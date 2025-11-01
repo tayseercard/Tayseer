@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-// Add /superadmin here
 const PROTECTED_PATHS = ['/admin', '/store', '/superadmin']
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
   const url = req.nextUrl.clone()
 
-  // ⚙️ Handle async cookies in Next 15+
+  // Create a response we can modify if needed
+  const res = NextResponse.next()
+
+  // Handle async cookies in Next 15+
   const cookies =
     typeof (req.cookies as any).then === 'function'
       ? await req.cookies
@@ -38,63 +39,77 @@ export async function middleware(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // 🧩 CASE 1: Protected areas (admin/store/superadmin)
+  // 🧱 CASE 1: Protected areas
   if (PROTECTED_PATHS.some((p) => url.pathname.startsWith(p))) {
+    // ❌ Not logged in
     if (!user) {
-      url.pathname = '/auth/login'
-      url.searchParams.set('redirectTo', req.nextUrl.pathname)
-      return NextResponse.redirect(url)
+      const loginUrl = req.nextUrl.clone()
+      loginUrl.pathname = '/auth/login'
+      loginUrl.searchParams.set('redirectTo', req.nextUrl.pathname)
+      return NextResponse.redirect(loginUrl)
     }
 
-    // Fetch all roles for the user
+    // ✅ Logged in → fetch roles
+    const { data: roles, error } = await supabase
+      .from('me_effective_role')
+      .select('role')
+      .eq('user_id', user.id)
+
+    if (error || !roles?.length) {
+      // No roles? Deny access
+      return NextResponse.redirect(new URL('/auth/login', req.url))
+    }
+
+    const roleList = roles.map((r) => r.role)
+    const isSuperadmin = roleList.includes('superadmin')
+    const isAdmin = roleList.includes('admin')
+    const isStore =
+      roleList.includes('store_owner') ||
+      roleList.includes('manager') ||
+      roleList.includes('cashier')
+
+    // 🔐 Role-based checks
+    if (url.pathname.startsWith('/superadmin') && !isSuperadmin) {
+      // Superadmin only
+      return NextResponse.redirect(new URL('/auth/login', req.url))
+    }
+
+    if (url.pathname.startsWith('/admin') && !(isAdmin || isSuperadmin)) {
+      // Admin or Superadmin only
+      return NextResponse.redirect(new URL('/auth/login', req.url))
+    }
+
+    if (url.pathname.startsWith('/store') && !(isStore || isSuperadmin)) {
+      // Store roles or Superadmin
+      return NextResponse.redirect(new URL('/auth/login', req.url))
+    }
+
+    // ✅ Authorized → allow through
+    return res
+  }
+
+  // 🧱 CASE 2: Already logged in and trying to visit /auth/login
+  if (url.pathname.startsWith('/auth/login') && user) {
     const { data: roles } = await supabase
       .from('me_effective_role')
       .select('role')
       .eq('user_id', user.id)
 
     const roleList = roles?.map((r) => r.role) || []
-    const isSuperadmin = roleList.includes('superadmin')
-    const isAdmin = roleList.includes('admin')
-    const isStore = roleList.includes('store_owner') || roleList.includes('manager') || roleList.includes('cashier')
+    const dest = roleList.includes('superadmin')
+      ? '/superadmin'
+      : roleList.includes('admin')
+      ? '/admin'
+      : '/store'
 
-    // 🔐 Role-based access checks
-    if (url.pathname.startsWith('/superadmin') && !isSuperadmin) {
-      return NextResponse.redirect(new URL('/admin', req.url))
-    }
-
-    if (url.pathname.startsWith('/admin') && !(isAdmin || isSuperadmin)) {
-      return NextResponse.redirect(new URL('/store', req.url))
-    }
-
-    if (url.pathname.startsWith('/store') && isSuperadmin) {
-      return NextResponse.redirect(new URL('/superadmin', req.url))
-    }
+    return NextResponse.redirect(new URL(dest, req.url))
   }
 
-  // 🧩 CASE 2: Visiting login while already authenticated
-  if (url.pathname.startsWith('/auth/login')) {
-    if (user) {
-      const { data: roles } = await supabase
-        .from('me_effective_role')
-        .select('role')
-        .eq('user_id', user.id)
-
-      const roleList = roles?.map((r) => r.role) || []
-      const dest = roleList.includes('superadmin')
-        ? '/superadmin'
-        : roleList.includes('admin')
-        ? '/admin'
-        : '/store'
-      return NextResponse.redirect(new URL(dest, req.url))
-    }
-
-    return res
-  }
-
+  // Default: allow everything else
   return res
 }
 
-// Match all protected routes
+// ✅ Secure all protected routes
 export const config = {
-  matcher: ['/admin/:path*', '/store/:path*', '/superadmin/:path*'],
+  matcher: ['/admin/:path*', '/store/:path*', '/superadmin/:path*', '/auth/login'],
 }
