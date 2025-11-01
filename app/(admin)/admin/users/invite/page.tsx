@@ -68,7 +68,7 @@ export default async function InviteUserPage({
       redirect(`/admin/users/invite?${qs.toString()}&error=${encodeURIComponent('Pick a store for store roles')}`);
     }
 
-    const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://tayseercard.vercel.app';
     const postLoginPath = role === 'admin' ? '/admin' : '/store';
     const redirectTo = `${base}/auth/callback?redirectTo=${encodeURIComponent(postLoginPath)}`;
 

@@ -24,7 +24,7 @@ export default async function NewStorePage({
   async function createStoreAction(formData: FormData) {
     "use server";
     const admin = getAdminClient();
-    const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const base = process.env.NEXT_PUBLIC_BASE_URL || "https://tayseercard.vercel.app";
 
     const name = formData.get("name")?.toString().trim() ?? "";
     const email = formData.get("email")?.toString().trim() ?? "";
