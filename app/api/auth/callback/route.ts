@@ -12,16 +12,12 @@ import { cookies } from 'next/headers'
 
 export async function POST() {
   const supabase = createRouteHandlerClient({ cookies })
-
-  // This call triggers Supabase to write the session cookies server-side.
   const { data, error } = await supabase.auth.getSession()
-
   if (error) {
-    console.error('Auth cookie sync error:', error)
+    console.error('Callback error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-
-  return NextResponse.json({ success: true, session: data.session })
+  return NextResponse.json({ success: true })
 }
 
 // Optional GET → sanity-check endpoint
