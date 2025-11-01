@@ -1,59 +1,182 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
-export async function POST(req: Request) {
+/* ========= Types ========= */
+type RoleBody = {
+  email?: string;
+  id?: string;
+  role: string;
+  store_id?: string | null;
+  store_name?: string | null;
+};
+
+/* ========= Admin Client ========= */
+// Uses service role key to bypass RLS safely
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+/* ========= Helper: Check Superadmin ========= */
+async function assertSuperAdmin() {
   const supabase = createRouteHandlerClient({ cookies });
-  const body = await req.json();
-  const { email, role, store_id, store_name } = body;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!email || !role)
-    return NextResponse.json({ error: "Email and role are required." }, { status: 400 });
+  if (!user) throw new Error("Unauthorized");
 
-  // 1️⃣ Look up the user by email
-  const { data: user } = await supabase
-    .from("auth.users")
-    .select("id, email")
-    .eq("email", email)
-    .maybeSingle();
-
-  let user_id = user?.id;
-
-  // 2️⃣ If user doesn’t exist, invite them (creates an Auth user)
-  if (!user_id) {
-    const { data: invited, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
-      email,
-      { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` }
-    );
-    if (inviteError)
-      return NextResponse.json({ error: inviteError.message }, { status: 400 });
-    user_id = invited?.user?.id;
-  }
-
-  // 3️⃣ Insert role record
-  const { error: insertError } = await supabase
+  const { data: roles, error } = await supabase
     .from("me_effective_role")
-    .insert({
-      user_id,
-      role,
-      store_id: store_id || null,
-      store_name: store_name || null,
-    });
+    .select("role")
+    .eq("user_id", user.id);
 
-  if (insertError)
-    return NextResponse.json({ error: insertError.message }, { status: 400 });
+  if (error) throw error;
 
-  return NextResponse.json({ success: true });
+  const isSuper = roles?.some((r) => r.role === "superadmin");
+  if (!isSuper) throw new Error("Forbidden — requires superadmin privileges");
+
+  return user;
 }
 
-export async function DELETE(req: Request) {
-  const supabase = createRouteHandlerClient({ cookies });
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
-  if (!id)
-    return NextResponse.json({ error: "Missing id" }, { status: 400 });
+/* ========= GET (list all roles) ========= */
+export async function GET() {
+  try {
+    await assertSuperAdmin();
+    const { data, error } = await supabaseAdmin
+      .from("me_effective_role")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  const { error } = await supabase.from("me_effective_role").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ success: true });
+    if (error) throw error;
+    return NextResponse.json({ data });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e.message || "Internal error" },
+      { status: 500 }
+    );
+  }
+}
+
+/* ========= POST (add or invite user + assign role) ========= */
+export async function POST(req: Request) {
+  try {
+    await assertSuperAdmin();
+    const { email, role, store_id, store_name } = (await req.json()) as RoleBody;
+
+    if (!email || !role)
+      return NextResponse.json({ error: "Missing email or role" }, { status: 400 });
+
+    // 1️⃣ Look up user by email (faster than listUsers)
+    const { data: foundUser, error: findErr } =
+      await supabaseAdmin.auth.admin.getUserByEmail(email);
+    if (findErr) throw findErr;
+
+    let user = foundUser?.user;
+
+    // 2️⃣ If not found, create user
+    if (!user) {
+      const { data, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        email_confirm: true,
+      });
+      if (createErr) throw createErr;
+      user = data.user;
+    }
+
+    if (!user?.id) throw new Error("Failed to resolve user ID");
+
+    // 3️⃣ Avoid duplicate role assignment
+    const { data: existingRole } = await supabaseAdmin
+      .from("me_effective_role")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("store_id", store_id || null)
+      .maybeSingle();
+
+    if (existingRole)
+      return NextResponse.json(
+        { error: "Role already exists for this user/store" },
+        { status: 400 }
+      );
+
+    // 4️⃣ Insert new role
+    const { error: insertErr } = await supabaseAdmin
+      .from("me_effective_role")
+      .insert([
+        {
+          user_id: user.id,
+          role,
+          store_id: store_id || null,
+          store_name: store_name || null,
+        },
+      ]);
+
+    if (insertErr) throw insertErr;
+
+    return NextResponse.json({
+      success: true,
+      user: { id: user.id, email: user.email, role, store_id, store_name },
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e.message || "Internal error" },
+      { status: 500 }
+    );
+  }
+}
+
+/* ========= PUT (update role info) ========= */
+export async function PUT(req: Request) {
+  try {
+    await assertSuperAdmin();
+    const { id, role, store_id, store_name } = (await req.json()) as RoleBody;
+
+    if (!id || !role)
+      return NextResponse.json({ error: "Missing id or role" }, { status: 400 });
+
+    const { error } = await supabaseAdmin
+      .from("me_effective_role")
+      .update({
+        role,
+        store_id: store_id || null,
+        store_name: store_name || null,
+      })
+      .eq("id", id);
+
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e.message || "Internal error" },
+      { status: 500 }
+    );
+  }
+}
+
+/* ========= DELETE (remove role) ========= */
+export async function DELETE(req: Request) {
+  try {
+    await assertSuperAdmin();
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id)
+      return NextResponse.json({ error: "Missing id" }, { status: 400 });
+
+    const { error } = await supabaseAdmin
+      .from("me_effective_role")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e.message || "Internal error" },
+      { status: 500 }
+    );
+  }
 }
