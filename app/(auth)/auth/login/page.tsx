@@ -67,7 +67,7 @@ function LoginInner() {
 
       // 🧭 Redirect logic
       if (isSuperadmin) {
-        router.replace(redirectTo || '/(superadmin)/superadmin');
+        router.replace(redirectTo || '/superadmin');
       } else if (isAdmin) {
         router.replace(redirectTo || '/admin');
       } else if (isStoreOwner) {

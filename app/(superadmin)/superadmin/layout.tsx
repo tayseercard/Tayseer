@@ -29,9 +29,21 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
   const supabase = createClientComponentClient();
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error('Logout error:', error);
+
+    // 🔄 Clear server-side cookie
+    await fetch('/api/auth/callback', { method: 'POST', body: JSON.stringify({ signout: true }) });
+
+    // ✅ Force redirect to login
+    window.location.href = '/auth/login';
+  } catch (e) {
+    console.error('Logout failed:', e);
     window.location.href = '/auth/login';
   }
+}
+
 
   return (
     <div className="min-h-screen flex bg-gray-50 text-gray-800">
