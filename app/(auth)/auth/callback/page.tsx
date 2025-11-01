@@ -33,7 +33,10 @@ function AuthCallbackInner() {
         if (exchangeError) throw new Error('Exchange error: ' + exchangeError.message);
 
         setDebug('✅ Session exchanged, syncing cookies...');
-        const res = await fetch('/api/auth/callback', { method: 'POST' });
+const res = await fetch('/api/auth/callback', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+});
         const json = await res.json();
 
         if (!res.ok) {
