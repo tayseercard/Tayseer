@@ -157,6 +157,7 @@ export default function AdminRolesPage() {
             {roles.map((r) => (
               <tr key={r.id} className="border-t hover:bg-gray-50">
                 <td className="px-4 py-2 font-mono text-xs">{r.user_id}</td>
+                <td className="px-4 py-2">{r.auth?.users?.email || '—'}</td>
                 <td className="px-4 py-2 capitalize">{r.role}</td>
                 <td className="px-4 py-2">{r.store_name || '—'}</td>
                 <td className="px-4 py-2 text-gray-500">
