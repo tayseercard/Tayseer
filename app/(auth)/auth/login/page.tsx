@@ -77,11 +77,12 @@ function LoginInner() {
           .eq('email', email)
           .maybeSingle();
 
-        if (store?.temp_password_set) {
-          router.replace('/auth/set-password');
-        } else {
-          router.replace(redirectTo || '/store');
-        }
+        if (!store?.temp_password_set) {
+  router.replace('/auth/set-password');
+} else {
+  router.replace(redirectTo || '/store');
+}
+
       } else {
         setErr('Unknown role: ' + roleList.join(', '));
       }
