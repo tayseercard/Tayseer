@@ -27,71 +27,72 @@ function LoginInner() {
 
   const redirectTo = params.get('redirectTo');
 
-// ---------------- LOGIN ----------------
-async function onLogin(e: React.FormEvent) {
-  e.preventDefault();
-  setErr(null);
-  setLoading(true);
+  // ---------------- LOGIN ----------------
+  async function onLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    setLoading(true);
 
-  try {
-    const { data: signInData, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    setLoading(false);
+    try {
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) throw error;
-    if (!signInData.user) throw new Error('No user found');
+      if (error) throw error;
+      if (!signInData.user) throw new Error('No user found');
 
-    // 🟢 Sync session cookies
-    await fetch('/api/auth/callback', { method: 'POST' });
+      // 🟢 Sync session cookies for Next.js SSR
+      await fetch('/api/auth/callback', { method: 'POST' });
 
-    // 🔍 Fetch all roles for this user
-    const { data: roles, error: roleErr } = await supabase
-      .from('me_effective_role')
-      .select('role')
-      .eq('user_id', signInData.user.id);
+      // 🔍 Fetch all roles for this user
+      const { data: roles, error: roleErr } = await supabase
+        .from('me_effective_role')
+        .select('role')
+        .eq('user_id', signInData.user.id);
 
-    if (roleErr) console.error(roleErr);
+      if (roleErr) console.error(roleErr);
 
-    if (!roles || roles.length === 0) {
-      setErr('No role assigned to this user.');
-      return;
-    }
-
-    // ✅ Determine role priority
-    const roleList = roles.map((r) => r.role);
-    const isSuperadmin = roleList.includes('superadmin');
-    const isAdmin = roleList.includes('admin');
-    const isStoreOwner = roleList.includes('store_owner');
-
-    // 🧭 Redirect logic
-    if (isSuperadmin) {
-      router.replace(redirectTo || '/superadmin');
-    } else if (isAdmin) {
-      router.replace(redirectTo || '/admin');
-    } else if (isStoreOwner) {
-      const { data: store } = await supabase
-        .from('stores')
-        .select('temp_password_set')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (store?.temp_password_set) {
-        router.replace('/auth/change-password');
-      } else {
-        router.replace(redirectTo || '/store');
+      if (!roles || roles.length === 0) {
+        setErr('No role assigned to this user.');
+        setLoading(false);
+        return;
       }
-    } else {
-      setErr('Unknown role: ' + roleList.join(', '));
+
+      // ✅ Determine role priority
+      const roleList = roles.map((r) => r.role);
+      const isSuperadmin = roleList.includes('superadmin');
+      const isAdmin = roleList.includes('admin');
+      const isStoreOwner = roleList.includes('store_owner');
+
+      // 🧭 Redirect logic
+      if (isSuperadmin) {
+        router.replace(redirectTo || '/superadmin');
+      } else if (isAdmin) {
+        router.replace(redirectTo || '/admin');
+      } else if (isStoreOwner) {
+        const { data: store } = await supabase
+          .from('stores')
+          .select('temp_password_set')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (store?.temp_password_set) {
+          router.replace('/auth/change-password');
+        } else {
+          router.replace(redirectTo || '/store');
+        }
+      } else {
+        setErr('Unknown role: ' + roleList.join(', '));
+      }
+
+      setLoading(false);
+    } catch (e: any) {
+      console.error('Login error:', e);
+      setLoading(false);
+      setErr(e.message || 'Login failed');
     }
-  } catch (e: any) {
-    setLoading(false);
-    setErr(e.message || 'Login failed');
   }
-}
-
-
 
   // ---------------- RESET PASSWORD ----------------
   async function onReset(e: React.FormEvent) {
@@ -100,7 +101,10 @@ async function onLogin(e: React.FormEvent) {
     setMsg(null);
     setLoading(true);
 
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://tayseer.vercel.app';
+    const origin =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : 'https://tayseer.vercel.app';
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${origin}/auth/reset-password`,
