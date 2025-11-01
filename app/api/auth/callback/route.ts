@@ -1,25 +1,21 @@
-import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
 export async function POST() {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = createRouteHandlerClient({ cookies })
 
-    // Just touch the session to ensure cookies are set
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession();
+    // Force Supabase to refresh and persist cookies
+    const { data, error } = await supabase.auth.getSession()
+    if (error) throw error
 
-    if (error) throw error;
-
-    return NextResponse.json({ ok: true, session });
+    return NextResponse.json({ ok: true, session: data.session ?? null })
   } catch (err: any) {
-    console.error('Cookie sync error:', err.message);
+    console.error('❌ /api/auth/callback error:', err)
     return NextResponse.json(
       { error: err.message || 'Cookie sync failed' },
-      { status: 500 }
-    );
+      { status: 500 },
+    )
   }
 }
