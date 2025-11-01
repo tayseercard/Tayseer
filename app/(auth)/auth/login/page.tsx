@@ -95,25 +95,24 @@ function LoginInner() {
   }
 
   // ---------------- RESET PASSWORD ----------------
-  async function onReset(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-    setMsg(null);
-    setLoading(true);
+  // ---------------- RESET PASSWORD ----------------
+async function onReset(e: React.FormEvent) {
+  e.preventDefault();
+  setErr(null);
+  setMsg(null);
+  setLoading(true);
 
-    const origin =
-      typeof window !== 'undefined'
-        ? window.location.origin
-        : 'https://tayseercard.vercel.app';
+  const origin = 'https://tayseercard.vercel.app'; // ✅ always use production URL
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${origin}/auth/reset-password`,
-    });
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/reset-password`,
+  });
 
-    setLoading(false);
-    if (error) return setErr(error.message);
-    setMsg('✅ Check your email for a reset link.');
-  }
+  setLoading(false);
+  if (error) return setErr(error.message);
+  setMsg('✅ Check your email for a reset link.');
+}
+
 
   // ---------------- UI ----------------
   return (
