@@ -18,7 +18,6 @@ function SetPasswordInner() {
   const supabase = createClientComponentClient();
   const router = useRouter();
   const sp = useSearchParams();
-
   const redirectTo = sp.get('redirectTo') || '';
 
   const [p1, setP1] = useState('');
@@ -35,28 +34,48 @@ function SetPasswordInner() {
     if (p1 !== p2) return setErr('Passwords do not match.');
 
     setLoading(true);
-    const { error: e1 } = await supabase.auth.updateUser({
-      password: p1,
-      data: { must_change_password: false },
-    });
-    setLoading(false);
 
-    if (e1) return setErr(e1.message);
-    setOk(true);
+    try {
+      // 1️⃣ Update password in Supabase Auth
+      const { error: e1 } = await supabase.auth.updateUser({
+        password: p1,
+        data: { must_change_password: false },
+      });
+      if (e1) throw e1;
 
-    // Fetch role to redirect properly
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      // 2️⃣ Fetch current user
+      const {
+        data: { user },
+        error: userErr,
+      } = await supabase.auth.getUser();
+      if (userErr || !user) throw new Error('User not found after update.');
 
-    const { data: me } = await supabase
-      .from('me_effective_role')
-      .select('role')
-      .eq('user_id', user?.id)
-      .maybeSingle();
+      // 3️⃣ Mark store as having completed password setup
+      const { error: updateErr } = await supabase
+        .from('stores')
+        .update({ temp_password_set: false })
+        .eq('email', user.email);
 
-    const dest = redirectTo || (me?.role === 'admin' ? '/admin' : '/store');
-    router.replace(dest);
+      if (updateErr) console.error('Failed to update temp_password_set:', updateErr);
+
+      // 4️⃣ Fetch user role for redirect
+      const { data: me } = await supabase
+        .from('me_effective_role')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      const dest = redirectTo || (me?.role === 'admin' ? '/admin' : '/store');
+      setOk(true);
+
+      // 5️⃣ Redirect after short delay
+      setTimeout(() => router.replace(dest), 1000);
+    } catch (err: any) {
+      console.error('Set password error:', err);
+      setErr(err.message || 'Failed to update password.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -65,6 +84,7 @@ function SetPasswordInner() {
         {!ok ? (
           <form onSubmit={onSubmit} className="grid gap-3">
             <h1 className="text-xl font-semibold mb-2 text-center">Set your password</h1>
+
             <input
               type="password"
               placeholder="New password"
@@ -73,6 +93,7 @@ function SetPasswordInner() {
               required
               className="border rounded-md p-2"
             />
+
             <input
               type="password"
               placeholder="Confirm password"
@@ -81,7 +102,9 @@ function SetPasswordInner() {
               required
               className="border rounded-md p-2"
             />
+
             {err && <p className="text-red-600 text-sm">{err}</p>}
+
             <button
               type="submit"
               disabled={loading}
@@ -92,7 +115,7 @@ function SetPasswordInner() {
           </form>
         ) : (
           <div className="text-center text-green-700 font-medium">
-            ✅ Password updated successfully!
+            ✅ Password updated successfully! Redirecting…
           </div>
         )}
       </div>
