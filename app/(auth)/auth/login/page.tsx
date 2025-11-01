@@ -104,7 +104,7 @@ function LoginInner() {
     const origin =
       typeof window !== 'undefined'
         ? window.location.origin
-        : 'https://tayseer.vercel.app';
+        : 'https://tayseercard.vercel.app';
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${origin}/auth/reset-password`,
