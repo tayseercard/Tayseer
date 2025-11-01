@@ -77,12 +77,11 @@ function LoginInner() {
           .eq('email', email)
           .maybeSingle();
 
-        if (!store?.temp_password_set) {
-  router.replace('/auth/set-password');
-} else {
-  router.replace(redirectTo || '/store');
-}
-
+        if (store?.temp_password_set) {
+          router.replace('/auth/change-password');
+        } else {
+          router.replace(redirectTo || '/store');
+        }
       } else {
         setErr('Unknown role: ' + roleList.join(', '));
       }
@@ -96,24 +95,25 @@ function LoginInner() {
   }
 
   // ---------------- RESET PASSWORD ----------------
-  // ---------------- RESET PASSWORD ----------------
-async function onReset(e: React.FormEvent) {
-  e.preventDefault();
-  setErr(null);
-  setMsg(null);
-  setLoading(true);
+  async function onReset(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
+    setMsg(null);
+    setLoading(true);
 
-  const origin = 'https://tayseercard.vercel.app'; // ✅ always use production URL
+    const origin =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : 'https://tayseer.vercel.app';
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/reset-password`,
-  });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/auth/reset-password`,
+    });
 
-  setLoading(false);
-  if (error) return setErr(error.message);
-  setMsg('✅ Check your email for a reset link.');
-}
-
+    setLoading(false);
+    if (error) return setErr(error.message);
+    setMsg('✅ Check your email for a reset link.');
+  }
 
   // ---------------- UI ----------------
   return (
