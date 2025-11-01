@@ -1,0 +1,10 @@
+{
+  "appId": "com.tayseer.app",
+  "appName": "tayseer",
+  "webDir": "dist",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false
+    }
+  }
+}

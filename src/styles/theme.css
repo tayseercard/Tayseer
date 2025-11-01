@@ -1,0 +1,23 @@
+:root {
+  --color-bg: linear-gradient(to bottom right, #ffffff, #f9fafb, #f3f4f6);
+  --color-text: #0f172a;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Inter', sans-serif;
+}
+
+/* Glassy card */
+.card {
+  @apply bg-white/90 backdrop-blur border border-gray-100 shadow-card rounded-2xl;
+}
+
+/* Buttons */
+.btn-primary {
+  @apply bg-gradient-to-r from-brand-900 to-brand-800 text-white font-semibold px-4 py-2 rounded-lg shadow-md hover:opacity-95 transition;
+}
+.btn-secondary {
+  @apply border border-gray-300 text-slate-700 bg-white/70 hover:bg-gray-50 font-medium px-4 py-2 rounded-lg transition;
+}
