@@ -78,7 +78,7 @@ function LoginInner() {
           .maybeSingle();
 
         if (store?.temp_password_set) {
-          router.replace('/auth/change-password');
+          router.replace('/auth/set-password');
         } else {
           router.replace(redirectTo || '/store');
         }
