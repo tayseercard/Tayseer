@@ -144,16 +144,35 @@ export default function AdminRolesPage() {
       {/* Roles list */}
       <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left px-4 py-2">User ID</th>
-              <th className="text-left px-4 py-2">Role</th>
-              <th className="text-left px-4 py-2">Store</th>
-              <th className="text-left px-4 py-2">Date</th>
-              <th className="text-right px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+         <thead className="bg-gray-50">
+  <tr>
+    <th className="text-left px-4 py-2">Email</th>
+    <th className="text-left px-4 py-2">Role</th>
+    <th className="text-left px-4 py-2">Store</th>
+    <th className="text-left px-4 py-2">Date</th>
+    <th className="text-right px-4 py-2">Actions</th>
+  </tr>
+</thead>
+<tbody>
+  {roles.map((r) => (
+    <tr key={r.id} className="border-t hover:bg-gray-50">
+      <td className="px-4 py-2 text-sm">{r.email || "—"}</td>
+      <td className="px-4 py-2 capitalize">{r.role}</td>
+      <td className="px-4 py-2">{r.store_name || "—"}</td>
+      <td className="px-4 py-2 text-gray-500">
+        {new Date(r.created_at).toLocaleString()}
+      </td>
+      <td className="px-4 py-2 text-right">
+        <button
+          onClick={() => handleDelete(r.id)}
+          className="text-red-600 hover:text-red-800"
+        >
+          <Trash size={16} />
+        </button>
+      </td>
+    </tr>
+  ))}
+
             {roles.map((r) => (
               <tr key={r.id} className="border-t hover:bg-gray-50">
                 <td className="px-4 py-2 font-mono text-xs">{r.user_id}</td>

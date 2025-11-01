@@ -13,7 +13,6 @@ type RoleBody = {
 };
 
 /* ========= Admin Client ========= */
-// Uses service role key to bypass RLS safely
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -46,21 +45,19 @@ export async function GET() {
   try {
     await assertSuperAdmin();
     const { data, error } = await supabaseAdmin
-      .from("me_effective_role")
+      .from("v_roles_with_emails")
       .select("*")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
     return NextResponse.json({ data });
   } catch (e: any) {
-    return NextResponse.json(
-      { error: e.message || "Internal error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: e.message || "Internal error" }, { status: 500 });
   }
 }
 
-/* ========= POST (add or invite user + assign role) ========= */
+
+/* ========= POST (create or invite user + assign role) ========= */
 export async function POST(req: Request) {
   try {
     await assertSuperAdmin();
@@ -69,14 +66,32 @@ export async function POST(req: Request) {
     if (!email || !role)
       return NextResponse.json({ error: "Missing email or role" }, { status: 400 });
 
-    // 1️⃣ Look up user by email (faster than listUsers)
-    const { data: foundUser, error: findErr } =
-      await supabaseAdmin.auth.admin.getUserByEmail(email);
-    if (findErr) throw findErr;
+    // 1️⃣ Try to get user by email
+    let user: any = null;
+    let foundErr = null;
 
-    let user = foundUser?.user;
+    try {
+      // Some versions of supabase-js have getUserByEmail()
+      const adminApi: any = supabaseAdmin.auth.admin as any;
+      if (typeof adminApi.getUserByEmail === "function") {
+        const { data, error } = await adminApi.getUserByEmail(email);
+        foundErr = error;
+        user = data?.user;
+      } else {
+        // Fallback to listUsers()
+        const { data: userList, error: listErr } = await adminApi.listUsers();
+        foundErr = listErr;
+        user = userList?.users.find(
+          (u: any) => u.email?.toLowerCase() === email.toLowerCase()
+        );
+      }
+    } catch (err: any) {
+      foundErr = err;
+    }
 
-    // 2️⃣ If not found, create user
+    if (foundErr) throw foundErr;
+
+    // 2️⃣ Create user if not found
     if (!user) {
       const { data, error: createErr } = await supabaseAdmin.auth.admin.createUser({
         email,
@@ -88,7 +103,7 @@ export async function POST(req: Request) {
 
     if (!user?.id) throw new Error("Failed to resolve user ID");
 
-    // 3️⃣ Avoid duplicate role assignment
+    // 3️⃣ Prevent duplicate roles
     const { data: existingRole } = await supabaseAdmin
       .from("me_effective_role")
       .select("id")
@@ -102,7 +117,7 @@ export async function POST(req: Request) {
         { status: 400 }
       );
 
-    // 4️⃣ Insert new role
+    // 4️⃣ Insert role
     const { error: insertErr } = await supabaseAdmin
       .from("me_effective_role")
       .insert([
