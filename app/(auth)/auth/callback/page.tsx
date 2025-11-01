@@ -17,59 +17,51 @@ function AuthCallbackInner() {
   const router = useRouter()
   const params = useSearchParams()
   const code = params.get('code')
+  const redirectTo = params.get('redirectTo')
 
   useEffect(() => {
     if (!code) return
 
     ;(async () => {
       try {
-        // 🧭 Exchange code for session (magic-link or OAuth)
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-        if (exchangeError) {
-          console.error('Auth callback error:', exchangeError.message)
-          router.replace('/auth/login?error=session')
-          return
-        }
+        // 1️⃣ Exchange auth code for session
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) throw error
 
+        // 2️⃣ 🔐 Sync the session cookies on the server
+        await fetch('/api/auth/callback', { method: 'POST' })
+
+        // 3️⃣ Get current user
         const {
           data: { user },
         } = await supabase.auth.getUser()
 
-        if (!user) {
-          router.replace('/auth/login?error=nouser')
-          return
-        }
+        if (!user) throw new Error('No user')
 
-        // 🔍 Fetch role from me_effective_role
-        const { data: roles, error: roleError } = await supabase
+        // 4️⃣ Get user roles
+        const { data: roles, error: roleErr } = await supabase
           .from('me_effective_role')
           .select('role')
           .eq('user_id', user.id)
 
-        if (roleError) {
-          console.error('Role query error:', roleError.message)
-          router.replace('/auth/login?error=rolequery')
-          return
-        }
-
+        if (roleErr) throw roleErr
         const roleList = roles?.map((r) => r.role) || []
-        if (!roleList.length) {
-          // No assigned role
-          router.replace('/auth/login?error=norole')
-          return
-        }
 
-        // 🧭 Redirect based on role
-        const dest = roleList.includes('superadmin')
-          ? '/superadmin'
-          : roleList.includes('admin')
-          ? '/admin'
-          : '/store'
+        if (!roleList.length) throw new Error('No role assigned')
+
+        // 5️⃣ Redirect based on role
+        const dest =
+          redirectTo ||
+          (roleList.includes('superadmin')
+            ? '/superadmin'
+            : roleList.includes('admin')
+            ? '/admin'
+            : '/store')
 
         router.replace(dest)
-      } catch (err) {
-        console.error('Unexpected error in callback:', err)
-        router.replace('/auth/login?error=unknown')
+      } catch (e: any) {
+        console.error('Auth callback error:', e.message)
+        router.replace('/auth/login?error=' + encodeURIComponent(e.message))
       }
     })()
   }, [code, router, supabase])
