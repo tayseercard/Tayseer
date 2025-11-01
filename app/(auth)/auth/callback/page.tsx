@@ -1,3 +1,4 @@
+//app\(auth)\auth\callback\page.tsx
 'use client';
 
 import { Suspense, useEffect } from 'react';
