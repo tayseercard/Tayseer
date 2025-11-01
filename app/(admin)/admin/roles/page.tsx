@@ -22,18 +22,11 @@ export default function AdminRolesPage() {
 
     // You can either query the SQL view `v_roles_with_emails`
     // OR use the direct join with `auth.users` (like this)
-    const { data, error } = await supabase
-      .from('me_effective_role')
-      .select(`
-        id,
-        user_id,
-        role,
-        store_id,
-        store_name,
-        created_at,
-        users:auth.users(email)
-      `)
-      .order('created_at', { ascending: false });
+   const { data, error } = await supabase
+  .from('v_roles_with_emails')
+  .select('*')
+  .order('created_at', { ascending: false });
+
 
     if (error) {
       console.error(error);
