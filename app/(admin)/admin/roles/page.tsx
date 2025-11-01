@@ -21,7 +21,7 @@ export default function AdminRolesPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from('me_effective_role')
-      .select('id, user_id, role, store_id, store_name, created_at')
+      .select('id, user_id, role, store_id, store_name, auth.users(email),created_at')
       .order('created_at', { ascending: false });
     if (!error && data) setRoles(data);
     setLoading(false);
