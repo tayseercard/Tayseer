@@ -1,87 +1,100 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
-const PROTECTED_PATHS = ['/admin', '/store'];
+// Add /superadmin here
+const PROTECTED_PATHS = ['/admin', '/store', '/superadmin']
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  const url = req.nextUrl.clone();
+  const res = NextResponse.next()
+  const url = req.nextUrl.clone()
 
-  // ⚙️ FIX: handle async cookies in Next 15
-  const cookies = (typeof (req.cookies as any).then === 'function')
-    ? await req.cookies
-    : req.cookies;
+  // ⚙️ Handle async cookies in Next 15+
+  const cookies =
+    typeof (req.cookies as any).then === 'function'
+      ? await req.cookies
+      : req.cookies
 
-  // ✅ create Supabase client safely
+  // ✅ Create Supabase server client
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         get(name) {
-          return cookies.get(name)?.value;
+          return cookies.get(name)?.value
         },
         set(name, value, options) {
-          res.cookies.set({ name, value, ...options });
+          res.cookies.set({ name, value, ...options })
         },
         remove(name, options) {
-          res.cookies.delete({ name, ...options });
+          res.cookies.delete({ name, ...options })
         },
       },
     }
-  );
+  )
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await supabase.auth.getUser()
 
-  // 🧩 CASE 1: Protected pages (admin/store)
+  // 🧩 CASE 1: Protected areas (admin/store/superadmin)
   if (PROTECTED_PATHS.some((p) => url.pathname.startsWith(p))) {
     if (!user) {
-      url.pathname = '/auth/login';
-      url.searchParams.set('redirectTo', req.nextUrl.pathname);
-      return NextResponse.redirect(url);
+      url.pathname = '/auth/login'
+      url.searchParams.set('redirectTo', req.nextUrl.pathname)
+      return NextResponse.redirect(url)
     }
 
-    // 🔐 Check user role
-    const { data: roleRow } = await supabase
+    // Fetch all roles for the user
+    const { data: roles } = await supabase
       .from('me_effective_role')
       .select('role')
       .eq('user_id', user.id)
-      .maybeSingle();
 
-    const role = roleRow?.role;
+    const roleList = roles?.map((r) => r.role) || []
+    const isSuperadmin = roleList.includes('superadmin')
+    const isAdmin = roleList.includes('admin')
+    const isStore = roleList.includes('store_owner') || roleList.includes('manager') || roleList.includes('cashier')
 
-    if (url.pathname.startsWith('/admin') && role !== 'admin') {
-      return NextResponse.redirect(new URL('/store', req.url));
+    // 🔐 Role-based access checks
+    if (url.pathname.startsWith('/superadmin') && !isSuperadmin) {
+      return NextResponse.redirect(new URL('/admin', req.url))
     }
 
-    if (url.pathname.startsWith('/store') && role === 'admin') {
-      return NextResponse.redirect(new URL('/admin', req.url));
+    if (url.pathname.startsWith('/admin') && !(isAdmin || isSuperadmin)) {
+      return NextResponse.redirect(new URL('/store', req.url))
+    }
+
+    if (url.pathname.startsWith('/store') && isSuperadmin) {
+      return NextResponse.redirect(new URL('/superadmin', req.url))
     }
   }
 
-  // 🧩 CASE 2: visiting login but already logged in
+  // 🧩 CASE 2: Visiting login while already authenticated
   if (url.pathname.startsWith('/auth/login')) {
     if (user) {
-      const { data: roleRow } = await supabase
+      const { data: roles } = await supabase
         .from('me_effective_role')
         .select('role')
         .eq('user_id', user.id)
-        .maybeSingle();
 
-      const role = roleRow?.role;
-      const dest = role === 'admin' ? '/admin' : '/store';
-      return NextResponse.redirect(new URL(dest, req.url));
+      const roleList = roles?.map((r) => r.role) || []
+      const dest = roleList.includes('superadmin')
+        ? '/superadmin'
+        : roleList.includes('admin')
+        ? '/admin'
+        : '/store'
+      return NextResponse.redirect(new URL(dest, req.url))
     }
 
-    return res;
+    return res
   }
 
-  return res;
+  return res
 }
 
+// Match all protected routes
 export const config = {
-  matcher: ['/admin/:path*', '/store/:path*'],
-};
+  matcher: ['/admin/:path*', '/store/:path*', '/superadmin/:path*'],
+}

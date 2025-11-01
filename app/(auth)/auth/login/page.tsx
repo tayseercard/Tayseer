@@ -27,8 +27,8 @@ function LoginInner() {
 
   const redirectTo = params.get('redirectTo');
 
-  // ---------------- LOGIN ----------------
- async function onLogin(e: React.FormEvent) {
+// ---------------- LOGIN ----------------
+async function onLogin(e: React.FormEvent) {
   e.preventDefault();
   setErr(null);
   setLoading(true);
@@ -43,27 +43,34 @@ function LoginInner() {
     if (error) throw error;
     if (!signInData.user) throw new Error('No user found');
 
-    // 🟢 Force cookie sync before any redirect
+    // 🟢 Sync session cookies
     await fetch('/api/auth/callback', { method: 'POST' });
 
-    // Fetch role
-    const { data: roleRow, error: roleErr } = await supabase
+    // 🔍 Fetch all roles for this user
+    const { data: roles, error: roleErr } = await supabase
       .from('me_effective_role')
       .select('role')
-      .eq('user_id', signInData.user.id)
-      .maybeSingle();
+      .eq('user_id', signInData.user.id);
 
     if (roleErr) console.error(roleErr);
 
-    if (!roleRow) {
+    if (!roles || roles.length === 0) {
       setErr('No role assigned to this user.');
       return;
     }
 
-    // Redirect by role
-    if (roleRow.role === 'admin') {
+    // ✅ Determine role priority
+    const roleList = roles.map((r) => r.role);
+    const isSuperadmin = roleList.includes('superadmin');
+    const isAdmin = roleList.includes('admin');
+    const isStoreOwner = roleList.includes('store_owner');
+
+    // 🧭 Redirect logic
+    if (isSuperadmin) {
+      router.replace(redirectTo || '/superadmin');
+    } else if (isAdmin) {
       router.replace(redirectTo || '/admin');
-    } else if (roleRow.role === 'store_owner') {
+    } else if (isStoreOwner) {
       const { data: store } = await supabase
         .from('stores')
         .select('temp_password_set')
@@ -76,13 +83,14 @@ function LoginInner() {
         router.replace(redirectTo || '/store');
       }
     } else {
-      setErr('Unknown role: ' + roleRow.role);
+      setErr('Unknown role: ' + roleList.join(', '));
     }
   } catch (e: any) {
     setLoading(false);
     setErr(e.message || 'Login failed');
   }
 }
+
 
 
   // ---------------- RESET PASSWORD ----------------
