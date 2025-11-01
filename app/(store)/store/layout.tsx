@@ -62,47 +62,68 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [menuOpen, setMenuOpen] = useState(false);
 
   /* ---------------------- Auth check ---------------------- */
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const { data: s } = await supabase.auth.getSession();
-        if (!s?.session) {
-          if (mounted) router.replace('/auth/magic?redirectTo=/store');
-          return;
-        }
+ useEffect(() => {
+  let mounted = true;
 
-        const { data: me, error } = await supabase
-          .from('me_effective_role')
-          .select('role')
-          .eq('user_id', s.session.user.id)
-          .maybeSingle();
+  (async () => {
+    try {
+      // 🔹 Get the current session
+      const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
 
-        if (error || (me?.role !== 'store_owner' && me?.role !== 'store')) {
-          await supabase.auth.signOut();
-          if (mounted) router.replace('/auth/magic?redirectTo=/store');
-          return;
-        }
+      if (sessionErr) console.error('Session error:', sessionErr.message);
 
-        const { data: store } = await supabase
-          .from('stores')
-          .select('name')
-          .eq('owner_user_id', s.session.user.id)
-          .maybeSingle();
-
-        if (mounted) {
-          setEmail(s.session.user.email ?? null);
-          setStoreName(store?.name ?? null);
-          setChecking(false);
-        }
-      } catch {
-        if (mounted) router.replace('/auth/magic?redirectTo=/store');
+      if (!session) {
+        if (mounted) router.replace('/auth/login?redirectTo=/store');
+        return;
       }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [router, supabase]);
+
+      // 🔹 Check role
+      const { data: roleRow, error: roleErr } = await supabase
+        .from('me_effective_role')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (roleErr) {
+        console.error('Role fetch error:', roleErr.message);
+        await supabase.auth.signOut();
+        if (mounted) router.replace('/auth/login?redirectTo=/store');
+        return;
+      }
+
+      const allowedRoles = ['store_owner', 'store', 'manager', 'cashier'];
+      if (!roleRow || !allowedRoles.includes(roleRow.role)) {
+        console.warn('Unauthorized role:', roleRow?.role);
+        await supabase.auth.signOut();
+        if (mounted) router.replace('/auth/login?redirectTo=/store');
+        return;
+      }
+
+      // 🔹 Fetch store info
+      const { data: store, error: storeErr } = await supabase
+        .from('stores')
+        .select('name')
+        .eq('owner_user_id', session.user.id)
+        .maybeSingle();
+
+      if (storeErr) console.error('Store fetch error:', storeErr.message);
+
+      if (mounted) {
+        setEmail(session.user.email ?? null);
+        setStoreName(store?.name ?? null);
+        setChecking(false);
+      }
+    } catch (e) {
+      console.error('Auth check failed:', e);
+      if (mounted) router.replace('/auth/login?redirectTo=/store');
+    }
+  })();
+
+  return () => {
+    mounted = false;
+  };
+}, [router, supabase]);
+
 
   if (checking) {
     return (
