@@ -22,7 +22,7 @@ function LoginInner() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const redirectTo = params.get('redirectTo') || '/admin'
+const redirectTo = params.get('redirectTo') || '/superadmin'
 
   // ✅ Auto-redirect if already logged in
   useEffect(() => {
@@ -43,68 +43,72 @@ function LoginInner() {
   }, [supabase, router])
 
   async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+  e.preventDefault()
+  setLoading(true)
+  setError(null)
 
-    try {
-      // 1️⃣ Sign in with Supabase
-      const { data: signInData, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+  try {
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    if (error) throw error
+    if (!signInData.user) throw new Error('No user found')
+
+    // ✅ Persist session cookies for middleware (if needed)
+    if (signInData.session) {
+      await fetch('/api/auth/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_token: signInData.session.access_token,
+          refresh_token: signInData.session.refresh_token,
+        }),
       })
-      if (error) throw error
-      if (!signInData.user) throw new Error('No user found')
-
-      // 2️⃣ (Optional) persist session tokens to cookies
-      if (signInData.session) {
-        await fetch('/api/auth/set', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            access_token: signInData.session.access_token,
-            refresh_token: signInData.session.refresh_token,
-          }),
-        })
-      }
-
-      // 3️⃣ Fetch user roles
-      const { data: roles, error: roleErr } = await supabase
-        .from('me_effective_role')
-        .select('role')
-        .eq('user_id', signInData.user.id)
-
-      if (roleErr) throw roleErr
-      if (!roles || roles.length === 0) throw new Error('No role assigned to this user.')
-
-      // 4️⃣ Determine the highest-privilege role
-      const roleList = roles.map((r) => r.role)
-      let userRole = 'store_owner'
-      let destination = redirectTo
-
-      if (roleList.includes('superadmin')) {
-        userRole = 'superadmin'
-        destination = '/superadmin'
-      } else if (roleList.includes('admin')) {
-        userRole = 'admin'
-        destination = '/admin'
-      } else if (roleList.includes('store_owner')) {
-        userRole = 'store_owner'
-        destination = '/store'
-      }
-
-      // 5️⃣ Save role cookie (used by middleware)
-      document.cookie = `role=${userRole}; path=/; SameSite=Lax;`
-
-      // 6️⃣ Redirect
-      router.replace(destination)
-    } catch (err: any) {
-      console.error('Login error:', err)
-      setError(err.message || 'Login failed')
-    } finally {
-      setLoading(false)
     }
+
+    // ✅ Fetch user role
+    const { data: roles, error: roleErr } = await supabase
+      .from('me_effective_role')
+      .select('role')
+      .eq('user_id', signInData.user.id)
+
+    if (roleErr) throw roleErr
+    if (!roles || roles.length === 0) throw new Error('No role assigned to this user.')
+
+    // ✅ Determine redirect
+    const roleList = roles.map((r) => r.role)
+    let userRole = 'store_owner'
+    let destination = redirectTo
+
+    if (roleList.includes('superadmin')) {
+      userRole = 'superadmin'
+      destination = '/superadmin'
+    } else if (roleList.includes('admin')) {
+      userRole = 'admin'
+      destination = '/admin'
+    } else if (roleList.includes('store_owner')) {
+      userRole = 'store_owner'
+      destination = '/store'
+    }
+
+    // ✅ Optional: keep role cookie (for debugging/UI only)
+    document.cookie = `role=${userRole}; path=/; SameSite=Lax;`
+
+    // ✅ Wait a short moment for Supabase cookies to be applied
+    await new Promise((resolve) => setTimeout(resolve, 300))
+
+    // ✅ Navigate and force refresh
+    router.replace(destination)
+    router.refresh()
+  } catch (err: any) {
+    console.error('Login error:', err)
+    setError(err.message || 'Login failed')
+  } finally {
+    setLoading(false)
   }
+}
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
