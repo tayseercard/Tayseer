@@ -1,64 +1,35 @@
-// middleware.ts
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
 
-export async function middleware(req: NextRequest) {
+// 🧱 Define protected routes
+const PROTECTED = ['/admin', '/superadmin', '/store']
+
+export function middleware(req: NextRequest) {
   const url = req.nextUrl.clone()
   const pathname = url.pathname
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return req.cookies.get(name)?.value
-        },
-      },
-    }
-  )
+  // ✅ Check if this is a protected path
+  const isProtected = PROTECTED.some((p) => pathname.startsWith(p))
+  if (!isProtected) return NextResponse.next()
 
-  // 1️⃣ Check if user is logged in
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+  // ✅ Check for Supabase auth cookies
+  const hasAccess = req.cookies.has('sb-access-token')
+  const hasRefresh = req.cookies.has('sb-refresh-token')
 
-  if (!session) {
+  // ⚠️ Allow edge cases where Supabase may still be setting cookies
+  const isReturningFromLogin = req.headers.get('referer')?.includes('/auth/login')
+
+  if (!hasAccess && !hasRefresh && !isReturningFromLogin) {
+    // Redirect to login if no session cookies
     url.pathname = '/auth/login'
     url.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(url)
-  }
-
-  // 2️⃣ Fetch user role
-  const { data: roleRow, error } = await supabase
-    .from('me_effective_role')
-    .select('role')
-    .eq('user_id', session.user.id)
-    .maybeSingle()
-
-  const role = roleRow?.role
-  if (error) console.error('Role fetch error:', error)
-
-  // 3️⃣ Role-based restrictions
-  if (pathname.startsWith('/superadmin') && role !== 'superadmin') {
-    url.pathname = '/403'
-    return NextResponse.redirect(url)
-  }
-
-  if (pathname.startsWith('/admin') && role !== 'admin') {
-    url.pathname = '/403'
-    return NextResponse.redirect(url)
-  }
-
-  if (pathname.startsWith('/store') && role !== 'store_owner') {
-    url.pathname = '/403'
     return NextResponse.redirect(url)
   }
 
   return NextResponse.next()
 }
 
+// ✅ Apply only to these routes
 export const config = {
-  matcher: ['/superadmin/:path*', '/admin/:path*', '/store/:path*'],
+  matcher: ['/admin/:path*', '/superadmin/:path*', '/store/:path*'],
 }
