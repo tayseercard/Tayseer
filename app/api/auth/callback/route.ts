@@ -4,7 +4,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 
 export async function POST() {
   try {
-    // ✅ Works with both Next 14 and 15
+    // ✅ Compatible with Next 14 & 15 async cookie handling
     const cookieStore: any =
       typeof (nextCookies as any).then === 'function'
         ? await nextCookies()
@@ -22,7 +22,7 @@ export async function POST() {
     console.error('❌ /api/auth/callback error:', err)
     return NextResponse.json(
       { error: err.message || 'Cookie sync failed' },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
