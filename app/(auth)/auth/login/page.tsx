@@ -48,47 +48,55 @@ function LoginInner() {
     setError(null)
 
     try {
-      // 1️⃣ Sign in
+      // 1️⃣ Sign in with Supabase
       const { data: signInData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      if (signInData.session) {
-  await fetch('/api/auth/set', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      access_token: signInData.session.access_token,
-      refresh_token: signInData.session.refresh_token,
-    }),
-  })
-}
-
       if (error) throw error
       if (!signInData.user) throw new Error('No user found')
 
-      // 2️⃣ Fetch user roles
+      // 2️⃣ (Optional) persist session tokens to cookies
+      if (signInData.session) {
+        await fetch('/api/auth/set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: signInData.session.access_token,
+            refresh_token: signInData.session.refresh_token,
+          }),
+        })
+      }
+
+      // 3️⃣ Fetch user roles
       const { data: roles, error: roleErr } = await supabase
         .from('me_effective_role')
         .select('role')
         .eq('user_id', signInData.user.id)
 
       if (roleErr) throw roleErr
+      if (!roles || roles.length === 0) throw new Error('No role assigned to this user.')
 
-      if (!roles || roles.length === 0) {
-        setError('No role assigned to this user.')
-        return
-      }
-
-      // 3️⃣ Determine destination
+      // 4️⃣ Determine the highest-privilege role
       const roleList = roles.map((r) => r.role)
+      let userRole = 'store_owner'
       let destination = redirectTo
 
-      if (roleList.includes('superadmin')) destination = '/superadmin'
-      else if (roleList.includes('admin')) destination = '/admin'
-      else if (roleList.includes('store_owner')) destination = '/store'
+      if (roleList.includes('superadmin')) {
+        userRole = 'superadmin'
+        destination = '/superadmin'
+      } else if (roleList.includes('admin')) {
+        userRole = 'admin'
+        destination = '/admin'
+      } else if (roleList.includes('store_owner')) {
+        userRole = 'store_owner'
+        destination = '/store'
+      }
 
-      // 4️⃣ Redirect user
+      // 5️⃣ Save role cookie (used by middleware)
+      document.cookie = `role=${userRole}; path=/; SameSite=Lax;`
+
+      // 6️⃣ Redirect
       router.replace(destination)
     } catch (err: any) {
       console.error('Login error:', err)
