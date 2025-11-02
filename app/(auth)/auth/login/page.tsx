@@ -1,130 +1,129 @@
-'use client';
+'use client'
 
-import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { ArrowLeft, Gift } from 'lucide-react';
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { ArrowLeft, Gift } from 'lucide-react'
 
 export default function LoginPage() {
   return (
     <Suspense fallback={<div className="p-4 text-gray-500 text-sm text-center">Loading login…</div>}>
       <LoginInner />
     </Suspense>
-  );
+  )
 }
 
 function LoginInner() {
-  const supabase = createClientComponentClient();
-  const router = useRouter();
-  const params = useSearchParams();
+  const supabase = createClientComponentClient()
+  const router = useRouter()
+  const params = useSearchParams()
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  const [resetMode, setResetMode] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState<string | null>(null)
+  const [resetMode, setResetMode] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
 
-  const redirectTo = params.get('redirectTo');
+  const redirectTo = params.get('redirectTo')
 
-  // ---------------- LOGIN ----------------
+  /* ---------------- LOGIN ---------------- */
   async function onLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-    setLoading(true);
+    e.preventDefault()
+    setErr(null)
+    setLoading(true)
 
     try {
       const { data: signInData, error } = await supabase.auth.signInWithPassword({
         email,
         password,
-      });
+      })
+      if (error) throw error
+      if (!signInData.user) throw new Error('No user found')
 
-      if (error) throw error;
-      if (!signInData.user) throw new Error('No user found');
+      // ✅ Sync session cookies for SSR — use fixed callback route
+      const res = await fetch('/api/auth/callback', { method: 'POST' })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error || 'Cookie sync failed')
+      }
 
-      // 🟢 Sync session cookies for Next.js SSR
-      await fetch('/api/auth/callback', { method: 'POST' });
-
-      // 🔍 Fetch all roles for this user
+      // ✅ Fetch roles
       const { data: roles, error: roleErr } = await supabase
         .from('me_effective_role')
         .select('role')
-        .eq('user_id', signInData.user.id);
+        .eq('user_id', signInData.user.id)
+      if (roleErr) throw roleErr
 
-      if (roleErr) console.error(roleErr);
-
-      if (!roles || roles.length === 0) {
-        setErr('No role assigned to this user.');
-        setLoading(false);
-        return;
+      if (!roles?.length) {
+        setErr('No role assigned to this user.')
+        setLoading(false)
+        return
       }
 
       // ✅ Determine role priority
-      const roleList = roles.map((r) => r.role);
-      const isSuperadmin = roleList.includes('superadmin');
-      const isAdmin = roleList.includes('admin');
-      const isStoreOwner = roleList.includes('store_owner');
+      const roleList = roles.map((r) => r.role)
+      const isSuperadmin = roleList.includes('superadmin')
+      const isAdmin = roleList.includes('admin')
+      const isStoreOwner =
+        roleList.includes('store_owner') ||
+        roleList.includes('manager') ||
+        roleList.includes('cashier')
 
-      // 🧭 Redirect logic
+      // ✅ Redirect logic
       if (isSuperadmin) {
-        router.replace(redirectTo || '/superadmin');
+        router.replace(redirectTo || '/superadmin')
       } else if (isAdmin) {
-        router.replace(redirectTo || '/admin');
+        router.replace(redirectTo || '/admin')
       } else if (isStoreOwner) {
+        // check temp password
         const { data: store } = await supabase
           .from('stores')
           .select('temp_password_set')
           .eq('email', email)
-          .maybeSingle();
+          .maybeSingle()
 
-        if (store?.temp_password_set) {
-          router.replace('/auth/set-password');
+        if (store?.temp_password_set === true) {
+          router.replace('/auth/set-password')
         } else {
-          router.replace(redirectTo || '/store');
+          router.replace(redirectTo || '/store')
         }
       } else {
-        setErr('Unknown role: ' + roleList.join(', '));
+        setErr('Unknown role: ' + roleList.join(', '))
       }
-
-      setLoading(false);
     } catch (e: any) {
-      console.error('Login error:', e);
-      setLoading(false);
-      setErr(e.message || 'Login failed');
+      console.error('Login error:', e)
+      setErr(e.message || 'Login failed')
+    } finally {
+      setLoading(false)
     }
   }
 
-  // ---------------- RESET PASSWORD ----------------
+  /* ---------------- RESET PASSWORD ---------------- */
   async function onReset(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-    setMsg(null);
-    setLoading(true);
+    e.preventDefault()
+    setErr(null)
+    setMsg(null)
+    setLoading(true)
 
     const origin =
       typeof window !== 'undefined'
         ? window.location.origin
-        : 'https://tayseer.vercel.app';
+        : 'https://tayseercard.vercel.app'
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${origin}/auth/reset-password`,
-    });
+    })
 
-    setLoading(false);
-    if (error) return setErr(error.message);
-    setMsg('✅ Check your email for a reset link.');
+    setLoading(false)
+    if (error) return setErr(error.message)
+    setMsg('✅ Check your email for a reset link.')
   }
 
-  // ---------------- UI ----------------
+  /* ---------------- UI ---------------- */
   return (
-    <div
-      className="min-h-screen flex items-center justify-center px-4 sm:px-6 bg-gradient-to-br from-[#0A0A0C] via-[#18181C] to-[#2A2A30] text-white"
-      style={{
-        backgroundAttachment: 'fixed',
-      }}
-    >
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-[#0A0A0C] via-[#18181C] to-[#2A2A30] text-white">
       <div className="w-full max-w-sm rounded-2xl bg-white/10 backdrop-blur-lg border border-white/10 p-6 shadow-lg">
-        {/* Header */}
         <div className="flex flex-col items-center mb-6">
           <div className="flex items-center gap-2 mb-2">
             <Gift className="h-7 w-7 text-white" />
@@ -135,7 +134,6 @@ function LoginInner() {
           </p>
         </div>
 
-        {/* Forms */}
         {!resetMode ? (
           <form onSubmit={onLogin} className="space-y-3">
             <div>
@@ -199,7 +197,6 @@ function LoginInner() {
           </form>
         )}
 
-        {/* Toggle Links */}
         <div className="mt-4 text-center">
           {!resetMode ? (
             <button
@@ -219,5 +216,5 @@ function LoginInner() {
         </div>
       </div>
     </div>
-  );
+  )
 }
