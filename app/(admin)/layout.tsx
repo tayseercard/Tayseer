@@ -1,10 +1,10 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { useRouter, usePathname } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useRouter, usePathname } from 'next/navigation'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import {
   LayoutDashboard,
   Package,
@@ -15,14 +15,23 @@ import {
   Search,
   ChevronDown,
   Gift,
-} from 'lucide-react';
+} from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createClientComponentClient();
-  const router = useRouter();
-  const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [email] = useState('admin@tayseer.com');
+  const supabase = createClientComponentClient()
+  const router = useRouter()
+  const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [email] = useState('admin@tayseer.com')
+
+  async function handleLogout() {
+    try {
+      await supabase.auth.signOut()
+      router.replace('/auth/login')
+    } catch (err) {
+      console.error('Logout failed:', err)
+    }
+  }
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 overflow-hidden">
@@ -44,10 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
         <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            router.replace('/auth/magic?redirectTo=/admin');
-          }}
+          onClick={handleLogout}
           className="text-xs text-gray-600 hover:underline"
         >
           Logout
@@ -103,7 +109,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               label="Vouchers"
               onClick={() => setMenuOpen(false)}
             />
-            
             <NavItem
               href="/admin/settings"
               icon={Settings}
@@ -122,10 +127,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <div className="text-xs text-gray-500">@tayseer</div>
             </div>
             <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.replace('/auth/magic?redirectTo=/admin');
-              }}
+              onClick={handleLogout}
               className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs hover:bg-white"
             >
               <LogOut className="h-3.5 w-3.5" />
@@ -162,7 +164,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </main>
     </div>
-  );
+  )
 }
 
 /* ====== Reusable NavItem ====== */
@@ -172,13 +174,13 @@ function NavItem({
   label,
   onClick,
 }: {
-  href: string;
-  icon: React.ComponentType<any>;
-  label: string;
-  onClick?: () => void;
+  href: string
+  icon: React.ComponentType<any>
+  label: string
+  onClick?: () => void
 }) {
-  const pathname = usePathname();
-  const active = pathname?.startsWith(href);
+  const pathname = usePathname()
+  const active = pathname?.startsWith(href)
   return (
     <Link
       href={href}
@@ -192,5 +194,5 @@ function NavItem({
       <Icon className="h-4 w-4 shrink-0" />
       {label}
     </Link>
-  );
+  )
 }
