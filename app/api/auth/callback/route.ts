@@ -4,27 +4,24 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 
 export async function POST(req: Request) {
   try {
-    // ✅ Correct Supabase client for App Router
     const supabase = createRouteHandlerClient({ cookies })
 
-    // Refresh or confirm the session
+    // Refresh and sync cookies
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     if (sessionError) throw sessionError
 
     const user = sessionData.session?.user
     if (!user) throw new Error('No authenticated user found.')
 
-    // 🧩 Fetch roles from your view/table
-    const { data: roles, error: roleError } = await supabase
+    // Example: fetch roles
+    const { data: roles, error: roleErr } = await supabase
       .from('me_effective_role')
       .select('role')
       .eq('user_id', user.id)
 
-    if (roleError) throw roleError
-    if (!roles?.length) throw new Error('No role assigned to this user.')
+    if (roleErr) throw roleErr
 
-    // Determine destination based on roles
-    const roleList = roles.map(r => r.role)
+    const roleList = roles?.map((r) => r.role) || []
     const dest =
       roleList.includes('superadmin')
         ? '/superadmin'
@@ -32,14 +29,9 @@ export async function POST(req: Request) {
         ? '/admin'
         : '/store'
 
-    // ✅ Redirect securely
-    const redirectUrl = new URL(dest, req.url)
-    return NextResponse.redirect(redirectUrl)
+    return NextResponse.redirect(new URL(dest, req.url))
   } catch (err: any) {
-    console.error('❌ /api/auth/callback error:', err)
-    return NextResponse.json(
-      { error: err.message || 'Unexpected server error' },
-      { status: 500 }
-    )
+    console.error('Auth callback error:', err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
