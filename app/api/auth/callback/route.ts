@@ -4,7 +4,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 
 export async function POST() {
   try {
-    // ✅ Handle both sync and async cookies() versions
+    // ✅ Handle both sync and async versions of cookies()
     const cookieStore: any =
       typeof (cookies as any).then === 'function' ? await cookies() : cookies()
 
@@ -12,6 +12,7 @@ export async function POST() {
       cookies: () => cookieStore,
     })
 
+    // ✅ This actually refreshes + persists the session
     const { data, error } = await supabase.auth.getSession()
     if (error) throw error
 
