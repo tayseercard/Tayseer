@@ -41,7 +41,7 @@ export async function middleware(req: NextRequest) {
   const role = session.user.user_metadata?.role
 
   if (!role) {
-    url.pathname = '/403'
+    url.pathname = '/402'
     return NextResponse.redirect(url)
   }
 
