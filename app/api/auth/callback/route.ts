@@ -42,10 +42,18 @@ export async function POST(req: Request) {
     // Optional: log session metadata for debugging
     console.log('✅ Session synced for user:', data.session?.user?.email)
 
-    // ✅ Return OK + propagate cookies via NextResponse
-    return NextResponse.json(
-      { ok: true, session: data.session },
-      { status: 200, headers: response.headers }
+   return NextResponse.json(
+  { ok: true, session: data.session },
+  {
+    status: 200,
+    headers: {
+      ...response.headers,
+      'Access-Control-Allow-Origin': process.env.NEXT_PUBLIC_SITE_URL!,
+      'Access-Control-Allow-Credentials': 'true',
+    },
+  }
+
+
     )
   } catch (err: any) {
     console.error('❌ /api/auth/callback error:', err)
