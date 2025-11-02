@@ -4,15 +4,17 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 
 export async function POST(req: Request) {
   try {
+    // ✅ Correct Supabase client for App Router
     const supabase = createRouteHandlerClient({ cookies })
 
-    // Re-sync session cookies
+    // Refresh or confirm the session
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
     if (sessionError) throw sessionError
-    const user = sessionData.session?.user
-    if (!user) throw new Error('User not found in session.')
 
-    // Fetch effective role(s)
+    const user = sessionData.session?.user
+    if (!user) throw new Error('No authenticated user found.')
+
+    // 🧩 Fetch roles from your view/table
     const { data: roles, error: roleError } = await supabase
       .from('me_effective_role')
       .select('role')
@@ -21,8 +23,8 @@ export async function POST(req: Request) {
     if (roleError) throw roleError
     if (!roles?.length) throw new Error('No role assigned to this user.')
 
-    // Determine redirect destination
-    const roleList = roles.map((r) => r.role)
+    // Determine destination based on roles
+    const roleList = roles.map(r => r.role)
     const dest =
       roleList.includes('superadmin')
         ? '/superadmin'
@@ -30,7 +32,7 @@ export async function POST(req: Request) {
         ? '/admin'
         : '/store'
 
-    // ✅ Redirect to the right dashboard
+    // ✅ Redirect securely
     const redirectUrl = new URL(dest, req.url)
     return NextResponse.redirect(redirectUrl)
   } catch (err: any) {
