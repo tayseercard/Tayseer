@@ -53,6 +53,17 @@ function LoginInner() {
         email,
         password,
       })
+      if (signInData.session) {
+  await fetch('/api/auth/set', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      access_token: signInData.session.access_token,
+      refresh_token: signInData.session.refresh_token,
+    }),
+  })
+}
+
       if (error) throw error
       if (!signInData.user) throw new Error('No user found')
 
