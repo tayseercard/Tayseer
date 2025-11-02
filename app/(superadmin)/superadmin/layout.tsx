@@ -3,31 +3,31 @@ import { cookies } from 'next/headers'
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import SuperadminLayoutClient from './SuperadminLayoutClient'
 
-export default async function SuperadminLayout({ children }: { children: React.ReactNode }) {
-  try {
-    const supabase = createServerComponentClient({ cookies })
-    const {
-      data: { user },
-      error: userErr,
-    } = await supabase.auth.getUser()
-    if (userErr || !user) redirect('/auth/login')
+export default async function SuperadminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const supabase = createServerComponentClient({ cookies })
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    const { data: roles, error: roleErr } = await supabase
-      .from('me_effective_role')
-      .select('role')
-      .eq('user_id', user.id)
+  // ❌ Not logged in → redirect to login
+  if (!user) {
+    redirect(`/auth/login?redirectTo=/superadmin`)
+  }
 
-    if (roleErr) {
-      console.error('Role fetch error:', roleErr)
-      redirect('/auth/login')
-    }
+  // ✅ Optional: check user role
+  const { data: roles } = await supabase
+    .from('me_effective_role')
+    .select('role')
+    .eq('user_id', user.id)
 
-    const roleList = roles?.map((r) => r.role) || []
-    if (!roleList.includes('superadmin')) redirect('/auth/login')
-
-    return <SuperadminLayoutClient>{children}</SuperadminLayoutClient>
-  } catch (err) {
-    console.error('❌ Superadmin layout error:', err)
+  const roleList = roles?.map((r) => r.role) || []
+  if (!roleList.includes('superadmin')) {
     redirect('/auth/login')
   }
+
+  return <SuperadminLayoutClient>{children}</SuperadminLayoutClient>
 }
