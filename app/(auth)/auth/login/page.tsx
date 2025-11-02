@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
@@ -22,7 +22,25 @@ function LoginInner() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const redirectTo = params.get('redirectTo') || '/superadmin'
+  const redirectTo = params.get('redirectTo') || '/admin'
+
+  // ✅ Auto-redirect if already logged in
+  useEffect(() => {
+    ;(async () => {
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (sessionData?.session?.user) {
+        const { data: roles } = await supabase
+          .from('me_effective_role')
+          .select('role')
+          .eq('user_id', sessionData.session.user.id)
+
+        const roleList = roles?.map((r) => r.role) || []
+        if (roleList.includes('superadmin')) router.replace('/superadmin')
+        else if (roleList.includes('admin')) router.replace('/admin')
+        else if (roleList.includes('store_owner')) router.replace('/store')
+      }
+    })()
+  }, [supabase, router])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
