@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
-  'https://YOUR_PROJECT_ID.supabase.co',
+  'https://djcotaizasnukiebjtjj.supabase.co',
   'YOUR_SERVICE_ROLE_KEY' // ⚠️ service role key only
 )
 
