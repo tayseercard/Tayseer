@@ -12,8 +12,10 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return setError(error.message)
-    window.location.href = '/auth/callback'
+if (error) return setError(error.message)
+
+// 👇 Session already exists, just go where you want
+window.location.href = '/superadmin'
   }
 
   return (
