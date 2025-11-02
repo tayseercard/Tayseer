@@ -12,55 +12,43 @@ export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone()
   const pathname = url.pathname
 
-  // 🧩 Allow public and error routes
-  if (
-    pathname.startsWith('/403') ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/favicon') ||
-    pathname.startsWith('/api')
-  ) {
-    return res
-  }
+  if (pathname.startsWith('/auth') || pathname.startsWith('/403')) return res
 
-  const isAuthPage =
-    pathname.startsWith('/auth') ||
-    pathname === '/' ||
-    pathname === '/login'
+  const isProtected =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/superadmin') ||
+    pathname.startsWith('/store')
 
-  // 🧱 If user not logged in → only /auth allowed
+  if (!isProtected) return res
+
   if (!session) {
-    if (!isAuthPage) {
-      url.pathname = '/auth/login'
-      url.searchParams.set('redirectTo', pathname)
-      return NextResponse.redirect(url)
-    }
-    return res
+    url.pathname = '/auth/login'
+    url.searchParams.set('redirectTo', pathname)
+    return NextResponse.redirect(url)
   }
 
-  // ✅ Logged in: extract role
-  const role = session.user.user_metadata?.role
+  // 🔹 Try reading role from JWT first
+  let role = session.user.user_metadata?.role
 
+  // 🔹 If missing, query your table directly
+  if (!role) {
+    const { data: roleData, error } = await supabase
+      .from('me_effective_role')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .maybeSingle()
+
+    if (error) console.error('Role fetch error:', error)
+    if (roleData?.role) role = roleData.role
+  }
+
+  // ❌ Still no role → forbidden
   if (!role) {
     url.pathname = '/403'
     return NextResponse.redirect(url)
   }
 
-  // 🚀 If user visits a public/auth page but is already logged in
-  // redirect them automatically to their correct dashboard
-  if (isAuthPage) {
-    if (role === 'superadmin') {
-      url.pathname = '/superadmin'
-    } else if (role === 'admin') {
-      url.pathname = '/admin'
-    } else if (['store_owner', 'manager', 'cashier'].includes(role)) {
-      url.pathname = '/store'
-    } else {
-      url.pathname = '/403'
-    }
-    return NextResponse.redirect(url)
-  }
-
-  // 🔐 Role-based route protection
+  // ✅ Role-based redirections
   if (pathname.startsWith('/superadmin') && role !== 'superadmin') {
     url.pathname = '/403'
     return NextResponse.redirect(url)
@@ -76,11 +64,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // ✅ All good — allow page to render
   return res
 }
 
 export const config = {
-  matcher: ['/', '/auth/:path*', '/admin/:path*', '/superadmin/:path*', '/store/:path*'],
+  matcher: ['/admin/:path*', '/superadmin/:path*', '/store/:path*'],
 }
-
