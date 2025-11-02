@@ -1,46 +1,80 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function LoginPage() {
   const supabase = createClientComponentClient()
+  const params = useSearchParams()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  // ✅ Read redirectTo param, fallback to /superadmin
+  const redirectTo = params.get('redirectTo') || '/superadmin'
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) return setError(error.message)
+    setLoading(true)
+    setError(null)
 
-    // 👇 tell the server to sync cookies
-    await fetch('/api/auth/callback', { method: 'POST' })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
 
-    // ✅ now you can redirect safely
-    window.location.href = '/superadmin'
+      // ✅ Sync cookies with the server
+      await fetch('/api/auth/callback', { method: 'POST' })
+
+      
+
+      // ✅ Redirect where user intended to go
+      window.location.href = redirectTo
+    } catch (err: any) {
+      console.error('Login error:', err)
+      setError(err.message || 'Login failed')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <form onSubmit={handleLogin} className="max-w-sm mx-auto mt-20 space-y-3">
-      <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Email"
-        className="border rounded w-full p-2"
-      />
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-        className="border rounded w-full p-2"
-      />
-      <button type="submit" className="bg-blue-600 text-white rounded p-2 w-full">
-        Login
-      </button>
-      {error && <p className="text-red-600 text-sm">{error}</p>}
-    </form>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <form
+        onSubmit={handleLogin}
+        className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm space-y-4"
+      >
+        <h1 className="text-lg font-semibold text-center">🔐 Tayseer Admin Login</h1>
+
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          required
+          className="w-full border rounded p-2 text-sm"
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          required
+          className="w-full border rounded p-2 text-sm"
+        />
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-indigo-600 text-white rounded-md py-2 font-medium hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {loading ? 'Connecting…' : 'Login'}
+        </button>
+
+        {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+      </form>
+    </div>
   )
 }
