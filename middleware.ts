@@ -1,37 +1,64 @@
 // middleware.ts
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
-// 🧱 Protected route prefixes
-const PROTECTED_PREFIXES = ['/admin', '/superadmin', '/store']
-
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone()
   const pathname = url.pathname
 
-  // ✅ Only protect if path starts with a protected prefix
-  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))
-  if (!isProtected) return NextResponse.next()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return req.cookies.get(name)?.value
+        },
+      },
+    }
+  )
 
-  // ✅ Supabase cookies check
-  const hasAccess = req.cookies.has('sb-access-token')
-  const hasRefresh = req.cookies.has('sb-refresh-token')
+  // 1️⃣ Check if user is logged in
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-  // ✅ Avoid infinite redirects after login
-  const isReturningFromLogin = req.headers.get('referer')?.includes('/auth/login')
-
-  // ❌ Not logged in → redirect to login
-  if (!hasAccess && !hasRefresh && !isReturningFromLogin) {
+  if (!session) {
     url.pathname = '/auth/login'
     url.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(url)
   }
 
-  // ✅ Allow access
+  // 2️⃣ Fetch user role
+  const { data: roleRow, error } = await supabase
+    .from('me_effective_role')
+    .select('role')
+    .eq('user_id', session.user.id)
+    .maybeSingle()
+
+  const role = roleRow?.role
+  if (error) console.error('Role fetch error:', error)
+
+  // 3️⃣ Role-based restrictions
+  if (pathname.startsWith('/superadmin') && role !== 'superadmin') {
+    url.pathname = '/403'
+    return NextResponse.redirect(url)
+  }
+
+  if (pathname.startsWith('/admin') && role !== 'admin') {
+    url.pathname = '/403'
+    return NextResponse.redirect(url)
+  }
+
+  if (pathname.startsWith('/store') && role !== 'store_owner') {
+    url.pathname = '/403'
+    return NextResponse.redirect(url)
+  }
+
   return NextResponse.next()
 }
 
-// ✅ Middleware applies to all nested admin/store/superadmin routes
 export const config = {
-  matcher: ['/admin/:path*', '/superadmin/:path*', '/store/:path*'],
+  matcher: ['/superadmin/:path*', '/admin/:path*', '/store/:path*'],
 }
