@@ -1,42 +1,39 @@
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PROTECTED = ['/admin', '/superadmin', '/store']
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next()
+  const supabase = createMiddlewareClient({ req, res })
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-export function middleware(req: NextRequest) {
   const url = req.nextUrl.clone()
   const pathname = url.pathname
 
-  // 🚫 Skip middleware for login, auth, and 403 pages
-  if (pathname.startsWith('/auth') || pathname.startsWith('/403')) {
-    return NextResponse.next()
-  }
+  if (pathname.startsWith('/auth') || pathname.startsWith('/403')) return res
 
-  // ✅ Check if this is a protected path
-  const isProtected = PROTECTED.some((p) => pathname.startsWith(p))
-  if (!isProtected) return NextResponse.next()
+  const isProtected =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/superadmin') ||
+    pathname.startsWith('/store')
 
-  // ✅ Supabase cookies
-  const hasAccess = req.cookies.has('sb-access-token')
-  const hasRefresh = req.cookies.has('sb-refresh-token')
+  if (!isProtected) return res
 
-  const isReturningFromLogin = req.headers.get('referer')?.includes('/auth/login')
-
-  if (!hasAccess && !hasRefresh && !isReturningFromLogin) {
+  if (!session) {
     url.pathname = '/auth/login'
     url.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(url)
   }
 
-  // ✅ Check role
-  const role = req.cookies.get('role')?.value
+  const role = session.user.user_metadata?.role
 
   if (!role) {
     url.pathname = '/403'
     return NextResponse.redirect(url)
   }
 
-  // 🔐 Role rules
   if (pathname.startsWith('/superadmin') && role !== 'superadmin') {
     url.pathname = '/403'
     return NextResponse.redirect(url)
@@ -52,7 +49,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  return NextResponse.next()
+  return res
 }
 
 export const config = {
