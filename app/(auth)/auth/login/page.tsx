@@ -12,10 +12,13 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-if (error) return setError(error.message)
+    if (error) return setError(error.message)
 
-// 👇 Session already exists, just go where you want
-window.location.href = '/superadmin'
+    // 👇 tell the server to sync cookies
+    await fetch('/api/auth/callback', { method: 'POST' })
+
+    // ✅ now you can redirect safely
+    window.location.href = '/superadmin'
   }
 
   return (
