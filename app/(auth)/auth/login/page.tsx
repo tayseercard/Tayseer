@@ -96,8 +96,11 @@ const redirectTo = params.get('redirectTo') || '/superadmin'
     document.cookie = `role=${userRole}; path=/; SameSite=Lax;`
 
     // ✅ Wait a short moment for Supabase cookies to be applied
-    await new Promise((resolve) => setTimeout(resolve, 300))
+// ✅ Wait for Supabase cookies to apply before redirecting
+await new Promise((resolve) => setTimeout(resolve, 400)) // 400ms wait
 
+// ✅ Force a reload (so middleware re-runs with session ready)
+window.location.href = destination
     // ✅ Navigate and force refresh
     router.replace(destination)
     router.refresh()
