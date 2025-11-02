@@ -1,13 +1,21 @@
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 
-export async function GET(request: Request) {
-  const supabase = createRouteHandlerClient({ cookies })
+export async function POST(request: Request) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies })
 
-  const { data, error } = await supabase.auth.getSession()
-  if (error) console.error('Session error:', error)
+    // Refresh the session to sync cookies on the server
+    const { data, error } = await supabase.auth.getSession()
+    if (error) throw error
 
-  // Continue your callback flow
-  return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.json({ success: true, session: data.session })
+  } catch (err: any) {
+    console.error('Auth callback route error:', err)
+    return NextResponse.json(
+      { error: err.message || 'Unexpected server error' },
+      { status: 500 }
+    )
+  }
 }
