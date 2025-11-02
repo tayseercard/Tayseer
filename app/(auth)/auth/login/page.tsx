@@ -1,10 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-gray-500">Loading login…</div>}>
+      <LoginInner />
+    </Suspense>
+  )
+}
+
+function LoginInner() {
   const supabase = createClientComponentClient()
   const params = useSearchParams()
 
@@ -13,7 +21,6 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // ✅ Read redirectTo param, fallback to /superadmin
   const redirectTo = params.get('redirectTo') || '/superadmin'
 
   async function handleLogin(e: React.FormEvent) {
@@ -25,12 +32,10 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
 
-      // ✅ Sync cookies with the server
+      // Sync cookies server-side
       await fetch('/api/auth/callback', { method: 'POST' })
 
-      
-
-      // ✅ Redirect where user intended to go
+      // Redirect
       window.location.href = redirectTo
     } catch (err: any) {
       console.error('Login error:', err)
