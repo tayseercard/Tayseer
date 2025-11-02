@@ -21,10 +21,11 @@ function LoginInner() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [resetMsg, setResetMsg] = useState<string | null>(null)
 
-const redirectTo = params.get('redirectTo') || '/superadmin'
+  const redirectTo = params.get('redirectTo') || '/superadmin'
 
-  // ✅ Auto-redirect if already logged in
+  /* Auto-redirect if already logged in */
   useEffect(() => {
     ;(async () => {
       const { data: sessionData } = await supabase.auth.getSession()
@@ -42,76 +43,74 @@ const redirectTo = params.get('redirectTo') || '/superadmin'
     })()
   }, [supabase, router])
 
+  /* Login handler */
   async function handleLogin(e: React.FormEvent) {
-  e.preventDefault()
-  setLoading(true)
-  setError(null)
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    setResetMsg(null)
 
-  try {
-    const { data: signInData, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (error) throw error
-    if (!signInData.user) throw new Error('No user found')
-
-    // ✅ Persist session cookies for middleware (if needed)
-    if (signInData.session) {
-      await fetch('/api/auth/set', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          access_token: signInData.session.access_token,
-          refresh_token: signInData.session.refresh_token,
-        }),
+    try {
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
+      if (error) throw error
+      if (!signInData.user) throw new Error('No user found')
+
+      if (signInData.session) {
+        await fetch('/api/auth/set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: signInData.session.access_token,
+            refresh_token: signInData.session.refresh_token,
+          }),
+        })
+      }
+
+      const { data: roles, error: roleErr } = await supabase
+        .from('me_effective_role')
+        .select('role')
+        .eq('user_id', signInData.user.id)
+
+      if (roleErr) throw roleErr
+      if (!roles || roles.length === 0) throw new Error('No role assigned to this user.')
+
+      const roleList = roles.map((r) => r.role)
+      let destination = redirectTo
+
+      if (roleList.includes('superadmin')) destination = '/superadmin'
+      else if (roleList.includes('admin')) destination = '/admin'
+      else if (roleList.includes('store_owner')) destination = '/store'
+
+      await new Promise((resolve) => setTimeout(resolve, 400))
+      window.location.href = destination
+    } catch (err: any) {
+      setError(err.message || 'Login failed')
+    } finally {
+      setLoading(false)
     }
-
-    // ✅ Fetch user role
-    const { data: roles, error: roleErr } = await supabase
-      .from('me_effective_role')
-      .select('role')
-      .eq('user_id', signInData.user.id)
-
-    if (roleErr) throw roleErr
-    if (!roles || roles.length === 0) throw new Error('No role assigned to this user.')
-
-    // ✅ Determine redirect
-    const roleList = roles.map((r) => r.role)
-    let userRole = 'store_owner'
-    let destination = redirectTo
-
-    if (roleList.includes('superadmin')) {
-      userRole = 'superadmin'
-      destination = '/superadmin'
-    } else if (roleList.includes('admin')) {
-      userRole = 'admin'
-      destination = '/admin'
-    } else if (roleList.includes('store_owner')) {
-      userRole = 'store_owner'
-      destination = '/store'
-    }
-
-    // ✅ Optional: keep role cookie (for debugging/UI only)
-    document.cookie = `role=${userRole}; path=/; SameSite=Lax;`
-
-    // ✅ Wait a short moment for Supabase cookies to be applied
-// ✅ Wait for Supabase cookies to apply before redirecting
-await new Promise((resolve) => setTimeout(resolve, 400)) // 400ms wait
-
-// ✅ Force a reload (so middleware re-runs with session ready)
-window.location.href = destination
-    // ✅ Navigate and force refresh
-    router.replace(destination)
-    router.refresh()
-  } catch (err: any) {
-    console.error('Login error:', err)
-    setError(err.message || 'Login failed')
-  } finally {
-    setLoading(false)
   }
-}
 
+  /* Forgot password handler */
+  async function handleForgotPassword() {
+    if (!email) {
+      setError('Please enter your email first.')
+      return
+    }
+    setError(null)
+    setResetMsg(null)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      })
+      if (error) throw error
+      setResetMsg('Password reset email sent! Check your inbox.')
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset email.')
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -147,7 +146,20 @@ window.location.href = destination
           {loading ? 'Connecting…' : 'Login'}
         </button>
 
+        {/* Forgot password */}
+        <div className="text-sm text-center">
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            className="text-indigo-600 hover:underline"
+          >
+            Forgot password?
+          </button>
+        </div>
+
+        {/* Messages */}
         {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+        {resetMsg && <p className="text-sm text-green-600 text-center">{resetMsg}</p>}
       </form>
     </div>
   )
