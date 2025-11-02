@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import {
   Store as StoreIcon,
   LayoutGrid,
@@ -13,10 +13,10 @@ import {
   MapPin,
   Phone,
   ChevronRight,
-} from 'lucide-react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Stat } from '@/components/ui/stat';
-import { Badge } from '@/components/ui/badge';
+} from 'lucide-react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Stat } from '@/components/ui/stat'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -25,19 +25,28 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 export default function AdminStoresPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createClientComponentClient()
 
-  const [rows, setRows] = useState<any[]>([]);
-  const [filtered, setFiltered] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState('');
-  const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<any[]>([])
+  const [filtered, setFiltered] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [q, setQ] = useState('')
+  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [open, setOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    wilaya: '',
+  })
 
   const [stats, setStats] = useState({
     total: 0,
@@ -46,107 +55,80 @@ export default function AdminStoresPage() {
     open: 0,
     closed: 0,
     topStore: '—',
-    totalSales: 0,
-    totalOrders: 0,
-    growth: 0,
-    avgRating: 0,
-  });
-
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    wilaya: '',
-  });
-  const [saving, setSaving] = useState(false);
-
-  /* ---------- Helpers ---------- */
-  function generateTempPassword(length = 8) {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    return Array.from({ length }, () =>
-      chars[Math.floor(Math.random() * chars.length)]
-    ).join('');
-  }
+  })
 
   /* ---------- Load Data ---------- */
-  /* ---------- Load Data ---------- */
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const { data } = await supabase.from('stores').select('*');
-      setRows(data || []);
-      setFiltered(data || []);
-      setStats({
-        ...stats,
+  const loadStores = useCallback(async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.from('stores').select('*')
+      if (error) throw error
+      setRows(data || [])
+      setFiltered(data || [])
+      setStats((prev) => ({
+        ...prev,
         total: data?.length || 0,
-      });
-      setLoading(false);
-    })();
-  }, []);
+        open: data?.filter((s) => s.status === 'open').length || 0,
+        closed: data?.filter((s) => s.status === 'closed').length || 0,
+      }))
+    } catch (err) {
+      console.error('Load stores failed', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [supabase])
+
+  useEffect(() => {
+    loadStores()
+  }, [loadStores])
 
   /* ---------- Search ---------- */
   useEffect(() => {
-    const t = q.trim().toLowerCase();
-    if (!t) setFiltered(rows);
-    else
+    const t = q.trim().toLowerCase()
+    if (!t) setFiltered(rows)
+    else {
       setFiltered(
         rows.filter(
           (s) =>
             (s.name ?? '').toLowerCase().includes(t) ||
             (s.address ?? '').toLowerCase().includes(t)
         )
-      );
-  }, [q, rows]);
-
-
-  /* ---------- Search ---------- */
-  useEffect(() => {
-    const t = q.trim().toLowerCase();
-    if (!t) setFiltered(rows);
-    else
-      setFiltered(
-        rows.filter(
-          (s) =>
-            (s.name ?? '').toLowerCase().includes(t) ||
-            (s.address ?? '').toLowerCase().includes(t)
-        )
-      );
-  }, [q, rows]);
+      )
+    }
+  }, [q, rows])
 
   /* ---------- Add Store ---------- */
   async function handleAddStore() {
-  if (!form.name.trim() || !form.email.trim()) {
-    return alert('Store name and email are required');
+    if (!form.name.trim() || !form.email.trim()) {
+      alert('Store name and email are required')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const res = await fetch('/api/admin/create-store-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Failed to create store')
+
+      alert(
+        `✅ Store "${result.store.name}" created successfully.\nTemporary password: ${result.temp_password}`
+      )
+
+      // ✅ Reload and reset
+      await loadStores()
+      setOpen(false)
+      setForm({ name: '', email: '', phone: '', address: '', wilaya: '' })
+    } catch (err: any) {
+      alert('❌ ' + err.message)
+    } finally {
+      setSaving(false)
+    }
   }
-
-  setSaving(true);
-  try {
-    const res = await fetch('/api/admin/create-store-user', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-
-    const result = await res.json();
-
-    if (!res.ok) throw new Error(result.error || 'Failed to create store');
-
-    alert(
-      `✅ Store "${result.store.name}" created successfully.\nTemporary password: ${result.temp_password}`
-    );
-
-    // Optionally reload stores list
-    await loadStores();
-    setShowAdd(false);
-    setForm({ name: '', email: '', phone: '', address: '', wilaya: '' });
-  } catch (err: any) {
-    alert(err.message);
-  } finally {
-    setSaving(false);
-  }
-}
-
 
   /* ---------- Render ---------- */
   return (
@@ -178,7 +160,6 @@ export default function AdminStoresPage() {
             <List className="h-4 w-4" />
           </button>
 
-          {/* ➕ Add Store Button (desktop) */}
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="ml-2 hidden sm:inline-flex bg-emerald-600 hover:bg-emerald-700">
@@ -190,7 +171,8 @@ export default function AdminStoresPage() {
               <DialogHeader>
                 <DialogTitle>Add New Store</DialogTitle>
                 <DialogDescription>
-                  Fill in the store information below. A temporary password will be generated automatically.
+                  Fill in the store information below. A temporary password will
+                  be generated automatically.
                 </DialogDescription>
               </DialogHeader>
 
@@ -201,7 +183,7 @@ export default function AdminStoresPage() {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                 />
                 <Input
-                  placeholder="Email"
+                  placeholder="Email *"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
@@ -242,11 +224,9 @@ export default function AdminStoresPage() {
         </div>
       </div>
 
-      {/* ✅ Stats Grid */}
+      {/* ✅ Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <Stat title="Total Stores" value={stats.total.toLocaleString()} />
-        <Stat title="Online" value={stats.online.toLocaleString()} />
-        <Stat title="Offline" value={stats.offline.toLocaleString()} />
         <Stat title="Open" value={stats.open.toLocaleString()} />
         <Stat title="Closed" value={stats.closed.toLocaleString()} />
         <Stat title="Top Store" value={stats.topStore} />
@@ -268,9 +248,13 @@ export default function AdminStoresPage() {
 
       {/* ✅ View Mode */}
       {loading ? (
-        <div className="py-20 text-center text-gray-500 text-sm">Loading stores…</div>
+        <div className="py-20 text-center text-gray-500 text-sm">
+          Loading stores…
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="py-20 text-center text-gray-500 text-sm">No stores found.</div>
+        <div className="py-20 text-center text-gray-500 text-sm">
+          No stores found.
+        </div>
       ) : view === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-16">
           {filtered.map((s) => (
@@ -325,7 +309,7 @@ export default function AdminStoresPage() {
         </DialogTrigger>
       </Dialog>
     </div>
-  );
+  )
 }
 
 /* ---------- Subcomponents ---------- */
@@ -336,7 +320,9 @@ function StoreCard({ s }: { s: any }) {
       className="block rounded-xl border border-gray-200 bg-white p-4 hover:shadow-lg transition-shadow"
     >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="font-medium text-gray-900 truncate">{s.name ?? 'Unnamed'}</h3>
+        <h3 className="font-medium text-gray-900 truncate">
+          {s.name ?? 'Unnamed'}
+        </h3>
         <ChevronRight className="h-4 w-4 text-gray-400" />
       </div>
       <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
@@ -357,20 +343,17 @@ function StoreCard({ s }: { s: any }) {
         </div>
       </div>
     </Link>
-  );
+  )
 }
 
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>;
+  return (
+    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
+      {children}
+    </th>
+  )
 }
+
 function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-3 py-2">{children}</td>;
+  return <td className="px-3 py-2">{children}</td>
 }
-function loadStores() {
-  throw new Error('Function not implemented.');
-}
-
-function setShowAdd(arg0: boolean) {
-  throw new Error('Function not implemented.');
-}
-

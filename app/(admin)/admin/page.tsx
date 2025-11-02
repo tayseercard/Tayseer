@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import {
   Store as StoreIcon,
   Gift,
@@ -9,17 +9,18 @@ import {
   TrendingUp,
   RefreshCw,
   Settings,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import CountUp from 'react-countup';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import CountUp from 'react-countup'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function AdminDashboardPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createClientComponentClient()
 
-  const [loading, setLoading] = useState(true);
-  const [stores, setStores] = useState<any[]>([]);
-  const [vouchers, setVouchers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true)
+  const [stores, setStores] = useState<any[]>([])
+  const [vouchers, setVouchers] = useState<any[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   const [storeStats, setStoreStats] = useState({
     total: 0,
@@ -27,51 +28,68 @@ export default function AdminDashboardPage() {
     closed: 0,
     online: 0,
     offline: 0,
-  });
+  })
 
   const [voucherStats, setVoucherStats] = useState({
     total: 0,
     active: 0,
     redeemed: 0,
     empty: 0,
-  });
+  })
 
   /* ---------- Load Data ---------- */
   useEffect(() => {
-    (async () => {
-      setLoading(true);
+    let isMounted = true
 
-      const [{ data: storesData }, { data: vouchersData }] = await Promise.all([
-        supabase.from('stores').select('*'),
-        supabase.from('vouchers').select('*'),
-      ]);
+    ;(async () => {
+      try {
+        setLoading(true)
+        setError(null)
 
-      if (storesData) {
-        setStores(storesData);
-        setStoreStats({
-          total: storesData.length,
-          open: storesData.filter((s) => s.status === 'open').length,
-          closed: storesData.filter((s) => s.status === 'closed').length,
-          online: storesData.filter((s) => s.type === 'online').length,
-          offline: storesData.filter((s) => s.type === 'offline').length,
-        });
+        // ✅ Fetch data in parallel
+        const [{ data: storesData, error: storesErr }, { data: vouchersData, error: vouchersErr }] =
+          await Promise.all([
+            supabase.from('stores').select('*'),
+            supabase.from('vouchers').select('*'),
+          ])
+
+        if (storesErr) throw storesErr
+        if (vouchersErr) throw vouchersErr
+
+        if (isMounted && storesData) {
+          setStores(storesData)
+          setStoreStats({
+            total: storesData.length,
+            open: storesData.filter((s) => s.status === 'open').length,
+            closed: storesData.filter((s) => s.status === 'closed').length,
+            online: storesData.filter((s) => s.type === 'online').length,
+            offline: storesData.filter((s) => s.type === 'offline').length,
+          })
+        }
+
+        if (isMounted && vouchersData) {
+          setVouchers(vouchersData)
+          setVoucherStats({
+            total: vouchersData.length,
+            active: vouchersData.filter((v) => v.status === 'active').length,
+            redeemed: vouchersData.filter((v) => v.status === 'redeemed').length,
+            empty: vouchersData.filter(
+              (v) => v.status === 'blank' || v.status === 'precreated'
+            ).length,
+          })
+        }
+      } catch (err: any) {
+        console.error('Dashboard load error:', err)
+        setError(err.message)
+      } finally {
+        if (isMounted) setLoading(false)
       }
+    })()
 
-      if (vouchersData) {
-        setVouchers(vouchersData);
-        setVoucherStats({
-          total: vouchersData.length,
-          active: vouchersData.filter((v) => v.status === 'active').length,
-          redeemed: vouchersData.filter((v) => v.status === 'redeemed').length,
-          empty: vouchersData.filter(
-            (v) => v.status === 'blank' || v.status === 'precreated'
-          ).length,
-        });
-      }
-
-      setLoading(false);
-    })();
-  }, [supabase]);
+    return () => {
+      isMounted = false
+    }
+  }, [supabase])
 
   /* ---------- UI ---------- */
   return (
@@ -87,9 +105,7 @@ export default function AdminDashboardPage() {
             <StoreIcon className="h-6 w-6 text-emerald-600" />
             Dashboard
           </h1>
-          <p className="text-gray-500 text-sm">
-            Overview of stores and vouchers
-          </p>
+          <p className="text-gray-500 text-sm">Overview of stores and vouchers</p>
         </div>
         <button
           onClick={() => window.location.reload()}
@@ -99,10 +115,14 @@ export default function AdminDashboardPage() {
         </button>
       </motion.header>
 
-      {/* STATS */}
+      {/* CONTENT */}
       {loading ? (
         <div className="py-20 text-center text-gray-400 text-sm animate-pulse">
           Loading dashboard data…
+        </div>
+      ) : error ? (
+        <div className="py-20 text-center text-red-600 text-sm">
+          ⚠️ Error loading dashboard: {error}
         </div>
       ) : (
         <AnimatePresence>
@@ -199,7 +219,7 @@ export default function AdminDashboardPage() {
         </AnimatePresence>
       )}
     </div>
-  );
+  )
 }
 
 /* ---------- Reusable Components ---------- */
@@ -214,7 +234,7 @@ function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string })
       {icon}
       {title}
     </motion.h2>
-  );
+  )
 }
 
 function StatCard({
@@ -223,12 +243,12 @@ function StatCard({
   suffix,
   color,
 }: {
-  title: string;
-  value: number;
-  suffix?: string;
-  color?: string;
+  title: string
+  value: number
+  suffix?: string
+  color?: string
 }) {
-  const gradients: any = {
+  const gradients: Record<string, string> = {
     emerald: 'from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200',
     indigo: 'from-indigo-50 to-indigo-100 text-indigo-700 border-indigo-200',
     rose: 'from-rose-50 to-rose-100 text-rose-700 border-rose-200',
@@ -237,7 +257,8 @@ function StatCard({
     cyan: 'from-cyan-50 to-cyan-100 text-cyan-700 border-cyan-200',
     gray: 'from-gray-50 to-gray-100 text-gray-700 border-gray-200',
     sky: 'from-sky-50 to-sky-100 text-sky-700 border-sky-200',
-  };
+    violet: 'from-violet-50 to-violet-100 text-violet-700 border-violet-200',
+  }
 
   return (
     <motion.div
@@ -251,7 +272,7 @@ function StatCard({
         {suffix && <span className="text-sm ml-0.5">{suffix}</span>}
       </p>
     </motion.div>
-  );
+  )
 }
 
 function LinkCard({
@@ -261,19 +282,22 @@ function LinkCard({
   desc,
   gradient,
 }: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  gradient: string;
+  href: string
+  icon: React.ReactNode
+  title: string
+  desc: string
+  gradient: string
 }) {
   return (
     <Link
       href={href}
       className={`flex flex-col gap-2 rounded-xl border p-4 bg-gradient-to-br ${gradient} hover:shadow-lg hover:-translate-y-1 transition`}
     >
-      <div className="flex items-center gap-2">{icon}<h3 className="font-medium text-sm">{title}</h3></div>
+      <div className="flex items-center gap-2">
+        {icon}
+        <h3 className="font-medium text-sm">{title}</h3>
+      </div>
       <p className="text-xs text-gray-600 leading-snug">{desc}</p>
     </Link>
-  );
+  )
 }
