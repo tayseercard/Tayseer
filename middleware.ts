@@ -12,21 +12,32 @@ export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone()
   const pathname = url.pathname
 
-  if (pathname.startsWith('/auth') || pathname.startsWith('/403')) return res
-
-  const isProtected =
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/superadmin') ||
-    pathname.startsWith('/store')
-
-  if (!isProtected) return res
-
-  if (!session) {
-    url.pathname = '/auth/login'
-    url.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(url)
+  // 🧩 Allow public and error routes
+  if (
+    pathname.startsWith('/403') ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/favicon') ||
+    pathname.startsWith('/api')
+  ) {
+    return res
   }
 
+  const isAuthPage =
+    pathname.startsWith('/auth') ||
+    pathname === '/' ||
+    pathname === '/login'
+
+  // 🧱 If user not logged in → only /auth allowed
+  if (!session) {
+    if (!isAuthPage) {
+      url.pathname = '/auth/login'
+      url.searchParams.set('redirectTo', pathname)
+      return NextResponse.redirect(url)
+    }
+    return res
+  }
+
+  // ✅ Logged in: extract role
   const role = session.user.user_metadata?.role
 
   if (!role) {
@@ -34,6 +45,22 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // 🚀 If user visits a public/auth page but is already logged in
+  // redirect them automatically to their correct dashboard
+  if (isAuthPage) {
+    if (role === 'superadmin') {
+      url.pathname = '/superadmin'
+    } else if (role === 'admin') {
+      url.pathname = '/admin'
+    } else if (['store_owner', 'manager', 'cashier'].includes(role)) {
+      url.pathname = '/store'
+    } else {
+      url.pathname = '/403'
+    }
+    return NextResponse.redirect(url)
+  }
+
+  // 🔐 Role-based route protection
   if (pathname.startsWith('/superadmin') && role !== 'superadmin') {
     url.pathname = '/403'
     return NextResponse.redirect(url)
@@ -49,9 +76,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // ✅ All good — allow page to render
   return res
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/superadmin/:path*', '/store/:path*'],
+  matcher: ['/', '/auth/:path*', '/admin/:path*', '/superadmin/:path*', '/store/:path*'],
 }
+
