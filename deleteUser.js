@@ -14,4 +14,4 @@ async function deleteUser(userId) {
   }
 }
 
-deleteUser('1165917e-01cf-488d-8609-5bf4af1996e7')
+deleteUser('d4462feb-db9a-4686-bd86-6a845ba5adca')
