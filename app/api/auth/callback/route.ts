@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
+import { cookies as nextCookies } from 'next/headers'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 
+// 🧩 Fix for Next.js 15+ cookies API change
 export async function POST() {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const cookieStore = await nextCookies() // <— important: call it!
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
-    // Force Supabase to refresh and persist cookies
     const { data, error } = await supabase.auth.getSession()
     if (error) throw error
 
