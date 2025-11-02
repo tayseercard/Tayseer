@@ -1,35 +1,37 @@
+// middleware.ts
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// 🧱 Define protected routes
-const PROTECTED = ['/admin', '/superadmin', '/store']
+// 🧱 Protected route prefixes
+const PROTECTED_PREFIXES = ['/admin', '/superadmin', '/store']
 
 export function middleware(req: NextRequest) {
   const url = req.nextUrl.clone()
   const pathname = url.pathname
 
-  // ✅ Check if this is a protected path
-  const isProtected = PROTECTED.some((p) => pathname.startsWith(p))
+  // ✅ Only protect if path starts with a protected prefix
+  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))
   if (!isProtected) return NextResponse.next()
 
-  // ✅ Check for Supabase auth cookies
+  // ✅ Supabase cookies check
   const hasAccess = req.cookies.has('sb-access-token')
   const hasRefresh = req.cookies.has('sb-refresh-token')
 
-  // ⚠️ Allow edge cases where Supabase may still be setting cookies
+  // ✅ Avoid infinite redirects after login
   const isReturningFromLogin = req.headers.get('referer')?.includes('/auth/login')
 
+  // ❌ Not logged in → redirect to login
   if (!hasAccess && !hasRefresh && !isReturningFromLogin) {
-    // Redirect to login if no session cookies
     url.pathname = '/auth/login'
     url.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(url)
   }
 
+  // ✅ Allow access
   return NextResponse.next()
 }
 
-// ✅ Apply only to these routes
+// ✅ Middleware applies to all nested admin/store/superadmin routes
 export const config = {
   matcher: ['/admin/:path*', '/superadmin/:path*', '/store/:path*'],
 }
