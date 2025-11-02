@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function LoginPage() {
@@ -14,6 +14,7 @@ export default function LoginPage() {
 
 function LoginInner() {
   const supabase = createClientComponentClient()
+  const router = useRouter()
   const params = useSearchParams()
 
   const [email, setEmail] = useState('')
@@ -29,14 +30,37 @@ function LoginInner() {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      // 1️⃣ Sign in
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
       if (error) throw error
+      if (!signInData.user) throw new Error('No user found')
 
-      // Sync cookies server-side
-      await fetch('/api/auth/callback', { method: 'POST' })
+      // 2️⃣ Fetch user roles
+      const { data: roles, error: roleErr } = await supabase
+        .from('me_effective_role')
+        .select('role')
+        .eq('user_id', signInData.user.id)
 
-      // Redirect
-      window.location.href = redirectTo
+      if (roleErr) throw roleErr
+
+      if (!roles || roles.length === 0) {
+        setError('No role assigned to this user.')
+        return
+      }
+
+      // 3️⃣ Determine destination
+      const roleList = roles.map((r) => r.role)
+      let destination = redirectTo
+
+      if (roleList.includes('superadmin')) destination = '/superadmin'
+      else if (roleList.includes('admin')) destination = '/admin'
+      else if (roleList.includes('store_owner')) destination = '/store'
+
+      // 4️⃣ Redirect user
+      router.replace(destination)
     } catch (err: any) {
       console.error('Login error:', err)
       setError(err.message || 'Login failed')
@@ -61,6 +85,7 @@ function LoginInner() {
           required
           className="w-full border rounded p-2 text-sm"
         />
+
         <input
           type="password"
           value={password}
