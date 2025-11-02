@@ -1,28 +1,64 @@
 import { NextResponse } from 'next/server'
-import { cookies as nextCookies } from 'next/headers'
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    // ✅ Compatible with Next 14 & 15 async cookie handling
-    const cookieStore: any =
-      typeof (nextCookies as any).then === 'function'
-        ? await nextCookies()
-        : nextCookies()
+    // 👇 Clone headers & cookies
+    const headers = new Headers(req.headers)
+    const response = NextResponse.next()
 
-    const supabase = createRouteHandlerClient({
-      cookies: () => cookieStore,
-    })
+    // ✅ Create Supabase SSR client (handles session cookies manually)
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name) {
+            const cookieHeader = headers.get('cookie')
+            if (!cookieHeader) return undefined
+            const cookies = Object.fromEntries(
+              cookieHeader.split(';').map((c) => {
+                const [k, ...v] = c.trim().split('=')
+                return [k, decodeURIComponent(v.join('='))]
+              })
+            )
+            return cookies[name]
+          },
+          set(name, value, options) {
+            // ✅ Forward any Supabase cookie updates to client
+            response.cookies.set({ name, value, ...options })
+          },
+          remove(name, options) {
+            response.cookies.delete({ name, ...options })
+          },
+        },
+      }
+    )
 
+    // ✅ Touch the session to sync cookies
     const { data, error } = await supabase.auth.getSession()
     if (error) throw error
 
-    return NextResponse.json({ ok: true, session: data.session ?? null })
+    // Optional: log session metadata for debugging
+    console.log('✅ Session synced for user:', data.session?.user?.email)
+
+    // ✅ Return OK + propagate cookies via NextResponse
+    return NextResponse.json(
+      { ok: true, session: data.session },
+      { status: 200, headers: response.headers }
+    )
   } catch (err: any) {
     console.error('❌ /api/auth/callback error:', err)
     return NextResponse.json(
-      { error: err.message || 'Cookie sync failed' },
-      { status: 500 },
+      { error: err.message || 'Internal Server Error' },
+      { status: 500 }
     )
   }
+}
+
+export async function GET() {
+  return NextResponse.json({
+    message:
+      '✅ Supabase auth callback ready. Use POST from client after sign-in.',
+  })
 }
