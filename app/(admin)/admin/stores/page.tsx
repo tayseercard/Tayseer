@@ -106,7 +106,7 @@ export default function AdminStoresPage() {
 
     setSaving(true)
     try {
-      const res = await fetch('/api/admin/create-store-user', {
+      const res = await fetch('/api/admin/create-store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
