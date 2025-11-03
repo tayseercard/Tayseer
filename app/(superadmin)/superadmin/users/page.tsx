@@ -10,27 +10,40 @@ export default function SuperadminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
 
-  /* ---------- Load users from me_effective_role ---------- */
+  /* ---------- Load users & roles ---------- */
   async function loadUsers() {
+    setLoading(true)
     try {
-      setLoading(true)
-      const { data, error } = await supabase
+      // 1️⃣ Get roles from public.me_effective_role
+      const { data: roles, error: rolesError } = await supabase
         .from('me_effective_role')
-        .select(
-          `
-          id,
-          user_id,
-          role,
-          store_id,
-          store_name,
-          created_at,
-          auth_user:auth.users(id, email, created_at)
-        `
-        )
+        .select('*')
+        .order('created_at', { ascending: false })
 
-      if (error) throw error
-      setRows(data || [])
-    } catch (err) {
+      if (rolesError) throw rolesError
+      if (!roles || roles.length === 0) {
+        setRows([])
+        return
+      }
+
+      // 2️⃣ Get all auth users via admin API
+      const { data: list, error: listError } =
+        await supabase.auth.admin.listUsers()
+      if (listError) throw listError
+
+      // 3️⃣ Merge
+      const merged = roles.map((r) => {
+        const user = list.users.find((u) => u.id === r.user_id)
+        return {
+          ...r,
+          email: user?.email ?? '—',
+          user_created_at: user?.created_at ?? null,
+          confirmed: !!user?.confirmed_at,
+        }
+      })
+
+      setRows(merged)
+    } catch (err: any) {
       console.error('❌ Load users failed:', err)
     } finally {
       setLoading(false)
@@ -41,24 +54,25 @@ export default function SuperadminUsersPage() {
     loadUsers()
   }, [])
 
+  /* ---------- Search ---------- */
   const filtered = rows.filter(
     (u) =>
-      (u.auth_user?.email ?? '')
-        .toLowerCase()
-        .includes(q.trim().toLowerCase()) ||
+      (u.email ?? '').toLowerCase().includes(q.trim().toLowerCase()) ||
       (u.role ?? '').toLowerCase().includes(q.trim().toLowerCase()) ||
       (u.store_name ?? '').toLowerCase().includes(q.trim().toLowerCase())
   )
 
   /* ---------- Delete User ---------- */
   async function handleDelete(userId: string, email: string) {
-    if (!confirm(`Delete user ${email}? This will remove all related records.`))
-      return
+    if (!confirm(`Delete ${email}? This will remove the role and user.`)) return
     try {
-      const { error } = await supabase.from('me_effective_role').delete().eq('user_id', userId)
+      const { error } = await supabase
+        .from('me_effective_role')
+        .delete()
+        .eq('user_id', userId)
       if (error) throw error
       alert(`✅ Deleted ${email}`)
-      loadUsers()
+      await loadUsers()
     } catch (err: any) {
       alert('❌ ' + err.message)
     }
@@ -109,13 +123,14 @@ export default function SuperadminUsersPage() {
                 <Th>Role</Th>
                 <Th>Store</Th>
                 <Th>Created</Th>
+                <Th>Status</Th>
                 <Th>Actions</Th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((u) => (
                 <tr key={u.id} className="border-t hover:bg-gray-50">
-                  <Td>{u.auth_user?.email ?? '—'}</Td>
+                  <Td>{u.email}</Td>
                   <Td>
                     <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
                       {u.role}
@@ -123,15 +138,24 @@ export default function SuperadminUsersPage() {
                   </Td>
                   <Td>{u.store_name ?? '—'}</Td>
                   <Td>
-                    {u.auth_user?.created_at
-                      ? new Date(u.auth_user.created_at).toLocaleDateString()
+                    {u.user_created_at
+                      ? new Date(u.user_created_at).toLocaleDateString()
                       : '—'}
                   </Td>
                   <Td>
+                    {u.confirmed ? (
+                      <span className="text-emerald-600 text-xs font-medium">
+                        Confirmed
+                      </span>
+                    ) : (
+                      <span className="text-amber-600 text-xs font-medium">
+                        Pending
+                      </span>
+                    )}
+                  </Td>
+                  <Td>
                     <button
-                      onClick={() =>
-                        handleDelete(u.user_id, u.auth_user?.email ?? 'user')
-                      }
+                      onClick={() => handleDelete(u.user_id, u.email)}
                       className="text-rose-600 hover:text-rose-700"
                     >
                       <Trash2 className="h-4 w-4" />
