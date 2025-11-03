@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// 👑 Admin client with Service Role Key (bypass RLS)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -8,9 +9,10 @@ const supabaseAdmin = createClient(
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
-  const storeId = params.id
+  const { id: storeId } = await context.params
+
   try {
     const { data, error } = await supabaseAdmin
       .from('vouchers')
@@ -19,6 +21,7 @@ export async function GET(
       .order('created_at', { ascending: false })
 
     if (error) throw error
+
     return NextResponse.json({ vouchers: data })
   } catch (err: any) {
     console.error('❌ Error fetching vouchers for store:', err)
