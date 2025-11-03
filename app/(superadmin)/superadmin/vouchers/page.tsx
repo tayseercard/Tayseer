@@ -42,9 +42,10 @@ export default function SuperadminVouchersPage() {
     setLoading(true);
     try {
       const [vouchersRes, storesRes] = await Promise.all([
-        fetch('/api/superadmin/list-vouchers'),
-        supabase.from('stores').select('id, name'),
-      ]);
+  fetch('/api/superadmin/vouchers'),
+  supabase.from('stores').select('id, name'),
+]);
+
       const { vouchers, error } = await vouchersRes.json();
       if (error) throw new Error(error);
       setRows(vouchers || []);

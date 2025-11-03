@@ -80,20 +80,24 @@ export default function AdminStoreDetailPage() {
     })();
   }, [storeId, supabase, router]);
 
-  /* -------- Load vouchers -------- */
-  async function loadVouchers() {
-    if (!storeId) return;
-    setLoadingVouchers(true);
+ /* -------- Load vouchers (superadmin) -------- */
+async function loadVouchers() {
+  if (!storeId) return;
+  setLoadingVouchers(true);
 
-    const { data, error } = await supabase
-      .from('vouchers')
-      .select('*')
-      .eq('store_id', storeId)
-      .order('created_at', { ascending: false });
+  try {
+    const res = await fetch(`/api/superadmin/stores/${storeId}/vouchers`);
+    const { vouchers, error } = await res.json();
 
+    if (error) throw new Error(error);
+    setVouchers(vouchers || []);
+  } catch (err) {
+    console.error('❌ Error loading vouchers:', err);
+  } finally {
     setLoadingVouchers(false);
-    if (!error && data) setVouchers(data as VoucherRow[]);
   }
+}
+
 
   useEffect(() => {
     loadVouchers();
