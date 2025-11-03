@@ -19,6 +19,10 @@ export async function POST(req: Request) {
       "🔑 Service key prefix:",
       process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 8)
     );
+    console.log("🟢 Loaded ENV vars:");
+console.log("URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+console.log("ANON starts:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.slice(0, 10));
+console.log("SERVICE starts:", process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 10));
 
     if (!name || !email)
       return NextResponse.json(
