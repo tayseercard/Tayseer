@@ -17,7 +17,7 @@ export async function POST(req: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `Tayseer <${process.env.SMTP_USER || 'onboarding@resend.dev'}>`,
+        from: `Tayseer <${process.env.SMTP_USER || 'tayseercard@gmail.com'}>`,
         to,
         subject: '📨 Test Email from Tayseer',
         html: `
