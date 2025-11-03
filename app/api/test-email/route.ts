@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'tayseercard@gmail.com', // ✅ Sandbox sender
+      from: 'onboarding@resend.dev', // ✅ Sandbox sender
       to,
       subject: '✅ Tayseer Email Test via Resend Sandbox',
       html: `<p>✅ Success! Your Resend connection works.</p>`,
