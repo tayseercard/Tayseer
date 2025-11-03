@@ -3,32 +3,41 @@ export const runtime = 'nodejs'
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
 export async function POST(req: Request) {
   try {
-    console.log('🟢 API HIT /api/admin/add-store')
-
-    console.log('🔑 URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.log(
-      '🔑 SERVICE KEY prefix:',
-      process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 10)
-    )
-
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    const { data, error } = await supabaseAdmin.from('stores').select('*').limit(1)
-
-    if (error) {
-      console.error('❌ Supabase error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    let body = {}
+    try {
+      body = await req.json()
+    } catch {
+      console.warn('⚠️ No JSON body received')
     }
 
-    console.log('✅ Connection works, first store row:', data)
-    return NextResponse.json({ success: true, message: 'Ping OK', data })
+    const { name, email, phone, address, wilaya } = body as any
+
+    if (!name || !email)
+      return NextResponse.json(
+        { error: 'Missing store name or email', received: body },
+        { status: 400 }
+      )
+
+    // --- test DB connection ---
+    const { data, error } = await supabaseAdmin
+      .from('stores')
+      .insert([{ name, email, phone, address, wilaya }])
+      .select()
+      .single()
+
+    if (error) throw error
+
+    return NextResponse.json({ success: true, store: data })
   } catch (err: any) {
-    console.error('❌ Unexpected error:', err)
+    console.error('❌ Internal error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+
