@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,15 +9,15 @@ const supabaseAdmin = createClient(
 export async function GET() {
   try {
     const { data, error } = await supabaseAdmin
-      .from("vouchers")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .from('vouchers')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
 
     return NextResponse.json({ vouchers: data });
   } catch (err: any) {
-    console.error("❌ Error fetching vouchers:", err);
+    console.error('❌ Error fetching vouchers:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

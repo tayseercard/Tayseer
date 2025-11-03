@@ -23,18 +23,21 @@ export default function SuperadminVouchersPage() {
   const [stores, setStores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null);
+
   const [adding, setAdding] = useState(false);
   const [addingLoading, setAddingLoading] = useState(false);
   const [storeId, setStoreId] = useState<string | null>(null);
   const [count, setCount] = useState(1);
+
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [showFabActions, setShowFabActions] = useState(false);
+
   const [q, setQ] = useState('');
   const [selectedStore, setSelectedStore] = useState<'all' | string>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all');
 
-  /* -------- Load data -------- */
+  /* -------- Load Data -------- */
   async function loadData() {
     setLoading(true);
     try {
@@ -105,6 +108,31 @@ export default function SuperadminVouchersPage() {
     } catch (e: any) {
       setScanError(e.message || 'Error scanning QR.');
     }
+  }
+
+  /* -------- Create Blank Vouchers -------- */
+  async function createBlankVouchers() {
+    if (!storeId || count < 1) return alert('Select store and count.');
+    setAddingLoading(true);
+
+    const rowsToInsert = Array.from({ length: count }).map(() => ({
+      store_id: storeId,
+      code: 'MKD-' + uuidv4().split('-')[0].toUpperCase(),
+      status: 'blank',
+      initial_amount: 0,
+      balance: 0,
+    }));
+
+    const { error } = await supabase.from('vouchers').insert(rowsToInsert);
+    setAddingLoading(false);
+
+    if (error) return alert('❌ Error: ' + error.message);
+
+    alert(`✅ Created ${count} blank voucher(s).`);
+    setAdding(false);
+    setStoreId(null);
+    setCount(1);
+    loadData();
   }
 
   /* -------- UI -------- */
@@ -208,16 +236,174 @@ export default function SuperadminVouchersPage() {
           </table>
         </div>
       )}
+
+      {/* Voucher Modal */}
+      {selectedVoucher && (
+        <VoucherModal
+          voucher={selectedVoucher}
+          supabase={supabase}
+          onClose={() => setSelectedVoucher(null)}
+          onRefresh={loadData}
+        />
+      )}
     </div>
   );
 }
 
-/* ---------- Helpers ---------- */
+/* ---------- Voucher Modal ---------- */
+function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [buyerName, setBuyerName] = useState(voucher.buyer_name ?? '');
+  const [buyerPhone, setBuyerPhone] = useState(voucher.buyer_phone ?? '');
+  const [amount, setAmount] = useState('');
+  const [consumeAmount, setConsumeAmount] = useState('');
+
+  useEffect(() => {
+    voucherToDataUrl(voucher.code).then(setUrl);
+  }, [voucher.code]);
+
+  async function handleActivate() {
+    if (!buyerName || !amount) return alert('Enter buyer name and amount');
+    const { error } = await supabase
+      .from('vouchers')
+      .update({
+        buyer_name: buyerName,
+        buyer_phone: buyerPhone || null,
+        initial_amount: Number(amount),
+        balance: Number(amount),
+        status: 'active',
+        activated_at: new Date().toISOString(),
+      })
+      .eq('id', voucher.id);
+    if (error) return alert(error.message);
+    alert('✅ Voucher activated');
+    onRefresh();
+    onClose();
+  }
+
+  async function handleConsume(partial = true) {
+    const value = partial ? Number(consumeAmount) : voucher.balance;
+    if (!value || value <= 0 || value > voucher.balance)
+      return alert('Invalid amount');
+    const newBalance = voucher.balance - value;
+    const newStatus = newBalance <= 0 ? 'redeemed' : 'active';
+    const { error } = await supabase
+      .from('vouchers')
+      .update({ balance: newBalance, status: newStatus })
+      .eq('id', voucher.id);
+    if (error) return alert(error.message);
+    alert('✅ Consumption recorded');
+    onRefresh();
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
+      <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+        <button
+          onClick={onClose}
+          className="absolute right-3 top-3 text-gray-500 hover:text-black"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <h2 className="text-lg font-semibold mb-3">Voucher Details</h2>
+
+        <div className="flex flex-col items-center mb-4">
+          {url ? (
+            <img src={url} alt="QR" className="h-32 w-32 rounded border" />
+          ) : (
+            <div className="w-32 h-32 bg-gray-100 rounded" />
+          )}
+          <a
+            href={voucherDeepLink(voucher.code)}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-blue-600 hover:underline mt-1 break-all"
+          >
+            {voucherDeepLink(voucher.code)}
+          </a>
+        </div>
+
+        {voucher.status === 'blank' ? (
+          <div className="space-y-3">
+            <input
+              placeholder="Buyer name"
+              value={buyerName}
+              onChange={(e) => setBuyerName(e.target.value)}
+              className="w-full border rounded-md p-2 text-sm"
+            />
+            <input
+              placeholder="Phone (optional)"
+              value={buyerPhone}
+              onChange={(e) => setBuyerPhone(e.target.value)}
+              className="w-full border rounded-md p-2 text-sm"
+            />
+            <input
+              type="number"
+              placeholder="Amount (DZD)"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full border rounded-md p-2 text-sm"
+            />
+            <button
+              onClick={handleActivate}
+              className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+            >
+              Activate
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3 text-sm">
+            <Info label="Buyer" value={voucher.buyer_name ?? '—'} />
+            <Info label="Phone" value={voucher.buyer_phone ?? '—'} />
+            <Info label="Status" value={voucher.status} />
+            <Info label="Balance" value={fmtDZD(voucher.balance)} />
+            {voucher.status === 'active' && (
+              <>
+                <input
+                  type="number"
+                  placeholder="Consume amount (DZD)"
+                  value={consumeAmount}
+                  onChange={(e) => setConsumeAmount(e.target.value)}
+                  className="w-full border rounded-md p-2 text-sm"
+                />
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={() => handleConsume(true)}
+                    className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+                  >
+                    Consume Partial
+                  </button>
+                  <button
+                    onClick={() => handleConsume(false)}
+                    className="flex-1 rounded-md bg-rose-600 px-4 py-2 text-sm text-white hover:bg-rose-700"
+                  >
+                    Redeem All
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Small helpers ---------- */
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>;
 }
 function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-3 py-2">{children}</td>;
+}
+function Info({ label, value }: { label: string; value: any }) {
+  return (
+    <div className="flex justify-between border-b py-1">
+      <span className="text-gray-500">{label}</span>
+      <span className="font-medium text-gray-900">{value}</span>
+    </div>
+  );
 }
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -239,4 +425,4 @@ function fmtDZD(n: number) {
     currency: 'DZD',
     maximumFractionDigits: 0,
   }).format(n);
-}
+ }
