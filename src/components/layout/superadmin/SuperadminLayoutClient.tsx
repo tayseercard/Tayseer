@@ -21,7 +21,6 @@ import {
 const navItems = [
   { name: 'Dashboard', href: '/superadmin', icon: LayoutDashboard },
   { name: 'Stores', href: '/superadmin/stores', icon: Building2 },
-  { name: 'Vouchers', href: '/superadmin/vouchers', icon: ShieldCheck },
   { name: 'Roles', href: '/superadmin/roles', icon: ShieldCheck },
   { name: 'Audit Logs', href: '/superadmin/logs', icon: FileText },
   { name: 'Settings', href: '/superadmin/settings', icon: Settings },
@@ -42,28 +41,14 @@ export default function SuperadminLayoutClient({
   const [open, setOpen] = useState(false)
 
   // ✅ Clean logout flow
-  // ✅ Clean logout flow
-async function handleLogout() {
-  try {
-    // Sign out from Supabase (client session + cookies)
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-
-    // Clear any stored session or cached data if needed
-    localStorage.clear()
-    sessionStorage.clear()
-
-    // Redirect to login page
-    router.replace('/auth/login')
-
-    // Optional: hard reload to reset Next.js client cache
-    window.location.reload()
-  } catch (err) {
-    console.error('❌ Logout failed:', err)
-    alert('Error logging out, please try again.')
+  async function handleLogout() {
+    try {
+      await supabase.auth.signOut()
+      router.replace('/auth/login')
+    } catch (err) {
+      console.error('Logout failed:', err)
+    }
   }
-}
-
 
   return (
     <div className="min-h-screen flex bg-gray-50 text-gray-800">
@@ -106,13 +91,11 @@ async function handleLogout() {
         {/* Footer */}
         <div className="mt-auto p-4 border-t border-gray-100">
           <button
-  onClick={() => {
-    if (confirm('Are you sure you want to log out?')) handleLogout()
-  }}
-  className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors"
->
-  <LogOut size={16} /> Logout
-</button>
+            onClick={handleLogout}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors"
+          >
+            <LogOut size={16} /> Logout
+          </button>
         </div>
       </aside>
 
