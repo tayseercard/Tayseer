@@ -51,7 +51,7 @@ export async function POST(req: Request) {
           address,
           wilaya,
           owner_user_id: user.id,
-          temp_password,
+          tempPassword,
           temp_password_set: false,
         },
       ])
