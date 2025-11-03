@@ -72,7 +72,7 @@ export default function AdminStoreDetailPage() {
 
       if (error || !data) {
         console.error(error);
-        router.replace('/admin/stores');
+        router.replace('/superadmin/stores');
         return;
       }
 
@@ -176,7 +176,7 @@ return (
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <button
-          onClick={() => router.push('/admin/stores')}
+          onClick={() => router.push('/superadmin/stores')}
           className="inline-flex items-center gap-1 text-gray-600 hover:text-black text-sm"
         >
           <ArrowLeft className="h-4 w-4" /> Back

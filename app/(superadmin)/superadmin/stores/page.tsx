@@ -106,7 +106,7 @@ export default function AdminStoresPage() {
 
     setSaving(true)
     try {
-      const res = await fetch('/api/admin/add-store', {
+      const res = await fetch('/api/superadmin/add-store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -301,7 +301,7 @@ export default function AdminStoresPage() {
                   <Td>{s.address ?? '—'}</Td>
                   <Td>
                     <Link
-                      href={`/admin/stores/${s.id}`}
+                      href={`/superadmin/stores/${s.id}`}
                       className="text-blue-600 text-xs hover:underline"
                     >
                       View
@@ -331,7 +331,7 @@ export default function AdminStoresPage() {
 function StoreCard({ s }: { s: any }) {
   return (
     <Link
-      href={`/admin/stores/${s.id}`}
+      href={`/superadmin/stores/${s.id}`}
       className="block rounded-xl border border-gray-200 bg-white p-4 hover:shadow-lg transition-shadow"
     >
       <div className="flex items-center justify-between mb-2">
