@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
+import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Store as StoreIcon,
   LayoutGrid,
@@ -13,10 +13,10 @@ import {
   MapPin,
   Phone,
   ChevronRight,
-} from 'lucide-react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Stat } from '@/components/ui/stat'
-import { Badge } from '@/components/ui/badge'
+  Trash2,
+} from 'lucide-react';
+import { Stat } from '@/components/ui/stat';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -25,20 +25,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
-export default function AdminStoresPage() {
-  const supabase = createClientComponentClient()
-
-  const [rows, setRows] = useState<any[]>([])
-  const [filtered, setFiltered] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [q, setQ] = useState('')
-  const [view, setView] = useState<'grid' | 'list'>('grid')
-  const [open, setOpen] = useState(false)
-  const [saving, setSaving] = useState(false)
+export default function SuperadminStoresPage() {
+  const [rows, setRows] = useState<any[]>([]);
+  const [filtered, setFiltered] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState('');
+  const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
     name: '',
@@ -46,46 +44,47 @@ export default function AdminStoresPage() {
     phone: '',
     address: '',
     wilaya: '',
-  })
+  });
 
   const [stats, setStats] = useState({
     total: 0,
-    online: 0,
-    offline: 0,
     open: 0,
     closed: 0,
-    topStore: '—',
-  })
+  });
 
-  /* ---------- Load Data ---------- */
+  /* ---------- Load All Stores (Service Role API) ---------- */
   const loadStores = useCallback(async () => {
     try {
-      setLoading(true)
-      const { data, error } = await supabase.from('stores').select('*')
-      if (error) throw error
-      setRows(data || [])
-      setFiltered(data || [])
-      setStats((prev) => ({
-        ...prev,
-        total: data?.length || 0,
-        open: data?.filter((s) => s.status === 'open').length || 0,
-        closed: data?.filter((s) => s.status === 'closed').length || 0,
-      }))
+      setLoading(true);
+      const res = await fetch('/api/superadmin/list-stores');
+      const json = await res.json();
+      if (res.ok && json.stores) {
+        const data = json.stores;
+        setRows(data);
+        setFiltered(data);
+        setStats({
+          total: data.length,
+          open: data.filter((s) => s.status === 'open').length,
+          closed: data.filter((s) => s.status === 'closed').length,
+        });
+      } else {
+        throw new Error(json.error || 'Failed to load stores');
+      }
     } catch (err) {
-      console.error('Load stores failed', err)
+      console.error('❌ Load stores failed:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [supabase])
+  }, []);
 
   useEffect(() => {
-    loadStores()
-  }, [loadStores])
+    loadStores();
+  }, [loadStores]);
 
   /* ---------- Search ---------- */
   useEffect(() => {
-    const term = q.trim().toLowerCase()
-    if (!term) setFiltered(rows)
+    const term = q.trim().toLowerCase();
+    if (!term) setFiltered(rows);
     else {
       setFiltered(
         rows.filter(
@@ -93,33 +92,27 @@ export default function AdminStoresPage() {
             (s.name ?? '').toLowerCase().includes(term) ||
             (s.address ?? '').toLowerCase().includes(term)
         )
-      )
+      );
     }
-  }, [q, rows])
+  }, [q, rows]);
 
   /* ---------- Add Store ---------- */
   async function handleAddStore() {
     if (!form.name.trim() || !form.email.trim()) {
-      alert('Store name and email are required')
-      return
+      alert('Store name and email are required');
+      return;
     }
 
-    setSaving(true)
+    setSaving(true);
     try {
       const res = await fetch('/api/admin/add-store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
-      })
+      });
 
-      let result: any = {}
-      try {
-        result = await res.json()
-      } catch {
-        throw new Error('Invalid response from server')
-      }
-
-      if (!res.ok) throw new Error(result.error || 'Failed to create store')
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to create store');
 
       alert(
         `✅ Store "${result.store.name}" created successfully.${
@@ -127,15 +120,34 @@ export default function AdminStoresPage() {
             ? `\nTemporary password: ${result.temp_password}`
             : ''
         }`
-      )
+      );
 
-      await loadStores()
-      setOpen(false)
-      setForm({ name: '', email: '', phone: '', address: '', wilaya: '' })
+      await loadStores();
+      setOpen(false);
+      setForm({ name: '', email: '', phone: '', address: '', wilaya: '' });
     } catch (err: any) {
-      alert('❌ ' + err.message)
+      alert('❌ ' + err.message);
     } finally {
-      setSaving(false)
+      setSaving(false);
+    }
+  }
+
+  /* ---------- Delete Store ---------- */
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Delete store "${name}"? This cannot be undone.`)) return;
+
+    try {
+      const res = await fetch('/api/admin/delete-store', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Delete failed');
+      alert(`🗑️ Deleted store "${name}"`);
+      await loadStores();
+    } catch (err: any) {
+      alert('❌ ' + err.message);
     }
   }
 
@@ -146,32 +158,26 @@ export default function AdminStoresPage() {
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div className="flex items-center gap-2">
           <StoreIcon className="h-5 w-5 text-emerald-600" />
-          <h1 className="text-xl font-semibold">Stores</h1>
+          <h1 className="text-xl font-semibold">All Stores</h1>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={() => setView('grid')}
-            className={`rounded-md border px-2.5 py-1.5 text-sm ${
-              view === 'grid' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'
-            }`}
-            title="Grid view"
+            variant={view === 'grid' ? 'default' : 'outline'}
           >
             <LayoutGrid className="h-4 w-4" />
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setView('list')}
-            className={`rounded-md border px-2.5 py-1.5 text-sm ${
-              view === 'list' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'
-            }`}
-            title="List view"
+            variant={view === 'list' ? 'default' : 'outline'}
           >
             <List className="h-4 w-4" />
-          </button>
+          </Button>
 
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button className="ml-2 hidden sm:inline-flex bg-emerald-600 hover:bg-emerald-700">
+              <Button className="ml-2 bg-emerald-600 hover:bg-emerald-700">
                 <Plus className="h-4 w-4 mr-1" /> Add Store
               </Button>
             </DialogTrigger>
@@ -218,18 +224,13 @@ export default function AdminStoresPage() {
               </div>
 
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                  type="button"
-                >
+                <Button variant="outline" onClick={() => setOpen(false)}>
                   Cancel
                 </Button>
                 <Button
                   onClick={handleAddStore}
                   disabled={saving}
                   className="bg-emerald-600 hover:bg-emerald-700"
-                  type="button"
                 >
                   {saving ? 'Saving…' : 'Add'}
                 </Button>
@@ -244,7 +245,6 @@ export default function AdminStoresPage() {
         <Stat title="Total Stores" value={stats.total.toLocaleString()} />
         <Stat title="Open" value={stats.open.toLocaleString()} />
         <Stat title="Closed" value={stats.closed.toLocaleString()} />
-        <Stat title="Top Store" value={stats.topStore} />
       </div>
 
       {/* Search */}
@@ -256,9 +256,9 @@ export default function AdminStoresPage() {
           placeholder="Search Store…"
           className="flex-1 bg-transparent text-sm focus:outline-none"
         />
-        <button className="rounded-md border px-2 py-1 text-sm hover:bg-gray-50 flex items-center gap-1">
-          <Filter className="h-4 w-4" /> Filter
-        </button>
+        <Button variant="outline" size="sm">
+          <Filter className="h-4 w-4 mr-1" /> Filter
+        </Button>
       </div>
 
       {/* Store List */}
@@ -273,7 +273,7 @@ export default function AdminStoresPage() {
       ) : view === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-16">
           {filtered.map((s) => (
-            <StoreCard key={s.id} s={s} />
+            <StoreCard key={s.id} s={s} onDelete={handleDelete} />
           ))}
         </div>
       ) : (
@@ -299,13 +299,19 @@ export default function AdminStoresPage() {
                   </Td>
                   <Td>{s.phone ?? '—'}</Td>
                   <Td>{s.address ?? '—'}</Td>
-                  <Td>
+                  <Td className="flex gap-2">
                     <Link
-                      href={`/admin/stores/${s.id}`}
+                      href={`/superadmin/stores/${s.id}`}
                       className="text-blue-600 text-xs hover:underline"
                     >
                       View
                     </Link>
+                    <button
+                      onClick={() => handleDelete(s.id, s.name)}
+                      className="text-rose-600 text-xs hover:underline"
+                    >
+                      Delete
+                    </button>
                   </Td>
                 </tr>
               ))}
@@ -313,32 +319,32 @@ export default function AdminStoresPage() {
           </table>
         </div>
       )}
-
-      {/* Floating Add Button (Mobile) */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <button className="fixed bottom-5 right-5 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-medium text-white shadow-lg hover:bg-emerald-700 md:hidden">
-            <Plus className="h-4 w-4" />
-            Add Store
-          </button>
-        </DialogTrigger>
-      </Dialog>
     </div>
-  )
+  );
 }
 
 /* ---------- Subcomponents ---------- */
-function StoreCard({ s }: { s: any }) {
+function StoreCard({ s, onDelete }: { s: any; onDelete: any }) {
   return (
-    <Link
-      href={`/admin/stores/${s.id}`}
-      className="block rounded-xl border border-gray-200 bg-white p-4 hover:shadow-lg transition-shadow"
-    >
+    <div className="block rounded-xl border border-gray-200 bg-white p-4 hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-medium text-gray-900 truncate">
           {s.name ?? 'Unnamed'}
         </h3>
-        <ChevronRight className="h-4 w-4 text-gray-400" />
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/superadmin/stores/${s.id}`}
+            className="text-blue-600 text-xs hover:underline"
+          >
+            View
+          </Link>
+          <button
+            onClick={() => onDelete(s.id, s.name)}
+            className="text-rose-600 text-xs hover:underline"
+          >
+            Delete
+          </button>
+        </div>
       </div>
       <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
         <MapPin className="h-3 w-3" />
@@ -357,8 +363,8 @@ function StoreCard({ s }: { s: any }) {
           <span className="text-xs">{s.rating ?? '—'}</span>
         </div>
       </div>
-    </Link>
-  )
+    </div>
+  );
 }
 
 function Th({ children }: { children: React.ReactNode }) {
@@ -366,9 +372,9 @@ function Th({ children }: { children: React.ReactNode }) {
     <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
       {children}
     </th>
-  )
+  );
 }
 
 function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-3 py-2">{children}</td>
+  return <td className="px-3 py-2">{children}</td>;
 }
