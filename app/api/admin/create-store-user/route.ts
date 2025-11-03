@@ -1,99 +1,87 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import nodemailer from 'nodemailer'
 
-// === Supabase Admin Client ===
-const supabase = createClient(
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // 🟢 not anon key
-);
-
-// === Resend Email Client ===
-const resend = new Resend(process.env.RESEND_API_KEY!);
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // ⚠️ must be service role key
+)
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { name, email, phone, address, wilaya } = body;
+    const body = await req.json()
+    const { name, email, phone, address, wilaya } = body
 
-    if (!email || !name) {
-      return NextResponse.json({ error: 'Name and email are required' }, { status: 400 });
+    if (!name || !email) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // 1️⃣ Generate temp password
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    const tempPassword = Array.from({ length: 8 }, () =>
-      chars[Math.floor(Math.random() * chars.length)]
-    ).join('');
+    // 1️⃣ Generate a secure temporary password
+    const tempPassword = Math.random().toString(36).slice(-8) + 'Aa1!'
 
-    // 2️⃣ Create Supabase Auth user
-    const { data: user, error: userError } = await supabase.auth.admin.createUser({
+    // 2️⃣ Create user in Supabase Auth
+    const { data: user, error: userError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password: tempPassword,
       email_confirm: true,
-    });
-    if (userError) throw userError;
+      user_metadata: { role: 'store_owner', name },
+    })
+    if (userError) throw userError
 
-    const userId = user?.user?.id;
-
-    // 3️⃣ Insert store row
-    const { data: store, error: storeError } = await supabase
+    // 3️⃣ Insert the store record
+    const { data: store, error: storeError } = await supabaseAdmin
       .from('stores')
       .insert([
         {
           name,
           email,
-          phone: phone || null,
-          address: address || null,
-          wilaya: wilaya ? Number(wilaya) : null,
-          owner_user_id: userId,
-          temp_password: tempPassword,
-          temp_password_set: true,
+          phone,
+          address,
+          wilaya,
+          status: 'open',
+          user_id: user.user.id,
         },
       ])
-      .select('*')
-      .single();
+      .select()
+      .single()
+    if (storeError) throw storeError
 
-    if (storeError) throw storeError;
+    // 4️⃣ Configure the mail transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', // or use 'smtp.yourdomain.com'
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    })
 
-    // 4️⃣ Send welcome email
-    const loginUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://https://tayseer.vercel.app'}/auth/login`;
-
-    await resend.emails.send({
-      from: 'tayseer <tayseercard@gmail.com>',
+    // 5️⃣ Compose the email
+    const mailOptions = {
+      from: `"Tayseer" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: '🎁 Welcome to tayseer — Your Store Access',
+      subject: 'Your Tayseer Store Account',
       html: `
-        <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:20px;background:#f9fafb;border-radius:12px">
-          <h2 style="color:#16a34a;">Welcome to tayseer 🎉</h2>
-          <p>Hi <strong>${name}</strong>,</p>
-          <p>Your store has been successfully registered on the tayseer platform.</p>
-          <p>You can now log in with the following credentials:</p>
-          <ul style="background:#fff;padding:12px;border-radius:8px;border:1px solid #ddd">
-            <li><strong>Email:</strong> ${email}</li>
-            <li><strong>Temporary Password:</strong> ${tempPassword}</li>
-          </ul>
-          <p style="margin-top:10px;">
-            👉 <a href="${loginUrl}" style="color:#16a34a;font-weight:bold;">Login to your dashboard</a>
-          </p>
-          <hr style="margin:20px 0;border:none;border-top:1px solid #e5e7eb;" />
-          <p style="font-size:12px;color:#6b7280;">
-            Please change your password immediately after your first login for security reasons.
-          </p>
-          <p style="font-size:12px;color:#9ca3af;">— The tayseer Team</p>
+        <div style="font-family: sans-serif; line-height: 1.5;">
+          <h2 style="color:#059669;">Welcome to Tayseer 🎁</h2>
+          <p>Hello <strong>${name}</strong>,</p>
+          <p>Your store account has been created successfully.</p>
+          <p><b>Temporary password:</b> <code>${tempPassword}</code></p>
+          <p>You can log in now and change your password in your dashboard.</p>
+          <hr />
+          <p style="font-size: 12px; color: gray;">Tayseer Platform • Algeria</p>
         </div>
       `,
-    });
+    }
 
-    // 5️⃣ Return success response
+    // 6️⃣ Send the email
+    await transporter.sendMail(mailOptions)
+
     return NextResponse.json({
-      success: true,
       store,
       temp_password: tempPassword,
-      email_sent: true,
-    });
+    })
   } catch (err: any) {
-    console.error('Create store API error:', err.message);
-    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
+    console.error('Error creating store:', err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
