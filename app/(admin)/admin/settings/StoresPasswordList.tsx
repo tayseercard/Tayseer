@@ -3,8 +3,8 @@ import { useState } from "react";
 
 export default function StoresPasswordList({ stores: initialStores }: { stores: any[] }) {
   const [stores, setStores] = useState(initialStores);
-  const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(false);
 
   async function refresh() {
     setLoading(true);
@@ -12,6 +12,22 @@ export default function StoresPasswordList({ stores: initialStores }: { stores: 
     const data = await res.json();
     setStores(data.stores || []);
     setLoading(false);
+  }
+
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    const res = await fetch("/api/admin/delete-store", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    const result = await res.json();
+    if (res.ok && result.success) {
+      alert(`✅ Store "${name}" deleted`);
+      await refresh();
+    } else {
+      alert(`❌ Failed to delete: ${result.error || "Unknown error"}`);
+    }
   }
 
   return (
@@ -47,14 +63,20 @@ export default function StoresPasswordList({ stores: initialStores }: { stores: 
                   <td className="px-3 py-2">{s.name}</td>
                   <td className="px-3 py-2">{s.email ?? "—"}</td>
                   <td className="px-3 py-2 font-mono">{shown ? pw : masked}</td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 space-x-2">
                     <button
                       onClick={() =>
                         setVisible((v) => ({ ...v, [s.id]: !v[s.id] }))
                       }
-                      className="mr-2 rounded border px-2 py-1 text-xs"
+                      className="border rounded px-2 py-1 text-xs"
                     >
                       {shown ? "Hide" : "Show"}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(s.id, s.name)}
+                      className="border border-rose-400 text-rose-600 rounded px-2 py-1 text-xs hover:bg-rose-50"
+                    >
+                      Delete
                     </button>
                   </td>
                 </tr>
