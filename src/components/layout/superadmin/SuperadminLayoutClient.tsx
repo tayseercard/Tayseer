@@ -21,6 +21,8 @@ import {
 const navItems = [
   { name: 'Dashboard', href: '/superadmin', icon: LayoutDashboard },
   { name: 'Stores', href: '/superadmin/stores', icon: Building2 },
+  { name: 'Users', href: '/superadmin/users', icon: Building2 },
+  { name: 'Vouchers', href: '/superadmin/vouchers', icon: Building2 },
   { name: 'Roles', href: '/superadmin/roles', icon: ShieldCheck },
   { name: 'Audit Logs', href: '/superadmin/logs', icon: FileText },
   { name: 'Settings', href: '/superadmin/settings', icon: Settings },
