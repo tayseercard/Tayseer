@@ -33,7 +33,6 @@ export default function StoresPasswordList({ stores: initialStores }: { stores: 
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-medium">Stores Temporary Passwords</h2>
         <button
           onClick={refresh}
           disabled={loading}
