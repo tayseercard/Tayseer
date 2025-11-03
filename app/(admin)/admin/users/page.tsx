@@ -1,91 +1,166 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Shield, RefreshCw, Search, Trash2 } from 'lucide-react'
 
 export default function AdminUsersPage() {
-  const supabase = createClientComponentClient();
-  const router = useRouter();
+  const supabase = createClientComponentClient()
+  const [rows, setRows] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [q, setQ] = useState('')
 
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("platform-admin");
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  /* ---------- Load users & roles ---------- */
+  async function loadUsers() {
+  setLoading(true)
+  try {
+    const res = await fetch('/api/admin/users')
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Failed to load users')
+    setRows(data.users || [])
+  } catch (err: any) {
+    console.error('Load users failed:', err)
+  } finally {
+    setLoading(false)
+  }
+}
 
-  // Optional: gate the page (only admins)
+
   useEffect(() => {
-    (async () => {
-      const { data: s } = await supabase.auth.getSession();
-      if (!s?.session) return router.replace("/auth/login?redirectTo=/admin/users");
-      const { data: me } = await supabase
-        .from("me_effective_role")
-        .select("role")
-        .eq("user_id", s.session.user.id)
-        .maybeSingle();
-      if (me?.role !== "admin") return router.replace("/auth/login?redirectTo=/admin/users");
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    loadUsers()
+  }, [])
 
-  async function onInvite(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null); setMsg(null); setLoading(true);
-    const res = await fetch("/api/admin/invite", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, username }),
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok) return setErr(data?.error ?? "Failed to invite user.");
-    setMsg("Invite sent. They’ll get an email; after clicking it, they land on /auth/callback and will be routed to /admin.");
-    setEmail("");
+  /* ---------- Search ---------- */
+  const filtered = rows.filter(
+    (u) =>
+      (u.email ?? '').toLowerCase().includes(q.trim().toLowerCase()) ||
+      (u.role ?? '').toLowerCase().includes(q.trim().toLowerCase()) ||
+      (u.store_name ?? '').toLowerCase().includes(q.trim().toLowerCase())
+  )
+
+  /* ---------- Delete User ---------- */
+  async function handleDelete(userId: string, email: string) {
+    if (!confirm(`Delete ${email}? This will remove the role and user.`)) return
+    try {
+      const { error } = await supabase
+        .from('me_effective_role')
+        .delete()
+        .eq('user_id', userId)
+      if (error) throw error
+      alert(`✅ Deleted ${email}`)
+      await loadUsers()
+    } catch (err: any) {
+      alert('❌ ' + err.message)
+    }
   }
 
+  /* ---------- Render ---------- */
   return (
-    <div className="max-w-lg space-y-6">
-      <h1 className="text-xl font-semibold">Invite a Platform Admin</h1>
-      <form onSubmit={onInvite} className="grid gap-3 rounded-xl border p-4">
-        <label className="grid gap-1">
-          <span className="text-sm text-gray-600">Email</span>
-          <input
-            type="email"
-            className="rounded-md border px-3 py-2 text-sm"
-            placeholder="admin@tayseer.app"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </label>
-        <label className="grid gap-1">
-          <span className="text-sm text-gray-600">Username (internal)</span>
-          <input
-            className="rounded-md border px-3 py-2 text-sm"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-        </label>
+    <div className="min-h-screen bg-gray-50 text-gray-800 px-4 py-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold flex items-center gap-2">
+          <Shield className="h-6 w-6 text-emerald-600" /> Users & Roles
+        </h1>
+        <button
+          onClick={loadUsers}
+          className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-gray-100"
+        >
+          <RefreshCw className="h-4 w-4" /> Refresh
+        </button>
+      </div>
 
-        {err && <p className="text-sm text-rose-600">{err}</p>}
-        {msg && <p className="text-sm text-emerald-700">{msg}</p>}
+      {/* Search */}
+      <div className="flex items-center gap-2 bg-white border rounded-lg px-3 py-2 shadow-sm max-w-md">
+        <Search className="h-4 w-4 text-gray-400" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search by email, role, or store..."
+          className="flex-1 bg-transparent text-sm focus:outline-none"
+        />
+      </div>
 
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-            disabled={loading}
-          >
-            {loading ? "Sending…" : "Send Invite"}
-          </button>
+      {/* Table */}
+      {loading ? (
+        <div className="py-20 text-center text-gray-500 text-sm">
+          Loading users…
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="py-20 text-center text-gray-500 text-sm">
+          No users found.
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border bg-white shadow-sm">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <Th>Email</Th>
+                <Th>Role</Th>
+                <Th>Store</Th>
+                <Th>Created</Th>
+                <Th>Status</Th>
+                <Th>App Role</Th>
+                <Th>Actions</Th>
 
-        <p className="text-xs text-gray-500">
-          The invite link redirects to <code>/auth/callback?redirectTo=/admin</code>.
-          Your callback page should call <code>exchangeCodeForSession()</code> and then route by role.
-        </p>
-      </form>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((u) => (
+                <tr key={u.id} className="border-t hover:bg-gray-50">
+                  <Td>{u.email}</Td>
+                  <Td>
+                    <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+                      {u.role}
+                    </span>
+                  </Td>
+                  <Td>{u.store_name ?? '—'}</Td>
+                  <Td>
+                    {u.user_created_at
+                      ? new Date(u.user_created_at).toLocaleDateString()
+                      : '—'}
+                  </Td>
+                  <Td>
+                    {u.confirmed ? (
+                      <span className="text-emerald-600 text-xs font-medium">
+                        Confirmed
+                      </span>
+                    ) : (
+                      <span className="text-amber-600 text-xs font-medium">
+                        Pending
+                      </span>
+                    )}
+                  </Td>
+                  <Td>
+  <span className="text-xs text-gray-700">{u.app_role ?? '—'}</span>
+</Td>
+                  <Td>
+                    <button
+                      onClick={() => handleDelete(u.user_id, u.email)}
+                      className="text-rose-600 hover:text-rose-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
-  );
+  )
+}
+
+/* ---------- Helpers ---------- */
+function Th({ children }: { children: React.ReactNode }) {
+  return (
+    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+      {children}
+    </th>
+  )
+}
+
+function Td({ children }: { children: React.ReactNode }) {
+  return <td className="px-3 py-2">{children}</td>
 }

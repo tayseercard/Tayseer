@@ -110,6 +110,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               onClick={() => setMenuOpen(false)}
             />
             <NavItem
+              href="/admin/users"
+              icon={Gift}
+              label="Vouchers"
+              onClick={() => setMenuOpen(false)}
+            />
+            <NavItem
               href="/admin/settings"
               icon={Settings}
               label="Settings"
