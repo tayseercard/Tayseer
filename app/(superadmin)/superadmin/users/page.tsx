@@ -12,43 +12,19 @@ export default function SuperadminUsersPage() {
 
   /* ---------- Load users & roles ---------- */
   async function loadUsers() {
-    setLoading(true)
-    try {
-      // 1️⃣ Get roles from public.me_effective_role
-      const { data: roles, error: rolesError } = await supabase
-        .from('me_effective_role')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (rolesError) throw rolesError
-      if (!roles || roles.length === 0) {
-        setRows([])
-        return
-      }
-
-      // 2️⃣ Get all auth users via admin API
-      const { data: list, error: listError } =
-        await supabase.auth.admin.listUsers()
-      if (listError) throw listError
-
-      // 3️⃣ Merge
-      const merged = roles.map((r) => {
-        const user = list.users.find((u) => u.id === r.user_id)
-        return {
-          ...r,
-          email: user?.email ?? '—',
-          user_created_at: user?.created_at ?? null,
-          confirmed: !!user?.confirmed_at,
-        }
-      })
-
-      setRows(merged)
-    } catch (err: any) {
-      console.error('❌ Load users failed:', err)
-    } finally {
-      setLoading(false)
-    }
+  setLoading(true)
+  try {
+    const res = await fetch('/api/superadmin/users')
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Failed to load users')
+    setRows(data.users || [])
+  } catch (err: any) {
+    console.error('Load users failed:', err)
+  } finally {
+    setLoading(false)
   }
+}
+
 
   useEffect(() => {
     loadUsers()
@@ -124,7 +100,9 @@ export default function SuperadminUsersPage() {
                 <Th>Store</Th>
                 <Th>Created</Th>
                 <Th>Status</Th>
+                <Th>App Role</Th>
                 <Th>Actions</Th>
+
               </tr>
             </thead>
             <tbody>
@@ -153,6 +131,9 @@ export default function SuperadminUsersPage() {
                       </span>
                     )}
                   </Td>
+                  <Td>
+  <span className="text-xs text-gray-700">{u.app_role ?? '—'}</span>
+</Td>
                   <Td>
                     <button
                       onClick={() => handleDelete(u.user_id, u.email)}
