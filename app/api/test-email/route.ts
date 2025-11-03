@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import nodemailer from 'nodemailer'
 
 export async function POST(req: Request) {
   try {
@@ -10,41 +9,42 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing "to" address' }, { status: 400 })
     }
 
-    // 1️⃣ Configure the transporter (same config you use for create-store-user)
-    const transporter = nodemailer.createTransport({
-      service: 'gmail', // or host/port if custom domain
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+    // ✅ Send email via Resend API
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        from: `Tayseer <${process.env.SMTP_USER || 'onboarding@resend.dev'}>`,
+        to,
+        subject: '📨 Test Email from Tayseer',
+        html: `
+          <div style="font-family: sans-serif; line-height: 1.6;">
+            <h2 style="color:#059669;">🎁 Tayseer Test Email</h2>
+            <p>Hello, this is a test email to confirm that your Resend integration works.</p>
+            <p style="font-size:12px;color:#777;">Tayseer Platform • Algeria</p>
+          </div>
+        `,
+      }),
     })
 
-    // 2️⃣ Verify the connection (optional, helps debug)
-    await transporter.verify()
-    console.log('✅ SMTP connection verified')
+    const result = await res.json()
 
-    // 3️⃣ Send the test email
-    const info = await transporter.sendMail({
-      from: `"Tayseer Test" <${process.env.SMTP_USER}>`,
-      to,
-      subject: 'Test Email from Tayseer',
-      html: `
-        <div style="font-family: sans-serif; line-height: 1.5;">
-          <h2 style="color:#059669;">📨 Test Email Successful</h2>
-          <p>If you received this, your SMTP is configured correctly!</p>
-          <p style="font-size:12px;color:gray">Sent via Nodemailer from Tayseer API</p>
-        </div>
-      `,
-    })
-
-    console.log('📤 Email sent:', info.messageId)
+    if (!res.ok) throw new Error(result.error?.message || 'Failed to send email')
 
     return NextResponse.json({
       success: true,
-      messageId: info.messageId,
+      result,
     })
   } catch (err: any) {
     console.error('❌ Test email error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
+}
+
+// Optional GET handler to quickly verify deployment
+export async function GET() {
+  return NextResponse.json({ message: '✅ Tayseer test-email endpoint ready' })
 }
