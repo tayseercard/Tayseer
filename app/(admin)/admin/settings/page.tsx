@@ -1,6 +1,6 @@
 // app/admin/settings/page.tsx
 import { createClient } from "@supabase/supabase-js";
-import StoresPasswordList from "./StoresPasswordList"; // client component below
+import StoresPasswordList from "./StoresPasswordList";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
