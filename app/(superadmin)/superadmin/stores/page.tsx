@@ -179,6 +179,7 @@ export default function AdminStoresPage() {
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Add New Store</DialogTitle>
+                
                 <DialogDescription>
                   Fill in the store information below. A temporary password will
                   be generated automatically.
