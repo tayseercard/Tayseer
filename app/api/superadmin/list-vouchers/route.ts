@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const { data, error } = await supabaseAdmin
       .from("vouchers")
-      .select("*, stores(name, email)") // include store info if related
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
