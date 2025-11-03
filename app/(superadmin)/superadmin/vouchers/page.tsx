@@ -39,23 +39,24 @@ export default function SuperadminVouchersPage() {
 
   /* -------- Load Data -------- */
   async function loadData() {
-    setLoading(true);
-    try {
-      const [vouchersRes, storesRes] = await Promise.all([
-  fetch('/api/superadmin/vouchers'),
-  supabase.from('stores').select('id, name'),
-]);
+  setLoading(true);
 
-      const { vouchers, error } = await vouchersRes.json();
-      if (error) throw new Error(error);
-      setRows(vouchers || []);
-      setStores(storesRes.data || []);
-    } catch (err) {
-      console.error('❌ Error loading vouchers:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const params = new URLSearchParams();
+  if (selectedStore !== "all") params.set("store_id", selectedStore);
+  if (selectedStatus !== "all") params.set("status", selectedStatus);
+  if (q.trim()) params.set("q", q.trim());
+  const query = params.toString() ? `?${params}` : "";
+
+  const [vouchersRes, storesRes] = await Promise.all([
+    fetch(`/api/superadmin/vouchers${query}`),
+    supabase.from("stores").select("id, name"),
+  ]);
+
+  const { vouchers } = await vouchersRes.json();
+  setRows(vouchers || []);
+  setLoading(false);
+}
+
 
   useEffect(() => {
     loadData();
