@@ -138,12 +138,27 @@ async function loadVouchers() {
     }
   }
 
-  async function openVoucher(v: VoucherRow) {
+ /* ========== Manual click open ========== */
+async function openVoucher(v: VoucherRow) {
+  try {
     setLoadingVoucherDetail(true);
-    const { data } = await supabase.from('vouchers').select('*').eq('id', v.id).maybeSingle();
-    setLoadingVoucherDetail(false);
+
+    const { data, error } = await supabase
+      .from('vouchers')
+      .select('*')
+      .eq('id', v.id)
+      .maybeSingle();
+
+    if (error) throw error;
     if (data) setSelectedVoucher(data);
+  } catch (err: any) {
+    console.error('❌ Failed to load voucher details:', err.message);
+    alert('Error loading voucher details.');
+  } finally {
+    setLoadingVoucherDetail(false);
   }
+}
+
 
   /* 🟩 Create blank vouchers */
   async function createBlankVouchers() {
@@ -275,22 +290,23 @@ return (
                   <Th>Created</Th>
                 </tr>
               </thead>
-              <tbody>
-                {filtered.map((v) => (
-                  <tr
-                    key={v.id}
-                    onClick={() => openVoucher(v)}
-                    className="border-t cursor-pointer hover:bg-gray-50 transition"
-                  >
-                    <Td>{v.buyer_name ?? '—'}</Td>
-                    <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
-                    <Td><StatusPill status={v.status} /></Td>
-                    <Td>{fmtDZD(v.initial_amount)}</Td>
-                    <Td>{fmtDZD(v.balance)}</Td>
-                    <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
-                  </tr>
-                ))}
-              </tbody>
+             <tbody>
+  {filtered.map((v) => (
+    <tr
+      key={v.id}
+      onClick={() => openVoucher(v)} // 👈 here
+      className="border-t cursor-pointer hover:bg-gray-50 transition"
+    >
+      <Td>{v.buyer_name ?? '—'}</Td>
+      <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
+      <Td><StatusPill status={v.status} /></Td>
+      <Td>{fmtDZD(v.initial_amount)}</Td>
+      <Td>{fmtDZD(v.balance)}</Td>
+      <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
+    </tr>
+  ))}
+</tbody>
+
             </table>
           </div>
 
@@ -298,10 +314,10 @@ return (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
             {filtered.map((v) => (
               <div
-                key={v.id}
-                onClick={() => openVoucher(v)}
-                className="rounded-xl border bg-white p-4 shadow-sm hover:shadow-md transition cursor-pointer"
-              >
+  key={v.id}
+  onClick={() => openVoucher(v)} // 👈 here too
+  className="rounded-xl border bg-white p-4 shadow-sm hover:shadow-md transition cursor-pointer"
+>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-medium text-gray-900 text-sm">
                     {v.buyer_name || '—'}
