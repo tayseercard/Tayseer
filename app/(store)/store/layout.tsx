@@ -60,7 +60,16 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [storeName, setStoreName] = useState<string | null>(null);
 
   const [menuOpen, setMenuOpen] = useState(false);
+    /* ---------------------- Logout ---------------------- */
 
+ async function handleLogout() {
+    try {
+      await supabase.auth.signOut()
+      router.replace('/auth/login')
+    } catch (err) {
+      console.error('Logout failed:', err)
+    }
+  }
   /* ---------------------- Auth check ---------------------- */
  useEffect(() => {
   let mounted = true;
@@ -193,15 +202,11 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
         <div className="mt-auto pt-4 border-t border-gray-100 px-3 pb-4">
           <button
-            onClick={async () => {
-              await supabase.auth.signOut();
-              router.replace('/auth/magic?redirectTo=/store');
-            }}
-            className="w-full flex items-center justify-center gap-2 rounded-md border border-gray-300 px-2 py-2 text-sm hover:bg-gray-50"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
+          onClick={handleLogout}
+          className="text-xs text-gray-600 hover:underline"
+        >
+          Logout
+        </button>
         </div>
       </aside>
 
