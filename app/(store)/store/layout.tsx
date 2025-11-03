@@ -62,14 +62,27 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const [menuOpen, setMenuOpen] = useState(false);
     /* ---------------------- Logout ---------------------- */
 
- async function handleLogout() {
-    try {
-      await supabase.auth.signOut()
+ /* ---------------------- Logout ---------------------- */
+async function handleLogout() {
+  try {
+    // Sign out from Supabase (clears cookies)
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+
+    // Optional: clear local state
+    setEmail(null)
+    setStoreName(null)
+
+    // Give Supabase a brief tick to clear cookies before redirect
+    setTimeout(() => {
       router.replace('/auth/login')
-    } catch (err) {
-      console.error('Logout failed:', err)
-    }
+    }, 100)
+  } catch (err) {
+    console.error('❌ Logout failed:', err)
+    alert('Logout failed, please try again.')
   }
+}
+
   /* ---------------------- Auth check ---------------------- */
  useEffect(() => {
   let mounted = true;
@@ -202,12 +215,13 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
         <div className="mt-auto pt-4 border-t border-gray-100 px-3 pb-4">
            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs hover:bg-white"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              Logout
-            </button>
+  onClick={handleLogout}
+  className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-xs hover:bg-white"
+>
+  <LogOut className="h-3.5 w-3.5" />
+  Logout
+</button>
+
         </div>
       </aside>
 
