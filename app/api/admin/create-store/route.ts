@@ -13,13 +13,24 @@ export async function POST(req: Request) {
     if (!name || !email)
       return NextResponse.json({ error: "Missing store name or email" }, { status: 400 })
 
-    // 1️⃣ Ensure user exists (create if not)
-    let { data: user, error: findError } = await supabaseAdmin
-      .auth.admin.listUsers()
-      .then(({ data }) => {
-        const found = data?.users.find((u: any) => u.email === email)
-        return { data: found }
-      })
+  // 1️⃣ Ensure user exists (create if not)
+const { data: list, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+if (listError) throw listError
+
+let user = list.users.find((u: any) => u.email === email)
+
+if (!user) {
+  const tempPassword = Math.random().toString(36).slice(-8) + "Aa1!"
+  const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password: tempPassword,
+    email_confirm: true,
+    user_metadata: { role: "store_owner" },
+  })
+  if (createError) throw createError
+  user = created.user
+}
+
 
     if (!user) {
       const tempPassword = Math.random().toString(36).slice(-8) + "Aa1!"
