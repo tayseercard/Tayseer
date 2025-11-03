@@ -22,43 +22,32 @@ export default async function NewStorePage({
   const err = searchParams?.error ?? "";
 
   async function createStoreAction(formData: FormData) {
-    "use server";
-    const admin = getAdminClient();
-    const base = process.env.NEXT_PUBLIC_BASE_URL || "https://tayseercard.vercel.app";
+  "use server";
 
-    const name = formData.get("name")?.toString().trim() ?? "";
-    const email = formData.get("email")?.toString().trim() ?? "";
-    const phone = formData.get("phone")?.toString().trim() ?? "";
-    const address = formData.get("address")?.toString().trim() ?? "";
-    const wilaya = formData.get("wilaya")
-      ? Number(formData.get("wilaya"))
-      : null;
+  const payload = {
+    name: formData.get("name")?.toString(),
+    email: formData.get("email")?.toString(),
+    phone: formData.get("phone")?.toString(),
+    address: formData.get("address")?.toString(),
+    wilaya: Number(formData.get("wilaya")),
+  };
 
-    // 1️⃣ Create store
-    const { data: store, error: errStore } = await admin
-      .from("stores")
-      .insert([{ name, email, phone, address, wilaya }])
-      .select("id")
-      .single();
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "https://tayseercard.vercel.app";
 
-    if (errStore) {
-      redirect(
-        `/admin/stores/new?error=${encodeURIComponent(errStore.message)}`
-      );
-    }
+  const res = await fetch(`${base}/api/admin/create-store`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 
-    // 2️⃣ Send magic link
-    await fetch(`${base}/api/send-magic`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        email,
-        redirectTo: `${base}/auth/callback?redirectTo=/store`,
-      }),
-    }).catch(() => {});
-
-    redirect(`/admin/stores/new?ok=1`);
+  const result = await res.json();
+  if (!res.ok) {
+    redirect(`/admin/stores/new?error=${encodeURIComponent(result.error)}`);
   }
+
+  redirect(`/admin/stores/new?ok=1`);
+}
+
 
   return (
     <div className="space-y-6 text-black">
