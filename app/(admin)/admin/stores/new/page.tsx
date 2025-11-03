@@ -34,7 +34,7 @@ export default async function NewStorePage({
 
   const base = process.env.NEXT_PUBLIC_BASE_URL || "https://tayseercard.vercel.app";
 
-  const res = await fetch(`${base}/api/admin/create-store`, {
+  const res = await fetch(`${base}/api/admin/add-store`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
