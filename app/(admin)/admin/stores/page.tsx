@@ -84,14 +84,14 @@ export default function AdminStoresPage() {
 
   /* ---------- Search ---------- */
   useEffect(() => {
-    const t = q.trim().toLowerCase()
-    if (!t) setFiltered(rows)
+    const term = q.trim().toLowerCase()
+    if (!term) setFiltered(rows)
     else {
       setFiltered(
         rows.filter(
           (s) =>
-            (s.name ?? '').toLowerCase().includes(t) ||
-            (s.address ?? '').toLowerCase().includes(t)
+            (s.name ?? '').toLowerCase().includes(term) ||
+            (s.address ?? '').toLowerCase().includes(term)
         )
       )
     }
@@ -112,14 +112,23 @@ export default function AdminStoresPage() {
         body: JSON.stringify(form),
       })
 
-      const result = await res.json()
+      let result: any = {}
+      try {
+        result = await res.json()
+      } catch {
+        throw new Error('Invalid response from server')
+      }
+
       if (!res.ok) throw new Error(result.error || 'Failed to create store')
 
       alert(
-        `✅ Store "${result.store.name}" created successfully.\nTemporary password: ${result.temp_password}`
+        `✅ Store "${result.store.name}" created successfully.${
+          result.temp_password
+            ? `\nTemporary password: ${result.temp_password}`
+            : ''
+        }`
       )
 
-      // ✅ Reload and reset
       await loadStores()
       setOpen(false)
       setForm({ name: '', email: '', phone: '', address: '', wilaya: '' })
@@ -133,7 +142,7 @@ export default function AdminStoresPage() {
   /* ---------- Render ---------- */
   return (
     <div className="flex flex-col gap-5 text-black">
-      {/* ✅ Header */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div className="flex items-center gap-2">
           <StoreIcon className="h-5 w-5 text-emerald-600" />
@@ -184,6 +193,7 @@ export default function AdminStoresPage() {
                 />
                 <Input
                   placeholder="Email *"
+                  type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                 />
@@ -207,14 +217,19 @@ export default function AdminStoresPage() {
                 />
               </div>
 
-              <DialogFooter className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setOpen(false)}>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  type="button"
+                >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleAddStore}
                   disabled={saving}
                   className="bg-emerald-600 hover:bg-emerald-700"
+                  type="button"
                 >
                   {saving ? 'Saving…' : 'Add'}
                 </Button>
@@ -224,7 +239,7 @@ export default function AdminStoresPage() {
         </div>
       </div>
 
-      {/* ✅ Stats */}
+      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <Stat title="Total Stores" value={stats.total.toLocaleString()} />
         <Stat title="Open" value={stats.open.toLocaleString()} />
@@ -232,7 +247,7 @@ export default function AdminStoresPage() {
         <Stat title="Top Store" value={stats.topStore} />
       </div>
 
-      {/* ✅ Search Bar */}
+      {/* Search */}
       <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-sm p-2 rounded-xl border flex items-center gap-2 shadow-sm">
         <Search className="h-4 w-4 text-gray-400 ml-1" />
         <input
@@ -246,7 +261,7 @@ export default function AdminStoresPage() {
         </button>
       </div>
 
-      {/* ✅ View Mode */}
+      {/* Store List */}
       {loading ? (
         <div className="py-20 text-center text-gray-500 text-sm">
           Loading stores…
@@ -299,7 +314,7 @@ export default function AdminStoresPage() {
         </div>
       )}
 
-      {/* ✅ Floating Add Button (Mobile FAB) */}
+      {/* Floating Add Button (Mobile) */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <button className="fixed bottom-5 right-5 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-medium text-white shadow-lg hover:bg-emerald-700 md:hidden">
