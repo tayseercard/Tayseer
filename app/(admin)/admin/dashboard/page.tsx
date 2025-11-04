@@ -131,93 +131,96 @@ export default function AdminDashboardPage() {
         </button>
       </motion.header>
 
-      {/* ---------- MOBILE SWIPE VIEW ---------- */}
-      {screenWidth > 0 && (
-        <div className="sm:hidden relative overflow-hidden">
-          <motion.div
-            className="flex w-[300%]"
-            drag="x"
-            dragConstraints={{ left: -screenWidth * 2, right: 0 }}
-            dragElastic={0.1}
-            onDragEnd={handleDragEnd}
-            style={{ x, touchAction: 'pan-x' }}
-            transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-          >
-            {/* PAGE 1: Quick Actions */}
-            <div className="min-w-full flex-shrink-0 flex flex-col items-center justify-center px-4 py-6 space-y-4">
-              <h2 className="text-lg font-semibold text-gray-800">Quick Actions</h2>
-              <div className="grid grid-cols-2 gap-4 w-full">
-                <LinkCard
-                  href="/admin/stores"
-                  icon={<StoreIcon className="h-6 w-6 text-emerald-600" />}
-                  title="Stores"
-                  desc="Manage stores"
-                  gradient="from-emerald-50 to-emerald-100"
-                />
-                <LinkCard
-                  href="/admin/vouchers"
-                  icon={<Gift className="h-6 w-6 text-pink-500" />}
-                  title="Vouchers"
-                  desc="Manage vouchers"
-                  gradient="from-pink-50 to-pink-100"
-                />
-                <LinkCard
-                  href="/admin/reports"
-                  icon={<TrendingUp className="h-6 w-6 text-indigo-500" />}
-                  title="Reports"
-                  desc="View analytics"
-                  gradient="from-indigo-50 to-indigo-100"
-                />
-                <LinkCard
-                  href="/admin/settings"
-                  icon={<Settings className="h-6 w-6 text-gray-600" />}
-                  title="Settings"
-                  desc="Configurations"
-                  gradient="from-gray-50 to-gray-100"
-                />
-              </div>
-            </div>
-
-            {/* PAGE 2: Store Overview */}
-            <div className="min-w-full flex-shrink-0 px-4 py-6">
-              <h2 className="text-lg font-semibold mb-4 text-emerald-700">
-                Store Overview
-              </h2>
-              <div className="grid grid-cols-2 gap-3">
-                <StatCard title="Total Stores" value={storeStats.total} color="emerald" />
-                <StatCard title="Online" value={storeStats.online} color="sky" />
-                <StatCard title="Offline" value={storeStats.offline} color="amber" />
-                <StatCard title="Closed" value={storeStats.closed} color="rose" />
-              </div>
-            </div>
-
-            {/* PAGE 3: Voucher Overview */}
-            <div className="min-w-full flex-shrink-0 px-4 py-6">
-              <h2 className="text-lg font-semibold mb-4 text-indigo-700">
-                Voucher Overview
-              </h2>
-              <div className="grid grid-cols-2 gap-3">
-                <StatCard title="Total" value={voucherStats.total} color="indigo" />
-                <StatCard title="Active" value={voucherStats.active} color="emerald" />
-                <StatCard title="Redeemed" value={voucherStats.redeemed} color="rose" />
-                <StatCard title="Empty" value={voucherStats.empty} color="gray" />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Pagination Dots */}
-          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                  currentIndex === i ? 'bg-emerald-600 w-4' : 'bg-gray-300'
-                }`}
-              />
-            ))}
-          </div>
+     {/* ---------- MOBILE SWIPE VIEW ---------- */}
+{screenWidth > 0 && (
+  <div className="sm:hidden relative w-full overflow-hidden select-none">
+    <motion.div
+      className="flex w-[300%]"
+      drag="x"
+      dragConstraints={{ left: -screenWidth * 2, right: 0 }}
+      dragElastic={0.1}
+      onDragEnd={handleDragEnd}
+      style={{ x, touchAction: 'pan-x' }}
+      transition={{ type: 'spring', stiffness: 220, damping: 26 }}
+    >
+      {/* PAGE 1: Quick Actions */}
+      <div className="min-w-full flex-shrink-0 flex flex-col items-center justify-center px-5 py-8 space-y-6">
+        <h2 className="text-lg font-semibold text-gray-900 tracking-tight">Quick Actions</h2>
+        <div className="grid grid-cols-2 gap-4 w-full">
+          <LinkCard
+            href="/admin/stores"
+            icon={<StoreIcon className="h-6 w-6 text-emerald-600" />}
+            title="Stores"
+            desc="Manage stores"
+            gradient="from-emerald-50 to-emerald-100"
+          />
+          <LinkCard
+            href="/admin/vouchers"
+            icon={<Gift className="h-6 w-6 text-pink-500" />}
+            title="Vouchers"
+            desc="Manage vouchers"
+            gradient="from-pink-50 to-pink-100"
+          />
+          <LinkCard
+            href="/admin/reports"
+            icon={<TrendingUp className="h-6 w-6 text-indigo-500" />}
+            title="Reports"
+            desc="View analytics"
+            gradient="from-indigo-50 to-indigo-100"
+          />
+          <LinkCard
+            href="/admin/settings"
+            icon={<Settings className="h-6 w-6 text-gray-600" />}
+            title="Settings"
+            desc="Configurations"
+            gradient="from-gray-50 to-gray-100"
+          />
         </div>
-      )}
+      </div>
+
+      {/* PAGE 2: Store Overview */}
+      <div className="min-w-full flex-shrink-0 flex flex-col justify-center px-6 py-8">
+        <h2 className="text-lg font-semibold mb-5 text-emerald-700 tracking-tight">Store Overview</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <StatCard title="Total Stores" value={storeStats.total} color="emerald" />
+          <StatCard title="Online" value={storeStats.online} color="sky" />
+          <StatCard title="Offline" value={storeStats.offline} color="amber" />
+          <StatCard title="Closed" value={storeStats.closed} color="rose" />
+        </div>
+      </div>
+
+      {/* PAGE 3: Voucher Overview */}
+      <div className="min-w-full flex-shrink-0 flex flex-col justify-center px-6 py-8">
+        <h2 className="text-lg font-semibold mb-5 text-indigo-700 tracking-tight">Voucher Overview</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <StatCard title="Total" value={voucherStats.total} color="indigo" />
+          <StatCard title="Active" value={voucherStats.active} color="emerald" />
+          <StatCard title="Redeemed" value={voucherStats.redeemed} color="rose" />
+          <StatCard title="Empty" value={voucherStats.empty} color="gray" />
+        </div>
+      </div>
+    </motion.div>
+
+    {/* Pagination Dots */}
+    <div className="absolute bottom-5 left-0 right-0 flex justify-center items-center gap-2">
+      {[0, 1, 2].map((i) => (
+        <button
+          key={i}
+          onClick={() => {
+            const targetX = -i * screenWidth;
+            x.set(targetX);
+            setCurrentIndex(i);
+          }}
+          className={`h-2 rounded-full transition-all duration-300 ${
+            currentIndex === i
+              ? 'w-5 bg-emerald-600'
+              : 'w-2 bg-gray-300 hover:bg-gray-400'
+          }`}
+        />
+      ))}
+    </div>
+  </div>
+)}
 
       {/* ---------- DESKTOP DASHBOARD ---------- */}
       <div className="hidden sm:block">
