@@ -467,14 +467,14 @@ function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
               </div>
             </div>
             <div>
-  <label className="text-sm text-gray-600">To Whom (Recipient)</label>
-  <input
-    value={recipientName}
-    onChange={(e) => setRecipientName(e.target.value)}
-    placeholder="e.g. For my son, friend, etc."
-    className="w-full border rounded-md p-2 text-sm"
-  />
-</div>
+                <label className="text-sm text-gray-600">To Whom (Recipient)</label>
+                <input
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  placeholder="e.g. For my son, friend, etc."
+                  className="w-full border rounded-md p-2 text-sm"
+                />
+              </div>
 
 
             <button

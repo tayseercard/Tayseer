@@ -202,6 +202,7 @@ export default function AdminVouchersPage() {
             <thead className="bg-gray-50 border-b">
               <tr>
                 <Th>Buyer</Th>
+                <th>Recipient</th>
                 <Th>Store</Th>
                 <Th>Code</Th>
                 <Th>Status</Th>
@@ -358,6 +359,7 @@ export default function AdminVouchersPage() {
 function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
   const [url, setUrl] = useState<string | null>(null);
   const [buyerName, setBuyerName] = useState(voucher.buyer_name ?? '');
+    const [recipientName, setRecipientName] = useState(voucher.recipient_name ?? '');
   const [buyerPhone, setBuyerPhone] = useState(voucher.buyer_phone ?? '');
   const [amount, setAmount] = useState('');
   const [consumeAmount, setConsumeAmount] = useState('');
@@ -372,6 +374,7 @@ function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
       .from('vouchers')
       .update({
         buyer_name: buyerName,
+        recipient_name: recipientName.trim() || null,
         buyer_phone: buyerPhone || null,
         initial_amount: Number(amount),
         balance: Number(amount),
@@ -449,6 +452,17 @@ function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
               onChange={(e) => setAmount(e.target.value)}
               className="w-full border rounded-md p-2 text-sm"
             />
+
+             <div>
+                <label className="text-sm text-gray-600">To Whom (Recipient)</label>
+                <input
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  placeholder="e.g. For my son, friend, etc."
+                  className="w-full border rounded-md p-2 text-sm"
+                />
+              </div>
+              
             <button
               onClick={handleActivate}
               className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
@@ -460,6 +474,7 @@ function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
           <div className="space-y-3 text-sm">
             <Info label="Buyer" value={voucher.buyer_name ?? '—'} />
             <Info label="Phone" value={voucher.buyer_phone ?? '—'} />
+            <Info label="To" value={voucher.recipient_name ?? '—'} />
             <Info label="Status" value={voucher.status} />
             <Info label="Balance" value={fmtDZD(voucher.balance)} />
             {voucher.status === 'active' && (
