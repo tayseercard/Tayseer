@@ -14,11 +14,11 @@ export default function TayseerLanding() {
       style={paletteVars}
     >
       {/* ===== HEADER ===== */}
-      <header className="sticky top-0 z-50 backdrop-blur-lg bg-white/70 border-b border-[var(--c-primary)]/10">
+      <header className="sticky top-0 z-50 backdrop-blur-lg bg-white/70 border-b border-[var(--c-bank)]/10">
         <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[var(--c-primary)] via-[var(--c-secondary)] to-[var(--c-accent)] shadow-md" />
+            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-[var(--c-primary)] via-[var(--c-bank)] to-[var(--c-accent)] shadow-md" />
             <span className="text-lg font-semibold tracking-wide text-[var(--c-primary)]">
               tayseer
             </span>
@@ -26,12 +26,12 @@ export default function TayseerLanding() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6 text-sm">
-            <a href="#how" className="hover:text-[var(--c-primary)]">How it works</a>
-            <a href="#features" className="hover:text-[var(--c-primary)]">Features</a>
-            <a href="#pricing" className="hover:text-[var(--c-primary)]">Use cases</a>
+            <a href="#how" className="hover:text-[var(--c-bank)]">How it works</a>
+            <a href="#features" className="hover:text-[var(--c-bank)]">Features</a>
+            <a href="#pricing" className="hover:text-[var(--c-bank)]">Use cases</a>
             <Link
               href="/auth/login"
-              className="rounded-xl bg-[var(--c-primary)] text-white px-4 py-2 font-semibold shadow hover:bg-[var(--c-secondary)] transition"
+              className="rounded-xl bg-[var(--c-primary)] text-white px-4 py-2 font-semibold shadow hover:bg-[var(--c-bank)] transition"
             >
               Log in
             </Link>
@@ -40,7 +40,7 @@ export default function TayseerLanding() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMenuOpen(true)}
-            className="md:hidden rounded-xl p-2 bg-[var(--c-primary)]/10 hover:bg-[var(--c-primary)]/20"
+            className="md:hidden rounded-xl p-2 bg-[var(--c-primary)]/10 hover:bg-[var(--c-bank)]/20"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" fill="none">
               <line x1="3" y1="6" x2="21" y2="6" strokeWidth="2" strokeLinecap="round" />
@@ -52,7 +52,7 @@ export default function TayseerLanding() {
 
         {/* Mobile Fullscreen Menu */}
         {menuOpen && (
-          <div className="fixed inset-0 z-50 bg-[var(--c-primary)]/90 backdrop-blur-md flex flex-col items-center justify-center gap-6 text-lg font-medium text-white">
+          <div className="fixed inset-0 z-50 bg-[var(--c-bank)]/95 backdrop-blur-md flex flex-col items-center justify-center gap-6 text-lg font-medium text-white">
             <button
               onClick={() => setMenuOpen(false)}
               className="absolute top-5 right-5 rounded-full bg-white/10 p-2"
@@ -82,7 +82,7 @@ export default function TayseerLanding() {
           className="fixed inset-0 -z-10 opacity-60"
           style={{
             background:
-              'radial-gradient(60% 60% at 75% 20%, var(--grad-primary) 0%, transparent 60%), radial-gradient(50% 50% at 20% 80%, var(--grad-secondary) 0%, transparent 60%), radial-gradient(40% 40% at 10% 10%, var(--grad-accent) 0%, transparent 60%)',
+              'radial-gradient(60% 60% at 75% 20%, var(--grad-primary) 0%, transparent 60%), radial-gradient(50% 50% at 20% 80%, var(--grad-bank) 0%, transparent 60%), radial-gradient(40% 40% at 10% 10%, var(--grad-accent) 0%, transparent 60%)',
           }}
         />
 
@@ -94,8 +94,10 @@ export default function TayseerLanding() {
             transition={{ duration: 0.6 }}
             className="text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight max-w-[20ch] text-[var(--c-primary)]"
           >
-                         tayseer vouchers made simple.
-
+            Gift. Reward. Redeem.
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[var(--c-primary)] via-[var(--c-bank)] to-[var(--c-accent)]">
+              tayseer vouchers made simple.
+            </span>
           </motion.h1>
 
           <p className="text-base sm:text-lg text-[var(--c-text)]/80 max-w-[45ch]">
@@ -105,13 +107,13 @@ export default function TayseerLanding() {
           <div className="mt-6 flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-center">
             <Link
               href="/auth/login"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--c-primary)] text-white px-5 py-3 font-semibold shadow hover:bg-[var(--c-secondary)] transition"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--c-primary)] text-white px-5 py-3 font-semibold shadow hover:bg-[var(--c-bank)] transition"
             >
               Login to Dashboard <ArrowRight size={18} />
             </Link>
             <a
               href="#how"
-              className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 ring-1 ring-[var(--c-primary)] text-[var(--c-primary)] hover:bg-[var(--c-accent)] hover:text-[var(--c-primary)] transition"
+              className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 ring-1 ring-[var(--c-bank)] text-[var(--c-bank)] hover:bg-[var(--c-accent)] hover:text-[var(--c-primary)] transition"
             >
               See how it works
             </a>
@@ -120,7 +122,7 @@ export default function TayseerLanding() {
 
         {/* ===== HOW SECTION ===== */}
         <section id="how" className="py-14 text-center md:text-left">
-          <h2 className="text-2xl md:text-3xl font-semibold text-[var(--c-primary)]">
+          <h2 className="text-2xl md:text-3xl font-semibold text-[var(--c-bank)]">
             How tayseer works
           </h2>
           <p className="mt-2 text-[var(--c-text)]/80 max-w-prose mx-auto md:mx-0">
@@ -135,7 +137,7 @@ export default function TayseerLanding() {
 
         {/* ===== FEATURES ===== */}
         <section id="features" className="py-14">
-          <h2 className="text-2xl md:text-3xl font-semibold text-center md:text-left text-[var(--c-primary)]">
+          <h2 className="text-2xl md:text-3xl font-semibold text-center md:text-left text-[var(--c-bank)]">
             Built for modern merchants
           </h2>
           <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -156,8 +158,8 @@ export default function TayseerLanding() {
 
         {/* ===== CTA / PRICING ===== */}
         <section id="pricing" className="py-14">
-          <div className="rounded-3xl p-8 ring-1 ring-[var(--c-primary)]/20 bg-[var(--c-accent)]/10 backdrop-blur-sm text-center md:text-left">
-            <h3 className="text-xl md:text-2xl font-semibold text-[var(--c-primary)]">
+          <div className="rounded-3xl p-8 ring-1 ring-[var(--c-bank)]/20 bg-[var(--c-accent)]/10 backdrop-blur-sm text-center md:text-left">
+            <h3 className="text-xl md:text-2xl font-semibold text-[var(--c-bank)]">
               Ready to issue your first voucher?
             </h3>
             <p className="mt-2 text-[var(--c-text)]/80">
@@ -166,7 +168,7 @@ export default function TayseerLanding() {
             <div className="mt-6">
               <Link
                 href="/auth/login"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--c-primary)] text-white px-5 py-3 font-semibold shadow hover:bg-[var(--c-secondary)] transition"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--c-primary)] text-white px-5 py-3 font-semibold shadow hover:bg-[var(--c-bank)] transition"
               >
                 Login to tayseer <ArrowRight size={18} />
               </Link>
@@ -176,12 +178,12 @@ export default function TayseerLanding() {
 
         {/* ===== FOOTER ===== */}
         <footer className="py-10 text-[var(--c-text)]/70 text-sm">
-          <div className="border-t border-[var(--c-primary)]/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="border-t border-[var(--c-bank)]/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
             <p>© {new Date().getFullYear()} tayseer. All rights reserved.</p>
             <div className="flex items-center gap-4">
-              <a className="hover:text-[var(--c-primary)]" href="#">Privacy</a>
-              <a className="hover:text-[var(--c-primary)]" href="#">Terms</a>
-              <a className="hover:text-[var(--c-primary)]" href="#">Contact</a>
+              <a className="hover:text-[var(--c-bank)]" href="#">Privacy</a>
+              <a className="hover:text-[var(--c-bank)]" href="#">Terms</a>
+              <a className="hover:text-[var(--c-bank)]" href="#">Contact</a>
             </div>
           </div>
         </footer>
@@ -206,17 +208,17 @@ function Card({
       initial={{ opacity: 0, y: 20 }}
       viewport={{ once: true }}
       transition={{ duration: 0.4 }}
-      className="rounded-2xl p-5 ring-1 ring-[var(--c-primary)]/10 bg-white shadow-sm text-left"
+      className="rounded-2xl p-5 ring-1 ring-[var(--c-bank)]/10 bg-white shadow-sm text-left"
     >
       <div
         className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-white"
         style={{
-          background: 'linear-gradient(135deg, var(--c-primary), var(--c-secondary))',
+          background: 'linear-gradient(135deg, var(--c-primary), var(--c-bank))',
         }}
       >
         {icon}
       </div>
-      <h3 className="mt-4 text-lg font-semibold text-[var(--c-primary)]">{title}</h3>
+      <h3 className="mt-4 text-lg font-semibold text-[var(--c-bank)]">{title}</h3>
       <p className="mt-2 text-[var(--c-text)]/80 text-sm leading-relaxed">{text}</p>
     </motion.div>
   );
@@ -240,7 +242,7 @@ function FeatureBullet({
       <div
         className="mt-1 h-2.5 w-2.5 rounded-full"
         style={{
-          background: 'linear-gradient(135deg, var(--c-secondary), var(--c-accent))',
+          background: 'linear-gradient(135deg, var(--c-secondary), var(--c-bank))',
         }}
       />
       <div>
@@ -251,6 +253,7 @@ function FeatureBullet({
   );
 }
 
+/* ======= Palette: Option A (Emerald + Navy Bank Style) ======= */
 const paletteVars: React.CSSProperties = {
   ['--bg' as any]: '#F8F6F2',
   ['--c-primary' as any]: '#1B3D2F',
@@ -263,4 +266,3 @@ const paletteVars: React.CSSProperties = {
   ['--grad-bank' as any]: 'rgba(30, 42, 56, 0.35)',
   ['--grad-accent' as any]: 'rgba(210, 180, 140, 0.2)',
 };
-
