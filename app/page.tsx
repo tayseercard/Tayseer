@@ -94,10 +94,8 @@ export default function TayseerLanding() {
             transition={{ duration: 0.6 }}
             className="text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight max-w-[20ch] text-[var(--c-primary)]"
           >
-            Gift. Reward. Redeem.
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[var(--c-primary)] via-[var(--c-secondary)] to-[var(--c-accent)]">
-              tayseer vouchers made simple.
-            </span>
+                         tayseer vouchers made simple.
+
           </motion.h1>
 
           <p className="text-base sm:text-lg text-[var(--c-text)]/80 max-w-[45ch]">
@@ -253,14 +251,16 @@ function FeatureBullet({
   );
 }
 
-/* ======= Palette ======= */
 const paletteVars: React.CSSProperties = {
-  ['--bg' as any]: '#F8F6F2',       // Soft beige background
-  ['--c-primary' as any]: '#1B3D2F', // Deep green
+  ['--bg' as any]: '#F8F6F2',
+  ['--c-primary' as any]: '#1B3D2F',
   ['--c-secondary' as any]: '#204E37',
-  ['--c-accent' as any]: '#D2B48C',  // Sand beige
-  ['--c-text' as any]: '#1A1A1A',    // Dark neutral text
-  ['--grad-primary' as any]: 'rgba(32, 78, 55, 0.25)',
-  ['--grad-secondary' as any]: 'rgba(27, 61, 47, 0.25)',
+  ['--c-bank' as any]: '#1E2A38',
+  ['--c-accent' as any]: '#D2B48C',
+  ['--c-text' as any]: '#1A1A1A',
+  ['--grad-primary' as any]: 'rgba(27, 61, 47, 0.25)',
+  ['--grad-secondary' as any]: 'rgba(32, 78, 55, 0.25)',
+  ['--grad-bank' as any]: 'rgba(30, 42, 56, 0.35)',
   ['--grad-accent' as any]: 'rgba(210, 180, 140, 0.2)',
 };
+
