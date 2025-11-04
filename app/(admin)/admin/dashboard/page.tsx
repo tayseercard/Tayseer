@@ -15,12 +15,11 @@ import CountUp from 'react-countup';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function AdminDashboardPage() {
-  const supabase = createClientComponentClient();
 
+  const supabase = createClientComponentClient();
   const [loading, setLoading] = useState(true);
   const [stores, setStores] = useState<any[]>([]);
   const [vouchers, setVouchers] = useState<any[]>([]);
-
   const [storeStats, setStoreStats] = useState({
     total: 0,
     open: 0,
@@ -28,7 +27,6 @@ export default function AdminDashboardPage() {
     online: 0,
     offline: 0,
   });
-
   const [voucherStats, setVoucherStats] = useState({
     total: 0,
     active: 0,
@@ -75,131 +73,137 @@ export default function AdminDashboardPage() {
 
   /* ---------- UI ---------- */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-8 sm:px-6 lg:px-10 space-y-8">
-      {/* HEADER */}
-      <motion.header
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+  <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-8 sm:px-6 lg:px-10 space-y-10">
+    {/* HEADER */}
+    <motion.header
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+    >
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-semibold flex items-center gap-2">
+          <StoreIcon className="h-6 w-6 text-emerald-600" />
+          Dashboard
+        </h1>
+        <p className="text-gray-500 text-sm">Overview of stores and vouchers</p>
+      </div>
+      <button
+        onClick={() => window.location.reload()}
+        className="flex items-center gap-2 text-sm rounded-md border px-3 py-2 hover:bg-gray-100 transition"
       >
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold flex items-center gap-2">
-            <StoreIcon className="h-6 w-6 text-emerald-600" />
-            Dashboard
-          </h1>
-          <p className="text-gray-500 text-sm">
-            Overview of stores and vouchers
-          </p>
-        </div>
-        <button
-          onClick={() => window.location.reload()}
-          className="flex items-center gap-2 text-sm rounded-md border px-3 py-2 hover:bg-gray-100 transition"
+        <RefreshCw className="h-4 w-4 text-gray-600" /> Refresh
+      </button>
+    </motion.header>
+
+    {/* QUICK ACTIONS (Moved to top) */}
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className="space-y-4"
+    >
+      <SectionTitle
+        icon={<QrCode className="h-5 w-5 text-purple-600" />}
+        title="Quick Actions"
+      />
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <LinkCard
+          href="/admin/stores"
+          icon={<StoreIcon className="h-6 w-6 text-emerald-600" />}
+          title="Manage Stores"
+          desc="Add, edit, or view your stores."
+          gradient="from-emerald-50 to-emerald-100"
+        />
+        <LinkCard
+          href="/admin/vouchers"
+          icon={<Gift className="h-6 w-6 text-pink-500" />}
+          title="Manage Vouchers"
+          desc="Activate or redeem vouchers."
+          gradient="from-pink-50 to-pink-100"
+        />
+        <LinkCard
+          href="/admin/reports"
+          icon={<TrendingUp className="h-6 w-6 text-indigo-500" />}
+          title="Reports & Analytics"
+          desc="View performance and insights."
+          gradient="from-indigo-50 to-indigo-100"
+        />
+        <LinkCard
+          href="/admin/settings"
+          icon={<Settings className="h-6 w-6 text-gray-600" />}
+          title="Settings"
+          desc="Manage account & configuration."
+          gradient="from-gray-50 to-gray-100"
+        />
+      </div>
+    </motion.section>
+
+    {/* DASHBOARD STATS */}
+    {loading ? (
+      <div className="py-20 text-center text-gray-400 text-sm animate-pulse">
+        Loading dashboard data…
+      </div>
+    ) : (
+      <AnimatePresence>
+        <motion.div
+          key="stats"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="space-y-10"
         >
-          <RefreshCw className="h-4 w-4 text-gray-600" /> Refresh
-        </button>
-      </motion.header>
-
-      {/* STATS */}
-      {loading ? (
-        <div className="py-20 text-center text-gray-400 text-sm animate-pulse">
-          Loading dashboard data…
-        </div>
-      ) : (
-        <AnimatePresence>
-          <motion.div
-            key="stats"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="space-y-10"
-          >
-            {/* STORES SECTION */}
-            <SectionTitle
-              icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
-              title="Store Overview"
+          {/* STORES SECTION */}
+          <SectionTitle
+            icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
+            title="Store Overview"
+          />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <StatCard title="Total Stores" value={storeStats.total} color="emerald" />
+            <StatCard title="Online" value={storeStats.online} color="sky" />
+            <StatCard title="Offline" value={storeStats.offline} color="amber" />
+            <StatCard title="Open" value={storeStats.open} color="emerald" />
+            <StatCard title="Closed" value={storeStats.closed} color="rose" />
+            <StatCard
+              title="Open Rate"
+              value={Math.round((storeStats.open / (storeStats.total || 1)) * 100)}
+              suffix="%"
+              color="purple"
             />
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <StatCard title="Total Stores" value={storeStats.total} color="emerald" />
-              <StatCard title="Online" value={storeStats.online} color="sky" />
-              <StatCard title="Offline" value={storeStats.offline} color="amber" />
-              <StatCard title="Open" value={storeStats.open} color="emerald" />
-              <StatCard title="Closed" value={storeStats.closed} color="rose" />
-              <StatCard
-                title="Open Rate"
-                value={Math.round((storeStats.open / (storeStats.total || 1)) * 100)}
-                suffix="%"
-                color="purple"
-              />
-            </div>
+          </div>
 
-            {/* VOUCHERS SECTION */}
-            <SectionTitle
-              icon={<Gift className="h-5 w-5 text-indigo-600" />}
-              title="Voucher Overview"
+          {/* VOUCHERS SECTION */}
+          <SectionTitle
+            icon={<Gift className="h-5 w-5 text-indigo-600" />}
+            title="Voucher Overview"
+          />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <StatCard title="Total Vouchers" value={voucherStats.total} color="indigo" />
+            <StatCard title="Active" value={voucherStats.active} color="emerald" />
+            <StatCard title="Redeemed" value={voucherStats.redeemed} color="rose" />
+            <StatCard title="Empty" value={voucherStats.empty} color="gray" />
+            <StatCard
+              title="Redemption Rate"
+              value={Math.round(
+                (voucherStats.redeemed / (voucherStats.total || 1)) * 100
+              )}
+              suffix="%"
+              color="violet"
             />
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <StatCard title="Total Vouchers" value={voucherStats.total} color="indigo" />
-              <StatCard title="Active" value={voucherStats.active} color="emerald" />
-              <StatCard title="Redeemed" value={voucherStats.redeemed} color="rose" />
-              <StatCard title="Empty" value={voucherStats.empty} color="gray" />
-              <StatCard
-                title="Redemption Rate"
-                value={Math.round(
-                  (voucherStats.redeemed / (voucherStats.total || 1)) * 100
-                )}
-                suffix="%"
-                color="violet"
-              />
-              <StatCard
-                title="Active %"
-                value={Math.round(
-                  (voucherStats.active / (voucherStats.total || 1)) * 100
-                )}
-                suffix="%"
-                color="cyan"
-              />
-            </div>
+            <StatCard
+              title="Active %"
+              value={Math.round(
+                (voucherStats.active / (voucherStats.total || 1)) * 100
+              )}
+              suffix="%"
+              color="cyan"
+            />
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    )}
+  </div>
+);
 
-            {/* QUICK ACTIONS */}
-            <SectionTitle
-              icon={<QrCode className="h-5 w-5 text-purple-600" />}
-              title="Quick Actions"
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <LinkCard
-                href="/admin/stores"
-                icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
-                title="Manage Stores"
-                desc="Add, edit, or view your stores."
-                gradient="from-emerald-50 to-emerald-100"
-              />
-              <LinkCard
-                href="/admin/vouchers"
-                icon={<Gift className="h-5 w-5 text-pink-500" />}
-                title="Manage Vouchers"
-                desc="View, activate, or redeem vouchers."
-                gradient="from-pink-50 to-pink-100"
-              />
-              <LinkCard
-                href="/admin/reports"
-                icon={<TrendingUp className="h-5 w-5 text-indigo-500" />}
-                title="Reports & Analytics"
-                desc="See performance and trends."
-                gradient="from-indigo-50 to-indigo-100"
-              />
-              <LinkCard
-                href="/admin/settings"
-                icon={<Settings className="h-5 w-5 text-gray-600" />}
-                title="Settings"
-                desc="Manage account and configurations."
-                gradient="from-gray-50 to-gray-100"
-              />
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      )}
-    </div>
-  );
 }
 
 /* ---------- Reusable Components ---------- */
