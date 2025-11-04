@@ -219,6 +219,7 @@ export default function AdminVouchersPage() {
                   className="border-t hover:bg-gray-50 cursor-pointer"
                 >
                   <Td>{v.buyer_name ?? '—'}</Td>
+                  <Td>{v.recipien_name ?? '—'}</Td>
                   <Td>{getStoreName(v.store_id)}</Td>
                   <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
                   <Td><StatusPill status={v.status} /></Td>
@@ -462,7 +463,7 @@ function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
                   className="w-full border rounded-md p-2 text-sm"
                 />
               </div>
-              
+
             <button
               onClick={handleActivate}
               className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
