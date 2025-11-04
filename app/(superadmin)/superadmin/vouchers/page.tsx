@@ -38,7 +38,8 @@ export default function SuperadminVouchersPage() {
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all');
 
   /* -------- Load Data -------- */
-  async function loadData() {
+ /* -------- Load Data -------- */
+async function loadData() {
   setLoading(true);
 
   const params = new URLSearchParams();
@@ -53,9 +54,13 @@ export default function SuperadminVouchersPage() {
   ]);
 
   const { vouchers } = await vouchersRes.json();
+
+  // ✅ Save both
   setRows(vouchers || []);
+  setStores(storesRes.data || []); // <-- Added line
   setLoading(false);
 }
+
 
 
   useEffect(() => {
