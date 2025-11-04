@@ -1,294 +1,320 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useMemo } from 'react'
-import Link from 'next/link'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
-  LayoutGrid,
-  List,
-  Plus,
+  Gift,
+  Users,
+  CreditCard,
+  TrendingUp,
   RefreshCw,
-  Search,
-  Store as StoreIcon,
-  X,
+  Settings,
   QrCode,
-  Menu,
-} from 'lucide-react'
-import { v4 as uuidv4 } from 'uuid'
-import { Scanner } from '@yudiel/react-qr-scanner'
-import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode'
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import CountUp from 'react-countup';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-export default function AdminStoresPage() {
-  const supabase = createClientComponentClient()
+export default function StoreDashboardPage() {
+  const supabase = createClientComponentClient();
 
-  const [stores, setStores] = useState<any[]>([])
-  const [loadingStores, setLoadingStores] = useState(true)
-  const [q, setQ] = useState('')
-  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [loading, setLoading] = useState(true);
+  const [voucherStats, setVoucherStats] = useState({
+    total: 0,
+    active: 0,
+    redeemed: 0,
+    empty: 0,
+    totalValue: 0,
+    redeemedValue: 0,
+  });
 
-  // Voucher management
-  const [selectedStore, setSelectedStore] = useState<any | null>(null)
-  const [vouchers, setVouchers] = useState<any[]>([])
-  const [loadingVouchers, setLoadingVouchers] = useState(false)
-  const [adding, setAdding] = useState(false)
-  const [addingLoading, setAddingLoading] = useState(false)
-  const [countToAdd, setCountToAdd] = useState(1)
-  const [scanning, setScanning] = useState(false)
-  const [scanError, setScanError] = useState<string | null>(null)
-  const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null)
-  const [showFabActions, setShowFabActions] = useState(false)
+  const [clientStats, setClientStats] = useState({
+    totalClients: 0,
+    repeatClients: 0,
+  });
 
-  /* ---------- Load stores ---------- */
-  async function loadStores() {
-    setLoadingStores(true)
-    const { data, error } = await supabase.from('stores').select('*')
-    if (!error && data) setStores(data)
-    setLoadingStores(false)
-  }
-
+  /* ---------- Load Store Data ---------- */
   useEffect(() => {
-    loadStores()
-  }, [])
+    (async () => {
+      setLoading(true);
 
-  const filtered = useMemo(() => {
-    const t = q.trim().toLowerCase()
-    if (!t) return stores
-    return stores.filter((s) =>
-      (s.name ?? '').toLowerCase().includes(t)
-    )
-  }, [stores, q])
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData.session?.user;
+      if (!user) return;
 
-  /* ---------- Load vouchers for store ---------- */
-  async function loadVouchersForStore(storeId: string) {
-    setLoadingVouchers(true)
-    const { data, error } = await supabase
-      .from('vouchers')
-      .select('*')
-      .eq('store_id', storeId)
-      .order('created_at', { ascending: false })
-    if (!error) setVouchers(data || [])
-    setLoadingVouchers(false)
-  }
+      // Fetch store_id for this user
+      const { data: roleRow } = await supabase
+        .from('me_effective_role')
+        .select('store_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-  /* ---------- Create blank vouchers ---------- */
-  async function createBlankVouchers() {
-    if (!selectedStore) return
-    setAddingLoading(true)
-    const rows = Array.from({ length: countToAdd }).map(() => ({
-      store_id: selectedStore.id,
-      code: 'MKD-' + uuidv4().split('-')[0].toUpperCase(),
-      status: 'blank',
-      initial_amount: 0,
-      balance: 0,
-    }))
-    const { error } = await supabase.from('vouchers').insert(rows)
-    setAddingLoading(false)
-    if (error) alert('❌ ' + error.message)
-    else {
-      alert(`✅ Created ${countToAdd} blank voucher(s).`)
-      setAdding(false)
-      loadVouchersForStore(selectedStore.id)
-    }
-  }
+      const storeId = roleRow?.store_id;
+      if (!storeId) return;
 
-  /* ---------- Scan QR ---------- */
-  async function handleScan(result: string | null) {
-    if (!result) return
-    setScanning(false)
-    setScanError(null)
-    try {
-      const code = result.includes('/') ? result.split('/').pop()! : result.trim()
-      const { data, error } = await supabase
+      // Fetch vouchers belonging to this store
+      const { data: vouchersData } = await supabase
         .from('vouchers')
         .select('*')
-        .eq('code', code)
-        .maybeSingle()
-      if (error || !data) setScanError('Voucher not found.')
-      else setSelectedVoucher(data)
-    } catch (e: any) {
-      setScanError(e.message)
-    }
-  }
+        .eq('store_id', storeId);
 
-  /* ---------- Render ---------- */
+      // Fetch clients (linked to store)
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('store_id', storeId);
+
+      // ---------- Compute stats ----------
+      if (vouchersData) {
+        setVoucherStats({
+          total: vouchersData.length,
+          active: vouchersData.filter((v) => v.status === 'active').length,
+          redeemed: vouchersData.filter((v) => v.status === 'redeemed').length,
+          empty: vouchersData.filter(
+            (v) => v.status === 'blank' || v.status === 'precreated'
+          ).length,
+          totalValue: vouchersData.reduce((sum, v) => sum + (v.amount || 0), 0),
+          redeemedValue: vouchersData
+            .filter((v) => v.status === 'redeemed')
+            .reduce((sum, v) => sum + (v.amount || 0), 0),
+        });
+      }
+
+      if (clientsData) {
+        setClientStats({
+          totalClients: clientsData.length,
+          repeatClients: clientsData.filter((c) => c.visits > 1).length,
+        });
+      }
+
+      setLoading(false);
+    })();
+  }, [supabase]);
+
+  /* ---------- UI ---------- */
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 p-4 sm:p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <StoreIcon className="h-5 w-5 text-emerald-600" />
-          <h1 className="text-xl font-semibold">Stores</h1>
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-8 sm:px-6 lg:px-10 space-y-8">
+      {/* HEADER */}
+      <motion.header
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+      >
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-semibold flex items-center gap-2">
+            <Gift className="h-6 w-6 text-emerald-600" />
+            Store Dashboard
+          </h1>
+          <p className="text-gray-500 text-sm">
+            Overview of your vouchers and customers
+          </p>
         </div>
-        <button onClick={loadStores} className="flex items-center gap-2 border rounded-md px-3 py-2 text-sm hover:bg-gray-100">
-          <RefreshCw className="h-4 w-4" /> Refresh
+        <button
+          onClick={() => window.location.reload()}
+          className="flex items-center gap-2 text-sm rounded-md border px-3 py-2 hover:bg-gray-100 transition"
+        >
+          <RefreshCw className="h-4 w-4 text-gray-600" /> Refresh
         </button>
-      </div>
+      </motion.header>
 
-      <div className="flex items-center gap-2 border rounded-lg bg-white/80 p-2">
-        <Search className="h-4 w-4 text-gray-400" />
-        <input
-          className="flex-1 bg-transparent text-sm focus:outline-none"
-          placeholder="Search stores..."
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-      </div>
-
-      {/* Store list */}
-      {loadingStores ? (
-        <div className="py-20 text-center text-gray-500">Loading stores...</div>
-      ) : filtered.length === 0 ? (
-        <div className="py-20 text-center text-gray-500">No stores found.</div>
+      {/* CONTENT */}
+      {loading ? (
+        <div className="py-20 text-center text-gray-400 text-sm animate-pulse">
+          Loading store dashboard…
+        </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((s) => (
-            <div
-              key={s.id}
-              onClick={() => {
-                setSelectedStore(s)
-                loadVouchersForStore(s.id)
-              }}
-              className="p-4 border rounded-xl bg-white hover:shadow-lg transition cursor-pointer"
-            >
-              <h3 className="font-semibold">{s.name}</h3>
-              <p className="text-sm text-gray-600">{s.address}</p>
-              <p className="text-xs text-gray-500">{s.phone}</p>
+        <AnimatePresence>
+          <motion.div
+            key="store-stats"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-10"
+          >
+            {/* VOUCHER SECTION */}
+            <SectionTitle
+              icon={<Gift className="h-5 w-5 text-emerald-600" />}
+              title="Voucher Overview"
+            />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <StatCard title="Total Vouchers" value={voucherStats.total} color="emerald" />
+              <StatCard title="Active" value={voucherStats.active} color="sky" />
+              <StatCard title="Redeemed" value={voucherStats.redeemed} color="rose" />
+              <StatCard title="Empty" value={voucherStats.empty} color="gray" />
+              <StatCard
+                title="Redemption Rate"
+                value={Math.round(
+                  (voucherStats.redeemed / (voucherStats.total || 1)) * 100
+                )}
+                suffix="%"
+                color="violet"
+              />
+              <StatCard
+                title="Active %"
+                value={Math.round(
+                  (voucherStats.active / (voucherStats.total || 1)) * 100
+                )}
+                suffix="%"
+                color="cyan"
+              />
             </div>
-          ))}
-        </div>
-      )}
 
-      {/* 🟢 VOUCHER MODAL */}
-      {selectedStore && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-          <div className="relative w-full max-w-4xl bg-white rounded-2xl p-5 shadow-xl">
-            <button
-              onClick={() => setSelectedStore(null)}
-              className="absolute right-3 top-3 text-gray-500 hover:text-black"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <h2 className="text-lg font-semibold mb-3">
-              {selectedStore.name} — Vouchers
-            </h2>
-
-            {loadingVouchers ? (
-              <div className="py-8 text-center text-gray-500 text-sm">
-                Loading vouchers…
-              </div>
-            ) : vouchers.length === 0 ? (
-              <div className="py-8 text-center text-gray-500 text-sm">
-                No vouchers yet.
-              </div>
-            ) : (
-              <div className="overflow-x-auto border rounded-xl bg-white">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <Th>Buyer</Th>
-                      <Th>Code</Th>
-                      <Th>Status</Th>
-                      <Th>Balance</Th>
-                      <Th>Created</Th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {vouchers.map((v) => (
-                      <tr
-                        key={v.id}
-                        className="border-t hover:bg-gray-50 cursor-pointer"
-                        onClick={() => setSelectedVoucher(v)}
-                      >
-                        <Td>{v.buyer_name ?? '—'}</Td>
-                        <Td>
-                          <code className="rounded bg-gray-100 px-1.5 py-0.5">
-                            {v.code}
-                          </code>
-                        </Td>
-                        <Td>
-                          <StatusPill status={v.status} />
-                        </Td>
-                        <Td>{fmtDZD(v.balance)}</Td>
-                        <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Floating Add / Scan */}
-            <div className="fixed bottom-5 right-5">
-              <button
-                onClick={() => setShowFabActions((p) => !p)}
-                className="rounded-full bg-emerald-600 p-4 text-white shadow-lg hover:bg-emerald-700 transition"
-              >
-                <Menu className="h-6 w-6" />
-              </button>
-              {showFabActions && (
-                <div className="absolute bottom-16 right-0 flex flex-col gap-2">
-                  <button
-                    onClick={() => {
-                      setAdding(true)
-                      setShowFabActions(false)
-                    }}
-                    className="flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm text-white"
-                  >
-                    <Plus className="h-4 w-4" /> Add Vouchers
-                  </button>
-                  <button
-                    onClick={() => {
-                      setScanning(true)
-                      setScanError(null)
-                      setShowFabActions(false)
-                    }}
-                    className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm text-white"
-                  >
-                    <QrCode className="h-4 w-4" /> Scan QR
-                  </button>
-                </div>
-              )}
+            {/* FINANCIAL SECTION */}
+            <SectionTitle
+              icon={<CreditCard className="h-5 w-5 text-indigo-600" />}
+              title="Financial Summary"
+            />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <StatCard
+                title="Total Value Issued"
+                value={voucherStats.totalValue}
+                suffix=" DA"
+                color="emerald"
+              />
+              <StatCard
+                title="Total Redeemed"
+                value={voucherStats.redeemedValue}
+                suffix=" DA"
+                color="rose"
+              />
+              <StatCard
+                title="Redemption Value %"
+                value={Math.round(
+                  (voucherStats.redeemedValue / (voucherStats.totalValue || 1)) * 100
+                )}
+                suffix="%"
+                color="purple"
+              />
             </div>
-          </div>
-        </div>
+
+            {/* CLIENT SECTION */}
+            <SectionTitle
+              icon={<Users className="h-5 w-5 text-sky-600" />}
+              title="Client Overview"
+            />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <StatCard title="Total Clients" value={clientStats.totalClients} color="sky" />
+              <StatCard
+                title="Repeat Clients"
+                value={clientStats.repeatClients}
+                color="emerald"
+              />
+            </div>
+
+            {/* QUICK ACTIONS */}
+            <SectionTitle
+              icon={<QrCode className="h-5 w-5 text-purple-600" />}
+              title="Quick Actions"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <LinkCard
+                href="/store/vouchers"
+                icon={<Gift className="h-5 w-5 text-emerald-600" />}
+                title="View Vouchers"
+                desc="Activate, redeem, or manage vouchers."
+                gradient="from-emerald-50 to-emerald-100"
+              />
+              <LinkCard
+                href="/store/clients"
+                icon={<Users className="h-5 w-5 text-sky-500" />}
+                title="View Clients"
+                desc="Manage customer profiles and purchases."
+                gradient="from-sky-50 to-sky-100"
+              />
+              <LinkCard
+                href="/store/reports"
+                icon={<TrendingUp className="h-5 w-5 text-indigo-500" />}
+                title="Reports"
+                desc="See voucher performance and stats."
+                gradient="from-indigo-50 to-indigo-100"
+              />
+              <LinkCard
+                href="/store/settings"
+                icon={<Settings className="h-5 w-5 text-gray-600" />}
+                title="Store Settings"
+                desc="Manage store info and configuration."
+                gradient="from-gray-50 to-gray-100"
+              />
+            </div>
+          </motion.div>
+        </AnimatePresence>
       )}
     </div>
-  )
+  );
 }
 
-/* --- Helpers --- */
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>
-}
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-3 py-2">{children}</td>
-}
-function StatusPill({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    active: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-    redeemed: 'bg-blue-50 text-blue-700 ring-blue-200',
-    expired: 'bg-amber-50 text-amber-700 ring-amber-200',
-    void: 'bg-rose-50 text-rose-700 ring-rose-200',
-    blank: 'bg-gray-50 text-gray-700 ring-gray-200',
-  }
+/* ---------- Reusable Components ---------- */
+
+function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 ${
-        map[status] ?? map.blank
-      }`}
+    <motion.h2
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="text-lg font-semibold mb-3 flex items-center gap-2"
     >
-      {status}
-    </span>
-  )
+      {icon}
+      {title}
+    </motion.h2>
+  );
 }
-function fmtDZD(n: number) {
-  try {
-    return new Intl.NumberFormat('fr-DZ', {
-      style: 'currency',
-      currency: 'DZD',
-      maximumFractionDigits: 0,
-    }).format(n)
-  } catch {
-    return `${n} DZD`
-  }
+
+function StatCard({
+  title,
+  value,
+  suffix,
+  color,
+}: {
+  title: string;
+  value: number;
+  suffix?: string;
+  color?: string;
+}) {
+  const gradients: any = {
+    emerald: 'from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200',
+    indigo: 'from-indigo-50 to-indigo-100 text-indigo-700 border-indigo-200',
+    rose: 'from-rose-50 to-rose-100 text-rose-700 border-rose-200',
+    amber: 'from-amber-50 to-amber-100 text-amber-700 border-amber-200',
+    purple: 'from-purple-50 to-purple-100 text-purple-700 border-purple-200',
+    cyan: 'from-cyan-50 to-cyan-100 text-cyan-700 border-cyan-200',
+    gray: 'from-gray-50 to-gray-100 text-gray-700 border-gray-200',
+    sky: 'from-sky-50 to-sky-100 text-sky-700 border-sky-200',
+  };
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.03 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      className={`rounded-xl bg-gradient-to-br ${gradients[color || 'gray']} border shadow-sm p-4 flex flex-col items-start justify-center`}
+    >
+      <p className="text-[11px] uppercase font-medium text-gray-500">{title}</p>
+      <p className="text-2xl font-semibold mt-1">
+        <CountUp end={value || 0} duration={1.2} separator="," />
+        {suffix && <span className="text-sm ml-0.5">{suffix}</span>}
+      </p>
+    </motion.div>
+  );
+}
+
+function LinkCard({
+  href,
+  icon,
+  title,
+  desc,
+  gradient,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  gradient: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex flex-col gap-2 rounded-xl border p-4 bg-gradient-to-br ${gradient} hover:shadow-lg hover:-translate-y-1 transition`}
+    >
+      <div className="flex items-center gap-2">{icon}<h3 className="font-medium text-sm">{title}</h3></div>
+      <p className="text-xs text-gray-600 leading-snug">{desc}</p>
+    </Link>
+  );
 }
