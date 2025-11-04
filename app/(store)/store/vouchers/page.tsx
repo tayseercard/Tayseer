@@ -22,6 +22,7 @@ type VoucherRow = {
   id: string;
   code: string;
   buyer_name: string | null;
+  recipient_name: string | null;
   buyer_phone?: string | null;
   initial_amount: number;
   balance: number;
@@ -94,7 +95,7 @@ export default function StoreDashboard() {
     const { data, error } = await supabase
       .from('vouchers')
       .select(
-        'id, code, buyer_name, buyer_phone, initial_amount, balance, status, expires_at, activated_at, created_at'
+        'id, code, buyer_name,recipient_name, buyer_phone, initial_amount, balance, status, expires_at, activated_at, created_at'
       )
       .eq('store_id', id)
       .order('created_at', { ascending: false })
@@ -221,6 +222,7 @@ export default function StoreDashboard() {
               <thead className="bg-gray-50">
                 <tr>
                   <Th>Buyer</Th>
+                  <th>Recipient</th>
                   <Th>Code</Th>
                   <Th>Status</Th>
                   <Th>Initial</Th>
@@ -328,6 +330,7 @@ function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
   const [url, setUrl] = useState<string | null>(null);
 
   const [buyerName, setBuyerName] = useState(voucher.buyer_name ?? '');
+  const [recipientName, setRecipientName] = useState(voucher.recipient_name ?? '');
   const [buyerPhone, setBuyerPhone] = useState(voucher.buyer_phone ?? '');
   const [amount, setAmount] = useState(
     voucher.initial_amount && voucher.initial_amount > 0
@@ -354,6 +357,7 @@ function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
       .update({
         buyer_name: buyerName.trim(),
         buyer_phone: buyerPhone.trim() || null,
+        recipient_name: recipientName.trim() || null,
         initial_amount: Number(amount),
         balance: Number(amount),
         status: 'active',
@@ -462,6 +466,16 @@ function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
                 />
               </div>
             </div>
+            <div>
+  <label className="text-sm text-gray-600">To Whom (Recipient)</label>
+  <input
+    value={recipientName}
+    onChange={(e) => setRecipientName(e.target.value)}
+    placeholder="e.g. For my son, friend, etc."
+    className="w-full border rounded-md p-2 text-sm"
+  />
+</div>
+
 
             <button
               onClick={handleActivate}
@@ -476,6 +490,7 @@ function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
             <div className="space-y-2 text-sm mb-4">
               <Info label="Buyer" value={voucher.buyer_name ?? '—'} />
               <Info label="Phone" value={voucher.buyer_phone ?? '—'} />
+              <Info label="To" value={voucher.recipient_name ?? '—'} />
               <Info label="Status" value={voucher.status} />
               <Info label="Balance" value={fmtDZD(voucher.balance)} />
               <Info label="Initial" value={fmtDZD(voucher.initial_amount)} />
