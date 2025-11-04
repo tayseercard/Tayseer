@@ -202,7 +202,7 @@ export default function AdminVouchersPage() {
             <thead className="bg-gray-50 border-b">
               <tr>
                 <Th>Buyer</Th>
-                <th>Recipient</th>
+                <Th>Recipient</Th>
                 <Th>Store</Th>
                 <Th>Code</Th>
                 <Th>Status</Th>
