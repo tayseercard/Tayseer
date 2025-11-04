@@ -110,13 +110,14 @@ return (
 
     {/* ---------- MOBILE SWIPE VIEW ---------- */}
     <div className="sm:hidden relative overflow-hidden">
-      <motion.div
-        className="flex w-[300%]"
-        drag="x"
-        dragConstraints={{ left: -window.innerWidth * 2, right: 0 }}
-        dragElastic={0.1}
-        style={{ touchAction: "pan-x" }}
-      >
+   <motion.div
+  className="flex w-[300%]"
+  drag="x"
+  dragConstraints={{ left: -window.innerWidth * 2, right: 0 }}
+  dragElastic={0.1}
+  style={{ x, touchAction: "pan-x" }} // ✅ added x motion value
+  transition={{ type: "spring", stiffness: 200, damping: 25 }} // ✅ smoother drag
+>
         {/* PAGE 1: Quick Actions */}
         <div className="min-w-full flex-shrink-0 flex flex-col items-center justify-center px-4 py-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-800">Quick Actions</h2>
