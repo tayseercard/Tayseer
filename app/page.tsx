@@ -83,7 +83,7 @@ export default function tayseerLanding() {
           className="fixed inset-0 -z-10 opacity-60"
           style={{
             background:
-              'radial-gradient(60% 60% at 75% 20%, var(--grad-orange) 0%, transparent 60%), radial-gradient(50% 50% at 20% 80%, var(--grad-magenta) 0%, transparent 60%), radial-gradient(40% 40% at 10% 10%, var(--grad-purple) 0%, transparent 60%)',
+              'radial-gradient(60% 60% at 75% 20%, var(--grad-primary) 0%, transparent 60%), radial-gradient(50% 50% at 20% 80%, var(--grad-secondary) 0%, transparent 60%), radial-gradient(40% 40% at 10% 10%, var(--grad-accent) 0%, transparent 60%)',
           }}
         />
 
@@ -96,9 +96,10 @@ export default function tayseerLanding() {
             className="text-4xl sm:text-5xl md:text-6xl font-semibold leading-tight max-w-[20ch]"
           >
             Gift. Reward. Redeem.
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[var(--c-orange)] via-[var(--c-magenta)] to-[var(--c-purple)]">
-              tayseer vouchers made simple.
-            </span>
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-[var(--c-primary)] via-[var(--c-secondary)] to-[var(--c-accent)]">
+  tayseer vouchers made simple.
+</span>
+
           </motion.h1>
 
           <p className="text-base sm:text-lg text-white/80 max-w-[40ch]">
@@ -106,18 +107,20 @@ export default function tayseerLanding() {
           </p>
 
           <div className="mt-6 flex flex-col sm:flex-row gap-3 w-full sm:w-auto justify-center">
-            <Link
-              href="/auth/login"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-black px-5 py-3 font-medium shadow hover:shadow-lg transition"
-            >
-              Login to Dashboard <ArrowRight size={18} />
-            </Link>
-            <a
-              href="#how"
-              className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 ring-1 ring-white/30 hover:ring-white/50 text-white"
-            >
-              See how it works
-            </a>
+           <Link
+  href="/auth/login"
+  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--c-accent)] text-[var(--c-primary)] px-5 py-3 font-semibold shadow hover:bg-[var(--c-secondary)] hover:text-[var(--c-text)] transition"
+>
+  Login to Dashboard <ArrowRight size={18} />
+</Link>
+
+           <a
+  href="#how"
+  className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 ring-1 ring-[var(--c-accent)] text-[var(--c-accent)] hover:bg-[var(--c-secondary)] hover:text-[var(--c-text)] transition"
+>
+  See how it works
+</a>
+
           </div>
         </section>
 
@@ -257,11 +260,13 @@ function FeatureBullet({
 
 /* ======= Palette ======= */
 const paletteVars: React.CSSProperties = {
-  ['--bg' as any]: '#0A0A0C',
-  ['--c-orange' as any]: '#FF6A00',
-  ['--c-magenta' as any]: '#D81B60',
-  ['--c-purple' as any]: '#6A00FF',
-  ['--grad-orange' as any]: 'rgba(255, 106, 0, 0.55)',
-  ['--grad-magenta' as any]: 'rgba(216, 27, 96, 0.45)',
-  ['--grad-purple' as any]: 'rgba(106, 0, 255, 0.35)',
+  ['--bg' as any]: '#1A1A1A',         // Main background
+  ['--c-primary' as any]: '#1B3D2F',  // Deep green
+  ['--c-secondary' as any]: '#204E37',// Emerald
+  ['--c-accent' as any]: '#D2B48C',   // Beige-gold highlight
+  ['--c-text' as any]: '#F8F6F2',     // Soft white text
+  ['--grad-primary' as any]: 'rgba(32, 78, 55, 0.7)',
+  ['--grad-secondary' as any]: 'rgba(27, 61, 47, 0.6)',
+  ['--grad-accent' as any]: 'rgba(210, 180, 140, 0.4)',
 };
+
