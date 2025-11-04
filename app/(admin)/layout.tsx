@@ -10,18 +10,15 @@ import {
   Package,
   Settings,
   LogOut,
-  Menu,
-  X,
-  Search,
-  ChevronDown,
   Gift,
+  Users,
+  QrCode,
 } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClientComponentClient()
   const router = useRouter()
   const pathname = usePathname()
-  const [menuOpen, setMenuOpen] = useState(false)
   const [email] = useState('admin@tayseer.com')
 
   async function handleLogout() {
@@ -34,102 +31,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 overflow-hidden">
-      {/* ====== Topbar ====== */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b shadow-sm sticky top-0 z-40">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="rounded-md p-1.5 hover:bg-gray-100"
-          >
-            {menuOpen ? (
-              <X className="h-5 w-5 text-gray-700" />
-            ) : (
-              <Menu className="h-5 w-5 text-gray-700" />
-            )}
-          </button>
-          <div className="relative h-8 w-24">
+    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 via-white to-emerald-50">
+      {/* ===== Desktop Sidebar ===== */}
+      <aside className="hidden md:flex md:flex-col w-64 border-r border-gray-100 bg-white/80 backdrop-blur-md shadow-sm">
+        <div className="flex items-center justify-center border-b py-4">
+          <div className="relative h-9 w-28">
             <Image alt="tayseer" src="/tayseercard.png" fill className="object-contain" />
           </div>
         </div>
-        <button
-          onClick={handleLogout}
-          className="text-xs text-gray-600 hover:underline"
-        >
-          Logout
-        </button>
-      </header>
 
-      {/* ====== Overlay Sidebar ====== */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-[250px] transform bg-white/95 backdrop-blur-md border-r border-gray-200 shadow-xl transition-transform duration-300 ${
-          menuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex items-center justify-between p-4 border-b">
-          <div className="relative h-8 w-24">
-            <Image alt="tayseer" src="/tayseercard.png" fill className="object-contain" />
-          </div>
-          <button
-            onClick={() => setMenuOpen(false)}
-            className="p-1.5 hover:bg-gray-100 rounded-md"
-          >
-            <X className="h-5 w-5 text-gray-600" />
-          </button>
-        </div>
+        <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
+          <NavItem href="/admin/dashboard" icon={LayoutDashboard} label="Dashboard" />
+          <NavItem href="/admin/stores" icon={Package} label="Stores" />
+          <NavItem href="/admin/vouchers" icon={Gift} label="Vouchers" />
+          <NavItem href="/admin/users" icon={Users} label="Users" />
+          <NavItem href="/admin/settings" icon={Settings} label="Settings" />
+        </nav>
 
-        <div className="px-3 mt-4">
-          <div className="relative mb-3">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-            <input
-              placeholder="Search…"
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 pl-9 text-sm text-gray-700 outline-none placeholder:text-gray-500"
-            />
-          </div>
-
-          <div className="text-[12px] uppercase tracking-wide text-gray-500 mb-2">
-            Main Menu
-          </div>
-          <nav className="space-y-1">
-            <NavItem
-              href="/admin/dashboard"
-              icon={LayoutDashboard}
-              label="Dashboard"
-              onClick={() => setMenuOpen(false)}
-            />
-            <NavItem
-              href="/admin/stores"
-              icon={Package}
-              label="Stores"
-              onClick={() => setMenuOpen(false)}
-            />
-            <NavItem
-              href="/admin/vouchers"
-              icon={Gift}
-              label="Vouchers"
-              onClick={() => setMenuOpen(false)}
-            />
-            <NavItem
-              href="/admin/users"
-              icon={Gift}
-              label="Users"
-              onClick={() => setMenuOpen(false)}
-            />
-            <NavItem
-              href="/admin/settings"
-              icon={Settings}
-              label="Settings"
-              onClick={() => setMenuOpen(false)}
-            />
-          </nav>
-        </div>
-
-        <div className="mt-auto pt-4 border-t border-gray-100 px-3 pb-4">
+        <div className="mt-auto border-t p-4">
           <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
             <div className="min-w-0">
-              <div className="truncate text-sm font-medium text-gray-800">
-                {email ?? 'Admin'}
-              </div>
+              <div className="truncate text-sm font-medium text-gray-800">{email}</div>
               <div className="text-xs text-gray-500">@tayseer</div>
             </div>
             <button
@@ -143,61 +65,80 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* ====== Dimmed Background ====== */}
-      {menuOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
-          onClick={() => setMenuOpen(false)}
-        />
-      )}
-
-      {/* ====== Main Content ====== */}
-      <main className="relative z-10 p-4 md:p-6 transition-all duration-300">
-        <div className="flex h-full min-h-[85vh] flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-xl">
-          <div className="mb-4 flex items-center justify-between text-sm text-gray-500">
-            <div className="flex items-center gap-1 truncate">
-              <Link href="/admin" className="hover:underline">
-                Main Menu
-              </Link>
-              <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
-              <span className="font-medium text-gray-900 truncate">
-                {pathname?.split('/').slice(2).join(' / ') || 'Dashboard'}
-              </span>
-            </div>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+      {/* ===== Main Content ===== */}
+      <main className="flex-1 relative z-10 md:ml-64 pt-14 md:pt-0 px-3 sm:px-5 md:px-8 transition-all duration-300">
+        <div className="h-full min-h-[85vh] rounded-2xl border border-gray-100 bg-white/90 backdrop-blur-sm p-5 sm:p-8 shadow-lg overflow-hidden">
+          {children}
         </div>
       </main>
+
+      {/* ===== Bottom Navigation (Mobile Only) ===== */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t bg-white/90 backdrop-blur-md py-2 shadow-lg md:hidden">
+        <NavLink href="/admin/dashboard" icon={LayoutDashboard} label="Home" />
+        <NavLink href="/admin/stores" icon={Package} label="Stores" />
+        <div className="relative flex items-center justify-center">
+          {/* Floating Action Button (Scan / Add Voucher) */}
+          <Link
+            href="/admin/vouchers"
+            className="absolute -top-5 bg-emerald-600 text-white p-3 rounded-full shadow-lg hover:bg-emerald-700 transition"
+          >
+            <QrCode className="h-5 w-5" />
+          </Link>
+        </div>
+        <NavLink href="/admin/users" icon={Users} label="Users" />
+        <NavLink href="/admin/settings" icon={Settings} label="Settings" />
+      </nav>
     </div>
   )
 }
 
-/* ====== Reusable NavItem ====== */
+/* ====== Desktop Sidebar NavItem ====== */
 function NavItem({
   href,
   icon: Icon,
   label,
-  onClick,
 }: {
   href: string
   icon: React.ComponentType<any>
   label: string
-  onClick?: () => void
 }) {
   const pathname = usePathname()
   const active = pathname?.startsWith(href)
   return (
     <Link
       href={href}
-      onClick={onClick}
-      className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${
+      className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-all ${
         active
-          ? 'bg-emerald-50 text-emerald-700 font-medium'
-          : 'text-gray-700 hover:bg-gray-100'
+          ? 'bg-emerald-100 text-emerald-700 font-medium shadow-sm'
+          : 'text-gray-700 hover:bg-gray-100 hover:text-emerald-600'
       }`}
     >
       <Icon className="h-4 w-4 shrink-0" />
+      {label}
+    </Link>
+  )
+}
+
+/* ====== Mobile Bottom Nav Link ====== */
+function NavLink({
+  href,
+  icon: Icon,
+  label,
+}: {
+  href: string
+  icon: React.ComponentType<any>
+  label: string
+}) {
+  const pathname = usePathname()
+  const active = pathname === href
+  return (
+    <Link
+      href={href}
+      className={`flex flex-col items-center text-[11px] ${
+        active ? 'text-emerald-600 font-medium' : 'text-gray-500 hover:text-emerald-600'
+      }`}
+    >
+      <Icon className="h-5 w-5 mb-0.5" />
       {label}
     </Link>
   )
