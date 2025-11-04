@@ -219,7 +219,7 @@ export default function AdminVouchersPage() {
                   className="border-t hover:bg-gray-50 cursor-pointer"
                 >
                   <Td>{v.buyer_name ?? '—'}</Td>
-                  <Td>{v.recipien_name ?? '—'}</Td>
+                  <Td>{v.recipient_name ?? '—'}</Td>
                   <Td>{getStoreName(v.store_id)}</Td>
                   <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
                   <Td><StatusPill status={v.status} /></Td>
