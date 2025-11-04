@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Store as StoreIcon,
   Gift,
@@ -9,91 +9,79 @@ import {
   TrendingUp,
   RefreshCw,
   Settings,
-} from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import CountUp from 'react-countup'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import CountUp from 'react-countup';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+
+export const dynamic = 'force-dynamic'; // ✅ Prevents prerender error (SSR-safe)
 
 export default function AdminDashboardPage() {
-  const supabase = createClientComponentClient()
-
-  const [loading, setLoading] = useState(true)
-  const [stores, setStores] = useState<any[]>([])
-  const [vouchers, setVouchers] = useState<any[]>([])
-  const [error, setError] = useState<string | null>(null)
-
+  const supabase = createClientComponentClient();
+  const [loading, setLoading] = useState(true);
+  const [stores, setStores] = useState<any[]>([]);
+  const [vouchers, setVouchers] = useState<any[]>([]);
   const [storeStats, setStoreStats] = useState({
     total: 0,
     open: 0,
     closed: 0,
     online: 0,
     offline: 0,
-  })
-
+  });
   const [voucherStats, setVoucherStats] = useState({
     total: 0,
     active: 0,
     redeemed: 0,
     empty: 0,
-  })
+  });
+
+  // ✅ Safe refresh (works on both SSR + client)
+  function handleRefresh() {
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+    }
+  }
 
   /* ---------- Load Data ---------- */
   useEffect(() => {
-    let isMounted = true
+    (async () => {
+      setLoading(true);
 
-    ;(async () => {
-      try {
-        setLoading(true)
-        setError(null)
+      const [{ data: storesData }, { data: vouchersData }] = await Promise.all([
+        supabase.from('stores').select('*'),
+        supabase.from('vouchers').select('*'),
+      ]);
 
-        // ✅ Fetch data in parallel
-        const [{ data: storesData, error: storesErr }, { data: vouchersData, error: vouchersErr }] =
-          await Promise.all([
-            supabase.from('stores').select('*'),
-            supabase.from('vouchers').select('*'),
-          ])
-
-        if (storesErr) throw storesErr
-        if (vouchersErr) throw vouchersErr
-
-        if (isMounted && storesData) {
-          setStores(storesData)
-          setStoreStats({
-            total: storesData.length,
-            open: storesData.filter((s) => s.status === 'open').length,
-            closed: storesData.filter((s) => s.status === 'closed').length,
-            online: storesData.filter((s) => s.type === 'online').length,
-            offline: storesData.filter((s) => s.type === 'offline').length,
-          })
-        }
-
-        if (isMounted && vouchersData) {
-          setVouchers(vouchersData)
-          setVoucherStats({
-            total: vouchersData.length,
-            active: vouchersData.filter((v) => v.status === 'active').length,
-            redeemed: vouchersData.filter((v) => v.status === 'redeemed').length,
-            empty: vouchersData.filter(
-              (v) => v.status === 'blank' || v.status === 'precreated'
-            ).length,
-          })
-        }
-      } catch (err: any) {
-        console.error('Dashboard load error:', err)
-        setError(err.message)
-      } finally {
-        if (isMounted) setLoading(false)
+      if (storesData) {
+        setStores(storesData);
+        setStoreStats({
+          total: storesData.length,
+          open: storesData.filter((s) => s.status === 'open').length,
+          closed: storesData.filter((s) => s.status === 'closed').length,
+          online: storesData.filter((s) => s.type === 'online').length,
+          offline: storesData.filter((s) => s.type === 'offline').length,
+        });
       }
-    })()
 
-    return () => {
-      isMounted = false
-    }
-  }, [supabase])
+      if (vouchersData) {
+        setVouchers(vouchersData);
+        setVoucherStats({
+          total: vouchersData.length,
+          active: vouchersData.filter((v) => v.status === 'active').length,
+          redeemed: vouchersData.filter((v) => v.status === 'redeemed').length,
+          empty: vouchersData.filter(
+            (v) => v.status === 'blank' || v.status === 'precreated'
+          ).length,
+        });
+      }
+
+      setLoading(false);
+    })();
+  }, [supabase]);
 
   /* ---------- UI ---------- */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-8 sm:px-6 lg:px-10 space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-8 sm:px-6 lg:px-10 space-y-10">
       {/* HEADER */}
       <motion.header
         initial={{ opacity: 0, y: -10 }}
@@ -108,21 +96,60 @@ export default function AdminDashboardPage() {
           <p className="text-gray-500 text-sm">Overview of stores and vouchers</p>
         </div>
         <button
-          onClick={() => window.location.reload()}
+          onClick={handleRefresh}
           className="flex items-center gap-2 text-sm rounded-md border px-3 py-2 hover:bg-gray-100 transition"
         >
           <RefreshCw className="h-4 w-4 text-gray-600" /> Refresh
         </button>
       </motion.header>
 
-      {/* CONTENT */}
+      {/* QUICK ACTIONS */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="space-y-4"
+      >
+        <SectionTitle
+          icon={<QrCode className="h-5 w-5 text-purple-600" />}
+          title="Quick Actions"
+        />
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <LinkCard
+            href="/admin/stores"
+            icon={<StoreIcon className="h-6 w-6 text-emerald-600" />}
+            title="Manage Stores"
+            desc="Add, edit, or view your stores."
+            gradient="from-emerald-50 to-emerald-100"
+          />
+          <LinkCard
+            href="/admin/vouchers"
+            icon={<Gift className="h-6 w-6 text-pink-500" />}
+            title="Manage Vouchers"
+            desc="Activate or redeem vouchers."
+            gradient="from-pink-50 to-pink-100"
+          />
+          <LinkCard
+            href="/admin/reports"
+            icon={<TrendingUp className="h-6 w-6 text-indigo-500" />}
+            title="Reports & Analytics"
+            desc="View performance and insights."
+            gradient="from-indigo-50 to-indigo-100"
+          />
+          <LinkCard
+            href="/admin/settings"
+            icon={<Settings className="h-6 w-6 text-gray-600" />}
+            title="Settings"
+            desc="Manage account & configuration."
+            gradient="from-gray-50 to-gray-100"
+          />
+        </div>
+      </motion.section>
+
+      {/* DASHBOARD STATS */}
       {loading ? (
         <div className="py-20 text-center text-gray-400 text-sm animate-pulse">
           Loading dashboard data…
-        </div>
-      ) : error ? (
-        <div className="py-20 text-center text-red-600 text-sm">
-          ⚠️ Error loading dashboard: {error}
         </div>
       ) : (
         <AnimatePresence>
@@ -130,7 +157,7 @@ export default function AdminDashboardPage() {
             key="stats"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.2 }}
             className="space-y-10"
           >
             {/* STORES SECTION */}
@@ -146,7 +173,9 @@ export default function AdminDashboardPage() {
               <StatCard title="Closed" value={storeStats.closed} color="rose" />
               <StatCard
                 title="Open Rate"
-                value={Math.round((storeStats.open / (storeStats.total || 1)) * 100)}
+                value={Math.round(
+                  (storeStats.open / (storeStats.total || 1)) * 100
+                )}
                 suffix="%"
                 color="purple"
               />
@@ -179,47 +208,11 @@ export default function AdminDashboardPage() {
                 color="cyan"
               />
             </div>
-
-            {/* QUICK ACTIONS */}
-            <SectionTitle
-              icon={<QrCode className="h-5 w-5 text-purple-600" />}
-              title="Quick Actions"
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <LinkCard
-                href="/admin/stores"
-                icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
-                title="Manage Stores"
-                desc="Add, edit, or view your stores."
-                gradient="from-emerald-50 to-emerald-100"
-              />
-              <LinkCard
-                href="/admin/vouchers"
-                icon={<Gift className="h-5 w-5 text-pink-500" />}
-                title="Manage Vouchers"
-                desc="View, activate, or redeem vouchers."
-                gradient="from-pink-50 to-pink-100"
-              />
-              <LinkCard
-                href="/admin/reports"
-                icon={<TrendingUp className="h-5 w-5 text-indigo-500" />}
-                title="Reports & Analytics"
-                desc="See performance and trends."
-                gradient="from-indigo-50 to-indigo-100"
-              />
-              <LinkCard
-                href="/admin/settings"
-                icon={<Settings className="h-5 w-5 text-gray-600" />}
-                title="Settings"
-                desc="Manage account and configurations."
-                gradient="from-gray-50 to-gray-100"
-              />
-            </div>
           </motion.div>
         </AnimatePresence>
       )}
     </div>
-  )
+  );
 }
 
 /* ---------- Reusable Components ---------- */
@@ -234,7 +227,7 @@ function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string })
       {icon}
       {title}
     </motion.h2>
-  )
+  );
 }
 
 function StatCard({
@@ -243,12 +236,12 @@ function StatCard({
   suffix,
   color,
 }: {
-  title: string
-  value: number
-  suffix?: string
-  color?: string
+  title: string;
+  value: number;
+  suffix?: string;
+  color?: string;
 }) {
-  const gradients: Record<string, string> = {
+  const gradients: any = {
     emerald: 'from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200',
     indigo: 'from-indigo-50 to-indigo-100 text-indigo-700 border-indigo-200',
     rose: 'from-rose-50 to-rose-100 text-rose-700 border-rose-200',
@@ -257,8 +250,7 @@ function StatCard({
     cyan: 'from-cyan-50 to-cyan-100 text-cyan-700 border-cyan-200',
     gray: 'from-gray-50 to-gray-100 text-gray-700 border-gray-200',
     sky: 'from-sky-50 to-sky-100 text-sky-700 border-sky-200',
-    violet: 'from-violet-50 to-violet-100 text-violet-700 border-violet-200',
-  }
+  };
 
   return (
     <motion.div
@@ -272,7 +264,7 @@ function StatCard({
         {suffix && <span className="text-sm ml-0.5">{suffix}</span>}
       </p>
     </motion.div>
-  )
+  );
 }
 
 function LinkCard({
@@ -282,11 +274,11 @@ function LinkCard({
   desc,
   gradient,
 }: {
-  href: string
-  icon: React.ReactNode
-  title: string
-  desc: string
-  gradient: string
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  gradient: string;
 }) {
   return (
     <Link
@@ -299,5 +291,5 @@ function LinkCard({
       </div>
       <p className="text-xs text-gray-600 leading-snug">{desc}</p>
     </Link>
-  )
+  );
 }
