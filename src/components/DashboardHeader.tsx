@@ -1,103 +1,101 @@
 'use client'
 
 import { Menu } from '@headlessui/react'
-import { Plus, MoreVertical } from 'lucide-react'
+import { Plus, MoreVertical, User } from 'lucide-react'
 import React from 'react'
 
 export default function DashboardHeader({
-  title,
-  icon,
-  subtitle,
+  title = 'Dashboard',
+  user,
   onAdd,
-  actions = [],
 }: {
-  title: string
-  icon?: React.ReactNode
-  subtitle?: string
+  title?: string
+  user: { name: string; email: string; role?: string; avatarUrl?: string }
   onAdd?: () => void
-  actions?: { label: string; onClick: () => void; icon?: React.ReactNode }[]
 }) {
   return (
     <header className="relative flex items-center justify-between px-4 py-3 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-100 shadow-sm">
-      {/* === Left side === */}
+      {/* === Left side: Dashboard title === */}
       <div className="flex items-center gap-3">
-        {icon && (
-          <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-            {icon}
-          </div>
-        )}
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>
-          )}
-        </div>
+        <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">
+          {title}
+        </h1>
       </div>
 
-      {/* === Right side: desktop actions === */}
-      <div className="hidden sm:flex items-center gap-2">
-        {actions.map((a, i) => (
-          <button
-            key={i}
-            onClick={a.onClick}
-            className="flex items-center gap-2 text-sm font-medium rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-700 shadow-sm hover:bg-gray-50 transition-all"
-          >
-            {a.icon}
-            {a.label}
-          </button>
-        ))}
-
+      {/* === Right side: User profile === */}
+      <div className="flex items-center gap-3">
+        {/* Optional Add Button */}
         {onAdd && (
           <button
             onClick={onAdd}
-            className="flex items-center justify-center h-9 w-9 rounded-full bg-emerald-600 text-white shadow-md hover:bg-emerald-700 active:scale-95 transition-all"
+            className="hidden sm:flex items-center justify-center h-9 w-9 rounded-full bg-emerald-600 text-white shadow-md hover:bg-emerald-700 active:scale-95 transition-all"
             title="Add new"
           >
             <Plus className="h-5 w-5" />
           </button>
         )}
-      </div>
 
-      {/* === Mobile menu === */}
-      <div className="sm:hidden">
-        <Menu as="div" className="relative inline-block text-left">
-          <Menu.Button className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-gray-200 bg-white shadow-sm hover:bg-gray-50">
-            <MoreVertical className="h-5 w-5 text-gray-600" />
+        {/* User Menu */}
+        <Menu as="div" className="relative">
+          <Menu.Button className="flex items-center gap-3 rounded-full border border-gray-200 bg-white px-2.5 py-1.5 shadow-sm hover:bg-gray-50 transition-all">
+            {/* Avatar */}
+            {user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt="User Avatar"
+                className="h-8 w-8 rounded-full object-cover border border-gray-200"
+              />
+            ) : (
+              <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                <User className="h-4 w-4" />
+              </div>
+            )}
+
+            {/* Info */}
+            <div className="hidden sm:block text-left">
+              <p className="text-sm font-medium text-gray-800 leading-tight">
+                {user.name}
+              </p>
+              <p className="text-xs text-gray-500">{user.role || 'Admin'}</p>
+            </div>
+
+            <MoreVertical className="h-4 w-4 text-gray-500 ml-1" />
           </Menu.Button>
 
-          <Menu.Items className="absolute right-0 mt-2 w-44 origin-top-right bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg focus:outline-none">
+          {/* Dropdown */}
+          <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-white border border-gray-200 rounded-lg shadow-lg focus:outline-none divide-y divide-gray-100">
+            <div className="px-4 py-3 text-sm text-gray-700">
+              <p className="font-medium">{user.name}</p>
+              <p className="text-xs text-gray-500">{user.email}</p>
+              <p className="text-xs mt-1 text-emerald-600">{user.role || 'Admin'}</p>
+            </div>
+
             <div className="py-1">
-              {onAdd && (
-                <Menu.Item>
-                  {({ active }) => (
-                    <button
-                      onClick={onAdd}
-                      className={`flex w-full items-center gap-2 px-4 py-2 text-sm ${
-                        active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
-                      }`}
-                    >
-                      <Plus className="h-4 w-4 text-emerald-600" /> Add
-                    </button>
-                  )}
-                </Menu.Item>
-              )}
-              {actions.map((a, i) => (
-                <Menu.Item key={i}>
-                  {({ active }) => (
-                    <button
-                      onClick={a.onClick}
-                      className={`flex w-full items-center gap-2 px-4 py-2 text-sm ${
-                        active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
-                      }`}
-                    >
-                      {a.icon}
-                      {a.label}
-                    </button>
-                  )}
-                </Menu.Item>
-              ))}
+              <Menu.Item>
+                {({ active }) => (
+                  <button
+                    onClick={() => alert('Profile page')}
+                    className={`w-full text-left px-4 py-2 text-sm ${
+                      active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
+                    }`}
+                  >
+                    View Profile
+                  </button>
+                )}
+              </Menu.Item>
+
+              <Menu.Item>
+                {({ active }) => (
+                  <button
+                    onClick={() => alert('Logging out...')}
+                    className={`w-full text-left px-4 py-2 text-sm ${
+                      active ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
+                    }`}
+                  >
+                    Log out
+                  </button>
+                )}
+              </Menu.Item>
             </div>
           </Menu.Items>
         </Menu>
