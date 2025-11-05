@@ -20,6 +20,7 @@ import {
   QrCode,
   ArrowLeft,
   X,
+  QrCodeIcon,
 } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -67,7 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {[
               { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
               { href: '/admin/stores', label: 'Stores', icon: Package },
-              { action: 'scan', label: 'Scan Voucher', icon: QrCode },
+              { href: '/admin/vouchers', label: 'Vouchers', icon: QrCodeIcon },
               { href: '/admin/users', label: 'Users', icon: Users },
               { href: '/admin/settings', label: 'Settings', icon: Settings },
             ].map(({ href, label, icon: Icon, action }) => {
