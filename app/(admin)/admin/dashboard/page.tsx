@@ -115,10 +115,7 @@ return (
     role: 'Super Admin',
     avatarUrl: '/images/avatar-admin.png',
   }}
-  actions={[
-    { label: 'Settings', icon: <Settings className="h-4 w-4" />, onClick: () => alert('Settings...') },
-    { label: 'Refresh', icon: <RefreshCw className="h-4 w-4" />, onClick: handleRefresh },
-  ]}
+  
 />
 
 
