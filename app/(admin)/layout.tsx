@@ -5,6 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { scanVoucher } from '@/lib/scanVoucher' // 🟩 Import helper
+import { Scanner } from '@yudiel/react-qr-scanner'
+
 import {
   LayoutDashboard,
   Package,
@@ -14,6 +17,7 @@ import {
   Users,
   QrCode,
   ArrowLeft,
+  X,
 } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -21,7 +25,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
   const pathname = usePathname()
   const [email] = useState('admin@tayseer.com')
+
   const [scannerOpen, setScannerOpen] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
+  const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null)
 
   async function handleLogout() {
     try {
@@ -30,6 +37,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     } catch (err) {
       console.error('Logout failed:', err)
     }
+  }
+
+  /* ---------- Scan Handler ---------- */
+  async function handleScan(result: string | null) {
+    const { data, error } = await scanVoucher(supabase, result)
+    if (error) setScanError(error)
+    else setSelectedVoucher(data)
   }
 
   /* ---------- Breadcrumb ---------- */
@@ -42,7 +56,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* ===== Desktop Top Navigation ===== */}
       <header className="hidden md:flex flex-col w-full sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-gray-100 shadow-sm">
         <div className="flex items-center justify-between px-6 py-3">
-          {/* Logo */}
           <div className="relative h-8 w-28">
             <Image alt="tayseer" src="/tayseercard.png" fill className="object-contain" />
           </div>
@@ -52,7 +65,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {[
               { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
               { href: '/admin/stores', label: 'Stores', icon: Package },
-              // 🟢 Scan Voucher Button instead of "Vouchers"
               { action: 'scan', label: 'Scan Voucher', icon: QrCode },
               { href: '/admin/users', label: 'Users', icon: Users },
               { href: '/admin/settings', label: 'Settings', icon: Settings },
@@ -75,9 +87,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               return (
                 <Link
                   key={href}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all whitespace-nowrap ${active
+                  href={href}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all whitespace-nowrap ${
+                    active
                       ? 'bg-gray-900 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} href={''}                >
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
                   <Icon className="h-4 w-4" />
                   {label}
                 </Link>
@@ -95,7 +111,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
 
-        {/* ===== Breadcrumb Line ===== */}
+        {/* Breadcrumb */}
         <div className="flex items-center gap-2 px-6 py-2 border-t border-gray-100 text-sm text-gray-600 bg-white/70 backdrop-blur-sm">
           <button
             onClick={() => router.back()}
@@ -116,12 +132,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </main>
 
-      {/* ===== Bottom Navigation (Mobile Only) ===== */}
+      {/* ===== Bottom Navigation (Mobile) ===== */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t bg-white/90 backdrop-blur-md py-2 shadow-lg md:hidden">
         <NavLink href="/admin/dashboard" icon={LayoutDashboard} label="Home" />
         <NavLink href="/admin/stores" icon={Package} label="Stores" />
 
-        {/* 🟢 Floating Scan Button */}
+        {/* Floating Scan Button */}
         <div className="relative flex items-center justify-center">
           <button
             onClick={() => setScannerOpen(true)}
@@ -135,17 +151,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <NavLink href="/admin/settings" icon={Settings} label="Settings" />
       </nav>
 
-      {/* ===== QR Scanner Modal (placeholder for now) ===== */}
+      {/* ===== Scanner Modal ===== */}
       {scannerOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="bg-white p-6 rounded-2xl shadow-xl text-center w-[90%] max-w-sm">
-            <p className="text-sm text-gray-700 mb-4">📷 QR Scanner will appear here</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="relative bg-white rounded-xl p-4 w-[95%] max-w-md shadow-lg">
             <button
-              onClick={() => setScannerOpen(false)}
-              className="mt-2 rounded-md bg-emerald-600 text-white px-4 py-2 text-sm hover:bg-emerald-700"
+              onClick={() => {
+                setScannerOpen(false)
+                setSelectedVoucher(null)
+                setScanError(null)
+              }}
+              className="absolute right-2 top-2 text-gray-500 hover:text-black"
             >
-              Close
+              <X className="h-5 w-5" />
             </button>
+
+            <h2 className="text-center font-medium mb-2">Scan a voucher QR</h2>
+
+            <Scanner
+              onScan={(results) => handleScan(results[0]?.rawValue || null)}
+              onError={(err) => console.error(err)}
+              constraints={{ facingMode: 'environment' }}
+            />
+
+            {scanError && (
+              <p className="mt-3 text-center text-sm text-rose-600">{scanError}</p>
+            )}
+
+            {selectedVoucher && (
+              <div className="mt-4 border rounded-md p-3 text-sm bg-gray-50">
+                <p><strong>Code:</strong> {selectedVoucher.code}</p>
+                <p><strong>Buyer:</strong> {selectedVoucher.buyer_name ?? '—'}</p>
+                <p><strong>Status:</strong> {selectedVoucher.status}</p>
+                <p><strong>Balance:</strong> {selectedVoucher.balance} DZD</p>
+              </div>
+            )}
           </div>
         </div>
       )}
