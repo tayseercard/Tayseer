@@ -155,7 +155,7 @@ return (
 
     {/* DASHBOARD CARDS */}
     {!loading && (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 flex-grow mt-8 md:mt-0 z-10">
+<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mt-6 md:mt-0 z-10">
         {/* Latest Stores */}
         <DashboardCard
           title="Latest Stores"
@@ -291,22 +291,36 @@ function DashboardCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white/90 backdrop-blur-sm p-5 shadow-sm hover:shadow-md transition">
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      transition={{ type: 'spring', stiffness: 250, damping: 20 }}
+      className="rounded-xl border border-gray-200 bg-white/80 backdrop-blur-sm 
+                 shadow-sm hover:shadow-md transition-all p-4 sm:p-5 flex flex-col 
+                 justify-between min-h-[180px]"
+    >
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="flex items-center gap-2 font-semibold text-gray-800">
+        <h3 className="flex items-center gap-2 font-semibold text-gray-800 text-sm sm:text-base">
           {icon}
           {title}
         </h3>
+
         {link && (
           <Link
             href={link}
-            className="flex items-center text-xs text-emerald-600 hover:underline"
+            className="flex items-center text-xs text-emerald-600 hover:text-emerald-700 hover:underline transition"
           >
-            View all <ArrowRight className="h-3 w-3 ml-1" />
+            View all
+            <ArrowRight className="h-3 w-3 ml-1" />
           </Link>
         )}
       </div>
-      {children}
-    </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        {children}
+      </div>
+    </motion.div>
   )
 }
+
