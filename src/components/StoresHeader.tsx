@@ -9,15 +9,15 @@ export default function StoresHeader({
 }) {
   return (
     <header className="relative flex items-center justify-between px-4 py-3 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-100 shadow-sm">
-      {/* === Left: Title === */}
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
-          <Store className="h-5 w-5" />
-        </div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight">
-          Stores
-        </h1>
-      </div>
+     {/* === Left: Title === */}
+      <h1 className="
+        text-lg sm:text-xl font-semibold tracking-tight
+        text-gray-900
+      ">
+        <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+          Add Store
+        </span>
+      </h1>
 
       {/* === Right: Add Button === */}
       <button
