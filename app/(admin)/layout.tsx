@@ -71,24 +71,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               { href: '/admin/vouchers', label: 'Vouchers', icon: QrCodeIcon },
               { href: '/admin/users', label: 'Users', icon: Users },
               { href: '/admin/settings', label: 'Settings', icon: Settings },
-            ].map(({ href, label, icon: Icon, action }) => {
-              const active = href && pathname?.startsWith(href)
-
-              if (action === 'scan') {
-                return (
-                  <button
-                    key={label}
-                    onClick={() => setScannerOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-emerald-600 text-white shadow hover:bg-emerald-700 transition"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </button>
-                )
-              }
-                if (!href) return null // 🟢 Skip invalid entries safely
-
-
+          ].map(({ href, label, icon: Icon }) => {
+              const active = pathname?.startsWith(href)
               return (
                 <Link
                   key={href}
