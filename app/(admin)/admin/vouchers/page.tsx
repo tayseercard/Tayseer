@@ -170,7 +170,12 @@ const [stores, setStores] = useState<any[]>([])
 
   /* -------- UI -------- */
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 px-4 py-6 space-y-6">
+    <div className="
+    min-h-screen flex flex-col 
+    bg-gradient-to-br from-white via-gray-50 to-emerald-50 
+    text-gray-900 px-4 sm:px-6 md:px-8 py-6 
+    pb-24 md:pb-6 space-y-8
+  ">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div className="flex items-center gap-2">
@@ -208,7 +213,7 @@ const [stores, setStores] = useState<any[]>([])
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 border border-gray-200 rounded-xl bg-white/70 backdrop-blur-sm p-3">
+<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm">
         <div className="flex flex-1 items-center gap-2 border rounded-lg px-3 py-2">
           <Search className="h-4 w-4 text-gray-400" />
           <input
@@ -245,8 +250,8 @@ const [stores, setStores] = useState<any[]>([])
       </div>
 
       {/* Table */}
-      <div
-        className="overflow-y-auto border rounded-xl bg-white shadow-sm"
+   <div className="rounded-xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm overflow-y-auto"
+
         style={{ maxHeight: 'calc(100vh - 350px)' }}
       >
         {loading ? (
