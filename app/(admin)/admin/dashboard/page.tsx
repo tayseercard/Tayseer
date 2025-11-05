@@ -251,28 +251,33 @@ function StatCard({
   value: number
   color?: string
 }) {
-  const gradients: any = {
-    emerald: 'from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200',
-    indigo: 'from-indigo-50 to-indigo-100 text-indigo-700 border-indigo-200',
-    rose: 'from-rose-50 to-rose-100 text-rose-700 border-rose-200',
-    amber: 'from-amber-50 to-amber-100 text-amber-700 border-amber-200',
-    sky: 'from-sky-50 to-sky-100 text-sky-700 border-sky-200',
+  const colorMap: Record<string, string> = {
+    emerald: 'from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-100',
+    indigo: 'from-indigo-50 to-indigo-100 text-indigo-700 border-indigo-100',
+    rose: 'from-rose-50 to-rose-100 text-rose-700 border-rose-100',
+    amber: 'from-amber-50 to-amber-100 text-amber-700 border-amber-100',
+    sky: 'from-sky-50 to-sky-100 text-sky-700 border-sky-100',
+    gray: 'from-gray-50 to-gray-100 text-gray-700 border-gray-100',
   }
+
   return (
     <motion.div
       whileHover={{ scale: 1.03 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className={`rounded-xl bg-gradient-to-br ${
-        gradients[color || 'gray']
-      } border shadow-sm p-4 flex flex-col items-start justify-center`}
+      className={`rounded-xl bg-gradient-to-br ${colorMap[color || 'gray']} 
+        border shadow-sm p-3 sm:p-4 flex flex-col justify-center 
+        min-h-[80px] sm:min-h-[100px] hover:shadow-md transition-all`}
     >
-      <p className="text-[11px] uppercase font-medium text-gray-500">{title}</p>
-      <p className="text-2xl font-semibold mt-1">
-        <CountUp end={value} duration={1.2} separator="," />
+      <p className="text-[11px] uppercase font-medium tracking-wide text-gray-500 mb-0.5">
+        {title}
+      </p>
+      <p className="text-xl sm:text-2xl font-semibold leading-none">
+        {value.toLocaleString()}
       </p>
     </motion.div>
   )
 }
+
 
 function DashboardCard({
   title,
