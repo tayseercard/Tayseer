@@ -167,33 +167,46 @@ export default function AdminVouchersPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Gift className="h-6 w-6 text-emerald-600" />
-          <h1 className="text-2xl font-semibold">Vouchers</h1>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-2 rounded-md bg-blue-600 text-white px-3 py-2 text-sm hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" /> Add Vouchers
-          </button>
-          <button
-            onClick={() => setScanning(true)}
-            className="flex items-center gap-2 rounded-md bg-emerald-600 text-white px-3 py-2 text-sm hover:bg-emerald-700"
-          >
-            <QrCode className="h-4 w-4" /> Scan QR
-          </button>
-          <button
-            onClick={loadData}
-            className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-gray-100"
-          >
-            <RefreshCw className="h-4 w-4" /> Refresh
-          </button>
-        </div>
-      </div>
+   {/* Header */}
+<header className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 py-3 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-100 shadow-sm">
+  {/* Title + Icon */}
+  <div className="flex items-center gap-3">
+    <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
+      <Gift className="h-5 w-5" />
+    </div>
+    <div>
+      <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Vouchers</h1>
+      <p className="text-sm text-gray-500">Manage, scan, and issue digital gift vouchers</p>
+    </div>
+  </div>
+
+  {/* Actions */}
+  <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+    <button
+      onClick={loadData}
+      className="flex items-center gap-2 text-sm font-medium rounded-lg border border-gray-200 bg-white px-3.5 py-2 text-gray-700 shadow-sm hover:bg-gray-50 hover:shadow transition-all"
+    >
+      <RefreshCw className="h-4 w-4 text-gray-500" />
+      Refresh
+    </button>
+
+    <button
+      onClick={() => setScanning(true)}
+      className="flex items-center gap-2 text-sm font-medium rounded-lg bg-emerald-600 text-white px-3.5 py-2 shadow-sm hover:bg-emerald-700 active:scale-95 transition-all"
+    >
+      <QrCode className="h-4 w-4" />
+      Scan
+    </button>
+
+    <button
+      onClick={() => setAdding(true)}
+      className="flex items-center gap-2 text-sm font-medium rounded-lg bg-blue-600 text-white px-3.5 py-2 shadow-sm hover:bg-blue-700 active:scale-95 transition-all"
+    >
+      <Plus className="h-4 w-4" />
+      Add
+    </button>
+  </div>
+</header>
 
     
 
