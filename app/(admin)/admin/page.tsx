@@ -1,7 +1,7 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+'use client'
+import DashboardHeader from '@/components/DashboardHeader'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import {
   Store as StoreIcon,
   Gift,
@@ -9,248 +9,310 @@ import {
   TrendingUp,
   RefreshCw,
   Settings,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import CountUp from 'react-countup';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+  ArrowRight,
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import CountUp from 'react-countup'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-export const dynamic = 'force-dynamic'; // ✅ Prevents prerender error (SSR-safe)
+export const dynamic = 'force-dynamic' // ✅ Prevents prerender error (SSR-safe)
 
 export default function AdminDashboardPage() {
-  const supabase = createClientComponentClient();
-  const [loading, setLoading] = useState(true);
-  const [stores, setStores] = useState<any[]>([]);
-  const [vouchers, setVouchers] = useState<any[]>([]);
+  const supabase = createClientComponentClient()
+  const [loading, setLoading] = useState(true)
+
+  const [stores, setStores] = useState<any[]>([])
+  const [vouchers, setVouchers] = useState<any[]>([])
   const [storeStats, setStoreStats] = useState({
     total: 0,
     open: 0,
     closed: 0,
-    online: 0,
-    offline: 0,
-  });
+  })
   const [voucherStats, setVoucherStats] = useState({
     total: 0,
     active: 0,
     redeemed: 0,
-    empty: 0,
-  });
+  })
 
-  // ✅ Safe refresh (works on both SSR + client)
-  function handleRefresh() {
-    if (typeof window !== 'undefined') {
-      window.location.reload();
-    }
-  }
+  const [topStores, setTopStores] = useState<any[]>([])
 
   /* ---------- Load Data ---------- */
   useEffect(() => {
-    (async () => {
-      setLoading(true);
+    ;(async () => {
+      setLoading(true)
 
       const [{ data: storesData }, { data: vouchersData }] = await Promise.all([
-        supabase.from('stores').select('*'),
-        supabase.from('vouchers').select('*'),
-      ]);
+        supabase.from('stores').select('*').order('created_at', { ascending: false }),
+        supabase.from('vouchers').select('*').order('created_at', { ascending: false }),
+      ])
 
       if (storesData) {
-        setStores(storesData);
+        setStores(storesData)
         setStoreStats({
           total: storesData.length,
           open: storesData.filter((s) => s.status === 'open').length,
           closed: storesData.filter((s) => s.status === 'closed').length,
-          online: storesData.filter((s) => s.type === 'online').length,
-          offline: storesData.filter((s) => s.type === 'offline').length,
-        });
+        })
       }
 
       if (vouchersData) {
-        setVouchers(vouchersData);
+        setVouchers(vouchersData)
         setVoucherStats({
           total: vouchersData.length,
           active: vouchersData.filter((v) => v.status === 'active').length,
           redeemed: vouchersData.filter((v) => v.status === 'redeemed').length,
-          empty: vouchersData.filter(
-            (v) => v.status === 'blank' || v.status === 'precreated'
-          ).length,
-        });
+        })
       }
 
-      setLoading(false);
-    })();
-  }, [supabase]);
+      // 📊 Compute top stores by active vouchers
+      if (storesData && vouchersData) {
+        const grouped: Record<string, number> = {}
+        vouchersData
+          .filter((v) => v.status === 'active')
+          .forEach((v) => {
+            if (v.store_id) grouped[v.store_id] = (grouped[v.store_id] || 0) + 1
+          })
 
-  /* ---------- UI ---------- */
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-8 sm:px-6 lg:px-10 space-y-10">
-      {/* HEADER */}
-      <motion.header
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-      >
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold flex items-center gap-2">
-            <StoreIcon className="h-6 w-6 text-emerald-600" />
-            Dashboard
-          </h1>
-          <p className="text-gray-500 text-sm">Overview of stores and vouchers</p>
-        </div>
-        <button
-          onClick={handleRefresh}
-          className="flex items-center gap-2 text-sm rounded-md border px-3 py-2 hover:bg-gray-100 transition"
-        >
-          <RefreshCw className="h-4 w-4 text-gray-600" /> Refresh
-        </button>
-      </motion.header>
+        const ranked = storesData
+          .map((s) => ({ ...s, activeCount: grouped[s.id] || 0 }))
+          .sort((a, b) => b.activeCount - a.activeCount)
+          .slice(0, 5)
 
-      {/* QUICK ACTIONS */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="space-y-4"
-      >
-        <SectionTitle
-          icon={<QrCode className="h-5 w-5 text-purple-600" />}
-          title="Quick Actions"
-        />
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <LinkCard
-            href="/admin/stores"
-            icon={<StoreIcon className="h-6 w-6 text-emerald-600" />}
-            title="Manage Stores"
-            desc="Add, edit, or view your stores."
-            gradient="from-emerald-50 to-emerald-100"
-          />
-          <LinkCard
-            href="/admin/vouchers"
-            icon={<Gift className="h-6 w-6 text-pink-500" />}
-            title="Manage Vouchers"
-            desc="Activate or redeem vouchers."
-            gradient="from-pink-50 to-pink-100"
-          />
-         
-          <LinkCard
-            href="/admin/settings"
-            icon={<Settings className="h-6 w-6 text-gray-600" />}
-            title="Settings"
-            desc="Manage account & configuration."
-            gradient="from-gray-50 to-gray-100"
-          />
-        </div>
-      </motion.section>
+        setTopStores(ranked)
+      }
 
-      {/* DASHBOARD STATS */}
-      {loading ? (
-        <div className="py-20 text-center text-gray-400 text-sm animate-pulse">
-          Loading dashboard data…
-        </div>
-      ) : (
-        <AnimatePresence>
-          <motion.div
-            key="stats"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-10"
-          >
-            {/* Overview SECTION */}
-            <SectionTitle
-              icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
-              title="Overview"
-            />
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <StatCard title="Total Stores" value={storeStats.total} color="emerald" />
-             <StatCard title="Total Vouchers" value={voucherStats.total} color="indigo" />
-             <StatCard title="Active" value={voucherStats.active} color="emerald" />
-              <StatCard title="Redeemed" value={voucherStats.redeemed} color="rose" />
-              
-             
+      setLoading(false)
+    })()
+  }, [supabase])
 
+  /* ---------- Refresh ---------- */
+  function handleRefresh() {
+    if (typeof window !== 'undefined') window.location.reload()
+  }
 
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      )}
+ /* ---------- UI ---------- */
+/* ---------- UI ---------- */
+return (
+<div  className="
+      relative flex flex-col h-full 
+      overflow-y-auto md:overflow-hidden
+      bg-gradient-to-br from-white via-gray-50 to-emerald-50 
+      text-gray-900 px-4 py-6 sm:px-6 lg:px-10
+    ">
+    {/* Background Accent */}
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute top-[-20%] right-[-10%] w-[40rem] h-[40rem] bg-emerald-100/40 blur-[100px] rounded-full" />
+      <div className="absolute bottom-[-20%] left-[-10%] w-[35rem] h-[35rem] bg-sky-100/40 blur-[100px] rounded-full" />
     </div>
-  );
+
+    {/* HEADER */}
+  <DashboardHeader
+  title="Dashboard"
+  icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
+  user={{
+    name: 'Djamil',
+    email: 'admin@tayseer.app',
+    role: 'Admin',
+  avatarUrl: 'https://djcotaizasnukiebjtjj.supabase.co/storage/v1/object/sign/images/avatar-admin.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9iNmEyMDQ0Ny03YTVhLTRmMGUtYWM4ZC0xMGFlYWFkNmI5MWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvYXZhdGFyLWFkbWluLnBuZyIsImlhdCI6MTc2MjM1MzE5MiwiZXhwIjoxNzkzODg5MTkyfQ.7HT-5SbTGgo6tVz7Qza1gXcPHU1xO27kfOp3eHYj4Rc',
+  }}
+  
+/>
+
+
+   {/* === SUMMARY STATS (2x2 Grid) === */}
+<div className="mt-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <DashboardStatCard
+    title="Stores"
+    value={storeStats.total}
+    subtitle="Total registered"
+  />
+  <DashboardStatCard
+    title="Vouchers"
+    value={voucherStats.total}
+    subtitle="All vouchers"
+  />
+  <DashboardStatCard
+    title="Loaded"
+    value={voucherStats.active}
+    subtitle="Currently Loaded"
+    highlight
+  />
+  <DashboardStatCard
+    title="Redeemed"
+    value={voucherStats.redeemed}
+    subtitle="Used vouchers"
+  />
+</div>
+
+
+    {/* DASHBOARD CARDS */}
+    {!loading && (
+  <div className="mt-8 sm:mt-10 lg:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow">
+        {/* Latest Stores */}
+        <DashboardCard 
+        
+          title="Latest Stores"
+          icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
+          link="/admin/stores"
+        >
+          {stores.length === 0 ? (
+            <p className="text-sm text-gray-400">No stores yet.</p>
+          ) : (
+            <ul className="space-y-3">
+              {stores.slice(0, 5).map((s) => (
+                <li
+                  key={s.id}
+                  className="flex items-center justify-between border-b border-gray-100 pb-2 text-sm"
+                >
+                  <span className="truncate font-medium text-gray-700">{s.name}</span>
+                  <span className="text-xs text-gray-400">
+                    {new Date(s.created_at).toLocaleDateString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DashboardCard>
+
+        {/* Latest Vouchers */}
+        <DashboardCard
+          title="Recent Vouchers"
+          icon={<Gift className="h-5 w-5 text-pink-500" />}
+          link="/admin/vouchers"
+        >
+          {vouchers.length === 0 ? (
+            <p className="text-sm text-gray-400">No vouchers yet.</p>
+          ) : (
+            <ul className="space-y-3">
+              {vouchers.slice(0, 5).map((v) => (
+                <li
+                  key={v.id}
+                  className="flex items-center justify-between border-b border-gray-100 pb-2 text-sm"
+                >
+                  <span className="truncate font-medium text-gray-700">
+                    {v.code || '—'}
+                    <span className="text-gray-400 text-xs ml-1">({v.status})</span>
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {new Date(v.created_at).toLocaleDateString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DashboardCard>
+
+        {/* Top Stores */}
+        <DashboardCard
+          title="Top Performing Stores"
+          icon={<TrendingUp className="h-5 w-5 text-indigo-600" />}
+        >
+          {topStores.length === 0 ? (
+            <p className="text-sm text-gray-400">No Loaded vouchers found.</p>
+          ) : (
+            <ul className="space-y-3">
+              {topStores.map((s) => (
+                <li
+                  key={s.id}
+                  className="flex items-center justify-between border-b border-gray-100 pb-2 text-sm"
+                >
+                  <span className="truncate font-medium text-gray-700">{s.name}</span>
+                  <span className="text-xs text-emerald-600 font-semibold">
+                    {s.activeCount} Loaded
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DashboardCard>
+      </div>
+    )}
+  </div>
+)
+
+
 }
 
-/* ---------- Reusable Components ---------- */
+/* ---------- Components ---------- */
 
-function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
-  return (
-    <motion.h2
-      initial={{ opacity: 0, y: 5 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="text-lg font-semibold mb-3 flex items-center gap-2"
-    >
-      {icon}
-      {title}
-    </motion.h2>
-  );
-}
-
-function StatCard({
+function DashboardStatCard({
   title,
   value,
-  suffix,
-  color,
+  subtitle,
+  highlight = false,
 }: {
-  title: string;
-  value: number;
-  suffix?: string;
-  color?: string;
-}) {
-  const gradients: any = {
-    emerald: 'from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200',
-    indigo: 'from-indigo-50 to-indigo-100 text-indigo-700 border-indigo-200',
-    rose: 'from-rose-50 to-rose-100 text-rose-700 border-rose-200',
-    amber: 'from-amber-50 to-amber-100 text-amber-700 border-amber-200',
-    purple: 'from-purple-50 to-purple-100 text-purple-700 border-purple-200',
-    cyan: 'from-cyan-50 to-cyan-100 text-cyan-700 border-cyan-200',
-    gray: 'from-gray-50 to-gray-100 text-gray-700 border-gray-200',
-    sky: 'from-sky-50 to-sky-100 text-sky-700 border-sky-200',
-  };
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.03 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className={`rounded-xl bg-gradient-to-br ${gradients[color || 'gray']} border shadow-sm p-4 flex flex-col items-start justify-center`}
-    >
-      <p className="text-[11px] uppercase font-medium text-gray-500">{title}</p>
-      <p className="text-2xl font-semibold mt-1">
-        <CountUp end={value} duration={1.2} separator="," />
-        {suffix && <span className="text-sm ml-0.5">{suffix}</span>}
-      </p>
-    </motion.div>
-  );
-}
-
-function LinkCard({
-  href,
-  icon,
-  title,
-  desc,
-  gradient,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  gradient: string;
+  title: string
+  value: number
+  subtitle?: string
+  highlight?: boolean
 }) {
   return (
-    <Link
-      href={href}
-      className={`flex flex-col gap-2 rounded-xl border p-4 bg-gradient-to-br ${gradient} hover:shadow-lg hover:-translate-y-1 transition`}
+    <div
+      className={`rounded-2xl border border-gray-100 bg-white/80 backdrop-blur-sm shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-all`}
     >
-      <div className="flex items-center gap-2">
-        {icon}
-        <h3 className="font-medium text-sm">{title}</h3>
+      {/* Title Row */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">{title}</p>
       </div>
-      <p className="text-xs text-gray-600 leading-snug">{desc}</p>
-    </Link>
-  );
+
+      {/* Value */}
+      <div className="mt-1">
+        <p
+          className={`text-2xl font-semibold ${
+            highlight ? 'text-emerald-600' : 'text-gray-800'
+          }`}
+        >
+          {value.toLocaleString()}
+        </p>
+        {subtitle && (
+          <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>
+        )}
+      </div>
+    </div>
+  )
 }
+
+
+
+function DashboardCard({
+  title,
+  icon,
+  link,
+  children,
+}: {
+  title: string
+  icon: React.ReactNode
+  link?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      className="rounded-xl border border-gray-200 bg-white/80 backdrop-blur-sm 
+                 shadow-sm hover:shadow-md transition-all p-4 flex flex-col
+                 overflow-hidden min-h-[220px] max-h-[300px]"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2 flex-shrink-0">
+        <h3 className="flex items-center gap-2 font-semibold text-gray-800 text-sm">
+          {title}
+        </h3>
+
+        {link && (
+          <Link
+            href={link}
+            className="text-xs text-emerald-600 hover:text-emerald-700 hover:underline"
+          >
+            View all →
+          </Link>
+        )}
+      </div>
+
+      {/* Scrollable Content */}
+<div className="flex-1 overflow-y-auto md:overflow-visible scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pr-1">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+
