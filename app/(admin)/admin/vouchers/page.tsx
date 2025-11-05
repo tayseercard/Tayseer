@@ -482,30 +482,62 @@ function AddVoucherModal({
   onClose,
   onSubmit,
 }: any) {
+  const [search, setSearch] = useState('')
+
+  // Filter stores by name (case-insensitive)
+  const filteredStores = stores.filter((s: any) =>
+    s.name.toLowerCase().includes(search.toLowerCase())
+  )
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
       <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+        {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 text-gray-500 hover:text-black"
+          className="absolute right-3 top-3 text-gray-500 hover:text-black transition"
         >
           <X className="h-5 w-5" />
         </button>
+
+        {/* Title */}
         <h2 className="text-lg font-semibold mb-3">Create Blank Vouchers</h2>
+
         <div className="space-y-3">
+          {/* Store Search */}
+          <div>
+            <label className="text-sm text-gray-600">Search Store</label>
+            <input
+              type="text"
+              placeholder="Type store name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+
+          {/* Store Select */}
           <div>
             <label className="text-sm text-gray-600">Store</label>
             <select
               value={storeId ?? ''}
               onChange={(e) => setStoreId(e.target.value)}
-              className="w-full border rounded-md p-2 text-sm"
+              className="w-full border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               <option value="">Select store</option>
-              {stores.map((s: any) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
+              {filteredStores.length > 0 ? (
+                filteredStores.map((s: any) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))
+              ) : (
+                <option disabled>No store found</option>
+              )}
             </select>
           </div>
+
+          {/* Count Input */}
           <div>
             <label className="text-sm text-gray-600">How many?</label>
             <input
@@ -513,13 +545,15 @@ function AddVoucherModal({
               min={1}
               value={count}
               onChange={(e) => setCount(parseInt(e.target.value))}
-              className="w-full border rounded-md p-2 text-sm"
+              className="w-full border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
+
+          {/* Submit Button */}
           <button
             disabled={addingLoading}
             onClick={onSubmit}
-            className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+            className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 active:scale-[0.98] transition disabled:opacity-50"
           >
             {addingLoading ? 'Creating…' : 'Create Vouchers'}
           </button>
@@ -528,3 +562,4 @@ function AddVoucherModal({
     </div>
   )
 }
+
