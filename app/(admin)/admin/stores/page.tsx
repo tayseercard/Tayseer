@@ -1,6 +1,7 @@
 'use client'
+
 import StoresHeader from '@/components/StoresHeader'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import {
   Store as StoreIcon,
@@ -8,15 +9,20 @@ import {
   List,
   Plus,
   Search,
+  Calendar,
+  Filter,
+  ListChecks,
+  ChevronDown,
+  Check,
   X,
   MapPin,
   Phone,
   ChevronRight,
   Star,
 } from 'lucide-react'
+import { Menu } from '@headlessui/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import VoucherHeader from '@/components/VoucherHeader'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +38,9 @@ export default function AdminStoresPage() {
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
+  const [selectedWilaya, setSelectedWilaya] = useState<'all' | string>('all')
 
   const [form, setForm] = useState({
     name: '',
@@ -71,20 +80,29 @@ export default function AdminStoresPage() {
     loadStores()
   }, [loadStores])
 
-  /* ---------- Search ---------- */
-  useEffect(() => {
-    const t = q.trim().toLowerCase()
-    if (!t) setFiltered(rows)
-    else {
-      setFiltered(
-        rows.filter(
-          (s) =>
-            (s.name ?? '').toLowerCase().includes(t) ||
-            (s.address ?? '').toLowerCase().includes(t)
-        )
+  /* ---------- Filters ---------- */
+  const filteredData = useMemo(() => {
+    let data = [...rows]
+
+    if (selectedStatus !== 'all') {
+      data = data.filter((s) => s.status === selectedStatus)
+    }
+
+    if (selectedWilaya !== 'all') {
+      data = data.filter((s) => s.wilaya?.toString() === selectedWilaya)
+    }
+
+    if (q.trim()) {
+      const t = q.trim().toLowerCase()
+      data = data.filter(
+        (s) =>
+          s.name?.toLowerCase().includes(t) ||
+          s.address?.toLowerCase().includes(t)
       )
     }
-  }, [q, rows])
+
+    return data
+  }, [rows, q, selectedStatus, selectedWilaya])
 
   /* ---------- Add Store ---------- */
   async function handleAddStore() {
@@ -118,46 +136,135 @@ export default function AdminStoresPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
 
-      {/* 🌿 Modern Header */}
-<StoresHeader onAdd={() => setOpen(true)} />
+      {/* 🌿 Header */}
+      <StoresHeader onAdd={() => setOpen(true)} />
 
-    
+      {/* 📊 Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Stat title="Total Stores" value={stats.total.toLocaleString()} />
+        <Stat title="Open" value={stats.open.toLocaleString()} />
+        <Stat title="Closed" value={stats.closed.toLocaleString()} />
+      </div>
 
-      {/* 🔍 Search Bar */}
-      <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm flex items-center gap-2">
-        <Search className="h-4 w-4 text-gray-400" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search stores..."
-          className="flex-1 bg-transparent text-sm focus:outline-none"
-        />
-        <div className="flex gap-1">
-          <button
-            onClick={() => setView('grid')}
-            className={`rounded-md border p-1.5 ${view === 'grid' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'}`}
-            title="Grid view"
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => setView('list')}
-            className={`rounded-md border p-1.5 ${view === 'list' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'}`}
-            title="List view"
-          >
-            <List className="h-4 w-4" />
-          </button>
+      {/* ===== Filters Section ===== */}
+      <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
+
+        {/* 🔍 Search bar */}
+        <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
+          <Search className="h-4 w-4 text-gray-400" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by name or address..."
+            className="flex-1 bg-transparent text-sm focus:outline-none"
+          />
+        </div>
+
+        {/* ⚙️ Filters Row */}
+        <div className="flex justify-between gap-2 text-sm">
+          {/* 🗓 Sort by Date */}
+          <Menu as="div" className="relative flex-1">
+            <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+              <Calendar className="h-4 w-4 text-gray-500" />
+              Sort
+              <ChevronDown className="h-3 w-3" />
+            </Menu.Button>
+            <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
+              <Menu.Item>
+                {({ active }) => (
+                  <button
+                    onClick={() =>
+                      setRows([...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
+                    }
+                    className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
+                  >
+                    Newest first
+                  </button>
+                )}
+              </Menu.Item>
+              <Menu.Item>
+                {({ active }) => (
+                  <button
+                    onClick={() =>
+                      setRows([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
+                    }
+                    className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
+                  >
+                    Oldest first
+                  </button>
+                )}
+              </Menu.Item>
+            </Menu.Items>
+          </Menu>
+
+          {/* 🎯 Status Filter */}
+          <Menu as="div" className="relative flex-1">
+            <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+              <ListChecks className="h-4 w-4 text-gray-500" />
+              Status
+              <ChevronDown className="h-3 w-3" />
+            </Menu.Button>
+            <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
+              {['all', 'open', 'closed'].map((status) => (
+                <Menu.Item key={status}>
+                  {({ active }) => (
+                    <button
+                      onClick={() => setSelectedStatus(status)}
+                      className={`w-full text-left px-4 py-2 capitalize flex justify-between ${active ? 'bg-gray-50' : ''}`}
+                    >
+                      {status}
+                      {selectedStatus === status && <Check className="h-4 w-4 text-emerald-600" />}
+                    </button>
+                  )}
+                </Menu.Item>
+              ))}
+            </Menu.Items>
+          </Menu>
+
+          {/* 🧩 Wilaya Filter */}
+          <Menu as="div" className="relative flex-1">
+            <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+              <Filter className="h-4 w-4 text-gray-500" />
+              Wilaya
+              <ChevronDown className="h-3 w-3" />
+            </Menu.Button>
+            <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg max-h-48 overflow-y-auto">
+              <Menu.Item>
+                {({ active }) => (
+                  <button
+                    onClick={() => setSelectedWilaya('all')}
+                    className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
+                  >
+                    All wilayas
+                  </button>
+                )}
+              </Menu.Item>
+              {[...new Set(rows.map((s) => s.wilaya))].map((w) => (
+                <Menu.Item key={w}>
+                  {({ active }) => (
+                    <button
+                      onClick={() => setSelectedWilaya(w)}
+                      className={`w-full text-left px-4 py-2 flex justify-between ${active ? 'bg-gray-50' : ''}`}
+                    >
+                      Wilaya {w}
+                      {selectedWilaya === w && <Check className="h-4 w-4 text-emerald-600" />}
+                    </button>
+                  )}
+                </Menu.Item>
+              ))}
+            </Menu.Items>
+          </Menu>
         </div>
       </div>
 
-      {/* 📱 Mobile Cards / 💻 Desktop Table */}
+      {/* 📱 Cards / 💻 Table */}
       {loading ? (
         <div className="py-20 text-center text-gray-400">Loading stores...</div>
-      ) : filtered.length === 0 ? (
+      ) : filteredData.length === 0 ? (
         <div className="py-20 text-center text-gray-400">No stores found.</div>
       ) : view === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-16">
-          {filtered.map((s) => (
+          {filteredData.map((s) => (
             <StoreCard key={s.id} s={s} />
           ))}
         </div>
@@ -168,13 +275,14 @@ export default function AdminStoresPage() {
               <tr>
                 <Th>Name</Th>
                 <Th>Status</Th>
+                <Th>Wilaya</Th>
                 <Th>Phone</Th>
                 <Th>Address</Th>
                 <Th>Actions</Th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((s) => (
+              {filteredData.map((s) => (
                 <tr key={s.id} className="border-t hover:bg-gray-50 cursor-pointer">
                   <Td>{s.name ?? '—'}</Td>
                   <Td>
@@ -182,6 +290,7 @@ export default function AdminStoresPage() {
                       {s.status ?? '—'}
                     </Badge>
                   </Td>
+                  <Td>{s.wilaya ?? '—'}</Td>
                   <Td>{s.phone ?? '—'}</Td>
                   <Td>{s.address ?? '—'}</Td>
                   <Td>
