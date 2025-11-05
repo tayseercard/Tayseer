@@ -133,18 +133,120 @@ export default function AdminVouchersPage() {
       {/* Header */}
       <VoucherHeader onAdd={() => setAdding(true)} />
 
-      {/* Filters */}
-      <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
-        <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
-          <Search className="h-4 w-4 text-gray-400" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search vouchers..."
-            className="flex-1 bg-transparent text-sm focus:outline-none"
-          />
-        </div>
-      </div>
+
+
+{/* ===== Filters Section ===== */}
+<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
+
+  {/* 🔍 Search bar */}
+  <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
+    <Search className="h-4 w-4 text-gray-400" />
+    <input
+      value={q}
+      onChange={(e) => setQ(e.target.value)}
+      placeholder="Search"
+      className="flex-1 bg-transparent text-sm focus:outline-none"
+    />
+  </div>
+
+  {/* ⚙️ Filters Row */}
+  <div className="flex justify-between gap-2 text-sm">
+
+    {/* 🗓 Date Sort Menu */}
+    <Menu as="div" className="relative flex-1">
+      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+        <Calendar className="h-4 w-4 text-gray-500" />
+        Date
+        <ChevronDown className="h-3 w-3" />
+      </Menu.Button>
+      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
+        <Menu.Item>
+          {({ active }) => (
+            <button
+              onClick={() => {
+                setRows([...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
+              }}
+              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
+            >
+              Newest first
+            </button>
+          )}
+        </Menu.Item>
+        <Menu.Item>
+          {({ active }) => (
+            <button
+              onClick={() => {
+                setRows([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
+              }}
+              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
+            >
+              Oldest first
+            </button>
+          )}
+        </Menu.Item>
+      </Menu.Items>
+    </Menu>
+
+    {/* 🎯 Status Filter Menu */}
+    <Menu as="div" className="relative flex-1">
+      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+        <ListChecks className="h-4 w-4 text-gray-500" />
+        Status
+        <ChevronDown className="h-3 w-3" />
+      </Menu.Button>
+      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
+        {['all', 'blank', 'active', 'redeemed', 'expired', 'void'].map((status) => (
+          <Menu.Item key={status}>
+            {({ active }) => (
+              <button
+                onClick={() => setSelectedStatus(status)}
+                className={`w-full text-left px-4 py-2 capitalize flex justify-between ${active ? 'bg-gray-50' : ''}`}
+              >
+                {status}
+                {selectedStatus === status && <Check className="h-4 w-4 text-emerald-600" />}
+              </button>
+            )}
+          </Menu.Item>
+        ))}
+      </Menu.Items>
+    </Menu>
+
+    {/* 🧩 Store Filter Menu */}
+    <Menu as="div" className="relative flex-1">
+      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+        <Filter className="h-4 w-4 text-gray-500" />
+        Filter
+        <ChevronDown className="h-3 w-3" />
+      </Menu.Button>
+      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg max-h-48 overflow-y-auto">
+        <Menu.Item>
+          {({ active }) => (
+            <button
+              onClick={() => setSelectedStore('all')}
+              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
+            >
+              All stores
+            </button>
+          )}
+        </Menu.Item>
+        {stores.map((s) => (
+          <Menu.Item key={s.id}>
+            {({ active }) => (
+              <button
+                onClick={() => setSelectedStore(s.id)}
+                className={`w-full text-left px-4 py-2 flex justify-between ${active ? 'bg-gray-50' : ''}`}
+              >
+                {s.name}
+                {selectedStore === s.id && <Check className="h-4 w-4 text-emerald-600" />}
+              </button>
+            )}
+          </Menu.Item>
+        ))}
+      </Menu.Items>
+    </Menu>
+  </div>
+</div>
+
 
       {/* Mobile Cards */}
       <div className="block md:hidden space-y-3">
