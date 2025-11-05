@@ -17,6 +17,7 @@ import {
   QrCode,
   ArrowLeft,
   QrCodeIcon,
+  Gift,
 } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -129,7 +130,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
 
-        <NavLink href="/admin/users" icon={Users} label="Users" />
+        <NavLink href="/admin/vouchers" icon={Gift} label="Vouchers" />
         <NavLink href="/admin/settings" icon={Settings} label="Settings" />
       </nav>
 
