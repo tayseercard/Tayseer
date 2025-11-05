@@ -294,7 +294,6 @@ function DashboardCard({
       {/* Header */}
       <div className="flex items-center justify-between mb-2 flex-shrink-0">
         <h3 className="flex items-center gap-2 font-semibold text-gray-800 text-sm">
-          {icon}
           {title}
         </h3>
 

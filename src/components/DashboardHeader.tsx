@@ -23,11 +23,7 @@ export default function DashboardHeader({
       {/* === Top Row: Title + Actions === */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          {icon && (
-            <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
-              {icon}
-            </div>
-          )}
+          
           <div>
             <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight">
               {title}
