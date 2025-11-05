@@ -107,8 +107,6 @@ return (
 
     {/* HEADER */}
   <DashboardHeader
-  title="Dashboard"
-  icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
   user={{
     name: 'Djamil',
     email: 'admin@tayseer.app',

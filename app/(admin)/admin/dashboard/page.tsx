@@ -101,8 +101,8 @@ return (
     ">
     {/* Background Accent */}
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      <div className="absolute top-[-20%] right-[-10%] w-[40rem] h-[40rem] bg-emerald-100/40 blur-[100px] rounded-full" />
-      <div className="absolute bottom-[-20%] left-[-10%] w-[35rem] h-[35rem] bg-sky-100/40 blur-[100px] rounded-full" />
+      <div className="absolute top-[-20%] right-[-10%] w-[40rem] h-[40rem] bg-white-100/40 blur-[100px] rounded-full" />
+      <div className="absolute bottom-[-20%] left-[-10%] w-[35rem] h-[35rem] bg-white-100/40 blur-[100px] rounded-full" />
     </div>
 
     {/* HEADER */}
