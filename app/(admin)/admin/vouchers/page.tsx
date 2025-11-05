@@ -33,120 +33,108 @@ type Voucher = {
   created_at: string
 }
 
-
 /* =================== MAIN PAGE =================== */
 export default function AdminVouchersPage() {
-  const supabase = createClientComponentClient();
-const [rows, setRows] = useState<any[]>([])
-const [stores, setStores] = useState<any[]>([])
+  const supabase = createClientComponentClient()
+  const [rows, setRows] = useState<any[]>([])
+  const [stores, setStores] = useState<any[]>([])
 
+  const [loading, setLoading] = useState(true)
+  const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [addingLoading, setAddingLoading] = useState(false)
+  const [storeId, setStoreId] = useState<string | null>(null)
+  const [count, setCount] = useState(1)
 
-  const [loading, setLoading] = useState(true);
-  const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null);
+  const [scanning, setScanning] = useState(false)
+  const [scanError, setScanError] = useState<string | null>(null)
 
-  const [adding, setAdding] = useState(false);
-  const [addingLoading, setAddingLoading] = useState(false);
-  const [storeId, setStoreId] = useState<string | null>(null);
-  const [count, setCount] = useState(1);
-
-  const [scanning, setScanning] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
-
-  const [q, setQ] = useState('');
-  const [selectedStore, setSelectedStore] = useState<'all' | string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all');
+  const [q, setQ] = useState('')
+  const [selectedStore, setSelectedStore] = useState<'all' | string>('all')
+  const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
 
   /* ---------- Pagination ---------- */
-  const ITEMS_PER_PAGE = 10;
-  const [page, setPage] = useState(1);
-
-  const totalPages = useMemo(
-    () => Math.ceil(rows.length / ITEMS_PER_PAGE),
-    [rows]
-  );
-  type Store = {
-  id: string
-  name: string
-}
-
+  const ITEMS_PER_PAGE = 10
+  const [page, setPage] = useState(1)
+  const totalPages = useMemo(() => Math.ceil(rows.length / ITEMS_PER_PAGE), [rows])
 
   /* -------- Load data -------- */
   async function loadData() {
-    setLoading(true);
+    setLoading(true)
     const [{ data: vouchers }, { data: storesData }] = await Promise.all([
       supabase.from('vouchers').select('*').order('created_at', { ascending: false }),
       supabase.from('stores').select('id, name'),
-    ]);
-    setRows(vouchers || []);
-    setStores(storesData || []);
-    setLoading(false);
+    ])
+    setRows(vouchers || [])
+    setStores(storesData || [])
+    setLoading(false)
   }
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData()
+  }, [])
 
   /* -------- Filters -------- */
   const filtered = useMemo(() => {
-    let data = rows;
-    if (selectedStore !== 'all') data = data.filter((v) => v.store_id === selectedStore);
-    if (selectedStatus !== 'all') data = data.filter((v) => v.status === selectedStatus);
+    let data = rows
+    if (selectedStore !== 'all') data = data.filter((v) => v.store_id === selectedStore)
+    if (selectedStatus !== 'all') data = data.filter((v) => v.status === selectedStatus)
     if (q.trim()) {
-      const t = q.trim().toLowerCase();
+      const t = q.trim().toLowerCase()
       data = data.filter(
         (v) =>
           v.code?.toLowerCase().includes(t) ||
           v.buyer_name?.toLowerCase().includes(t)
-      );
+      )
     }
-    return data;
-  }, [rows, q, selectedStore, selectedStatus]);
+    return data
+  }, [rows, q, selectedStore, selectedStatus])
 
   /* -------- Paginated data -------- */
   const paginated = useMemo(() => {
-    const start = (page - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
-  }, [filtered, page]);
+    const start = (page - 1) * ITEMS_PER_PAGE
+    return filtered.slice(start, start + ITEMS_PER_PAGE)
+  }, [filtered, page])
 
   /* -------- Stats -------- */
   const stats = useMemo(() => {
-    const total = rows.length;
-    const active = rows.filter((v) => v.status === 'active').length;
-    const redeemed = rows.filter((v) => v.status === 'redeemed').length;
-    const blank = rows.filter((v) => v.status === 'blank').length;
-    return { total, active, redeemed, blank };
-  }, [rows]);
+    const total = rows.length
+    const active = rows.filter((v) => v.status === 'active').length
+    const redeemed = rows.filter((v) => v.status === 'redeemed').length
+    const blank = rows.filter((v) => v.status === 'blank').length
+    return { total, active, redeemed, blank }
+  }, [rows])
 
-  const getStoreName = (id: string) => stores.find((s) => s.id === id)?.name ?? '—';
+  const getStoreName = (id: string) => stores.find((s) => s.id === id)?.name ?? '—'
 
   /* -------- QR Scan -------- */
   async function handleScan(result: string | null) {
-    if (!result) return;
-    setScanError(null);
-    setScanning(false);
+    if (!result) return
+    setScanError(null)
+    setScanning(false)
 
     try {
-      const code = result.includes('/') ? result.split('/').pop()! : result.trim();
+      const code = result.includes('/') ? result.split('/').pop()! : result.trim()
       const { data, error } = await supabase
         .from('vouchers')
         .select('*')
         .eq('code', code)
-        .maybeSingle();
+        .maybeSingle()
 
       if (error || !data) {
-        setScanError('Voucher not found.');
-        return;
+        setScanError('Voucher not found.')
+        return
       }
-      setSelectedVoucher(data);
+      setSelectedVoucher(data)
     } catch (e: any) {
-      setScanError(e.message || 'Error scanning QR.');
+      setScanError(e.message || 'Error scanning QR.')
     }
   }
 
   /* -------- Create Blank Vouchers -------- */
   async function createBlankVouchers() {
-    if (!storeId || count < 1) return alert('Select store and count.');
-    setAddingLoading(true);
+    if (!storeId || count < 1) return alert('Select store and count.')
+    setAddingLoading(true)
 
     const rowsToInsert = Array.from({ length: count }).map(() => ({
       store_id: storeId,
@@ -154,28 +142,24 @@ const [stores, setStores] = useState<any[]>([])
       status: 'blank',
       initial_amount: 0,
       balance: 0,
-    }));
+    }))
 
-    const { error } = await supabase.from('vouchers').insert(rowsToInsert);
-    setAddingLoading(false);
+    const { error } = await supabase.from('vouchers').insert(rowsToInsert)
+    setAddingLoading(false)
 
-    if (error) return alert('❌ Error: ' + error.message);
+    if (error) return alert('❌ Error: ' + error.message)
 
-    alert(`✅ Created ${count} blank voucher(s).`);
-    setAdding(false);
-    setStoreId(null);
-    setCount(1);
-    loadData();
+    alert(`✅ Created ${count} blank voucher(s).`)
+    setAdding(false)
+    setStoreId(null)
+    setCount(1)
+    loadData()
   }
 
   /* -------- UI -------- */
   return (
-    <div className="
-    min-h-screen flex flex-col 
-    bg-gradient-to-br from-white via-gray-50 to-emerald-50 
-    text-gray-900 px-4 sm:px-6 md:px-8 py-6 
-    pb-24 md:pb-6 space-y-8
-  ">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div className="flex items-center gap-2">
@@ -204,10 +188,16 @@ const [stores, setStores] = useState<any[]>([])
         </div>
       </div>
 
-      
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Stat title="Total" value={stats.total.toLocaleString()} />
+        <Stat title="Active" value={stats.active.toLocaleString()} />
+        <Stat title="Redeemed" value={stats.redeemed.toLocaleString()} />
+        <Stat title="Blank" value={stats.blank.toLocaleString()} />
+      </div>
 
       {/* Filters */}
-<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm">
+      <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm flex flex-col sm:flex-row gap-2">
         <div className="flex flex-1 items-center gap-2 border rounded-lg px-3 py-2">
           <Search className="h-4 w-4 text-gray-400" />
           <input
@@ -243,11 +233,48 @@ const [stores, setStores] = useState<any[]>([])
         </select>
       </div>
 
-      {/* Table */}
-   <div className="rounded-xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm overflow-y-auto"
+      {/* 📱 Mobile — Cards layout */}
+      <div className="block md:hidden space-y-3">
+        {loading ? (
+          <div className="py-10 text-center text-gray-400">Loading vouchers...</div>
+        ) : paginated.length === 0 ? (
+          <div className="py-10 text-center text-gray-400">No vouchers found.</div>
+        ) : (
+          paginated.map((v) => (
+            <div
+              key={v.id}
+              onClick={() => setSelectedVoucher(v)}
+              className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-gray-800">{v.buyer_name ?? '—'}</h3>
+                <StatusPill status={v.status} />
+              </div>
 
-        style={{ maxHeight: 'calc(100vh - 350px)' }}
-      >
+              <div className="mt-2 text-sm text-gray-600">
+                <p>Recipient: {v.recipient_name ?? '—'}</p>
+                <p>Store: {getStoreName(v.store_id)}</p>
+              </div>
+
+              <div className="mt-3 flex justify-between items-center text-sm">
+                <div>
+                  <span className="text-gray-500">Code: </span>
+                  <code className="bg-gray-100 rounded px-1 py-0.5 text-xs">{v.code}</code>
+                </div>
+                <span className="font-medium text-emerald-700">{fmtDZD(v.balance)}</span>
+              </div>
+
+              <p className="mt-1 text-xs text-gray-400">
+                Created: {new Date(v.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* 💻 Desktop / Tablet — Table */}
+      <div className="hidden md:block rounded-xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm overflow-y-auto"
+           style={{ maxHeight: 'calc(100vh - 350px)' }}>
         {loading ? (
           <div className="py-20 text-center text-gray-400">Loading vouchers...</div>
         ) : paginated.length === 0 ? (
@@ -288,7 +315,7 @@ const [stores, setStores] = useState<any[]>([])
         )}
       </div>
 
-      {/* Pagination Controls */}
+      {/* Pagination */}
       {!loading && filtered.length > ITEMS_PER_PAGE && (
         <div className="flex justify-center items-center gap-2 mt-4">
           <button
@@ -358,15 +385,15 @@ const [stores, setStores] = useState<any[]>([])
         </div>
       )}
     </div>
-  );
+  )
 }
 
 /* ---------- Small Helpers ---------- */
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>;
+  return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>
 }
 function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-3 py-2">{children}</td>;
+  return <td className="px-3 py-2">{children}</td>
 }
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -375,19 +402,19 @@ function StatusPill({ status }: { status: string }) {
     expired: 'bg-amber-50 text-amber-700 ring-amber-200',
     void: 'bg-rose-50 text-rose-700 ring-rose-200',
     blank: 'bg-gray-50 text-gray-700 ring-gray-200',
-  };
+  }
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 ${map[status] ?? map.blank}`}>
       {status}
     </span>
-  );
+  )
 }
 function fmtDZD(n: number) {
   return new Intl.NumberFormat('fr-DZ', {
     style: 'currency',
     currency: 'DZD',
     maximumFractionDigits: 0,
-  }).format(n);
+  }).format(n)
 }
 
 /* ---------- AddVoucherModal ---------- */
@@ -419,8 +446,10 @@ function AddVoucherModal({
               onChange={(e) => setStoreId(e.target.value)}
               className="w-full border rounded-md p-2 text-sm"
             >
-             
-              
+              <option value="">Select store</option>
+              {stores.map((s: any) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
             </select>
           </div>
           <div>
@@ -443,5 +472,5 @@ function AddVoucherModal({
         </div>
       </div>
     </div>
-  );
+  )
 }
