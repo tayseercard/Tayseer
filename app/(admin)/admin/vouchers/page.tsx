@@ -191,41 +191,50 @@ export default function AdminVouchersPage() {
     
 
       {/* Filters */}
-      <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm flex flex-col sm:flex-row gap-2">
-        <div className="flex flex-1 items-center gap-2 border rounded-lg px-3 py-2">
-          <Search className="h-4 w-4 text-gray-400" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by code or buyer..."
-            className="flex-1 bg-transparent text-sm focus:outline-none"
-          />
-        </div>
-        <select
-          value={selectedStore}
-          onChange={(e) => setSelectedStore(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm text-gray-700"
-        >
-          <option value="all">All stores</option>
-          {stores.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
-          className="border rounded-lg px-3 py-2 text-sm text-gray-700"
-        >
-          <option value="all">All statuses</option>
-          <option value="blank">Blank</option>
-          <option value="active">Active</option>
-          <option value="redeemed">Redeemed</option>
-          <option value="expired">Expired</option>
-          <option value="void">Void</option>
-        </select>
-      </div>
+      {/* ===== Filters Section ===== */}
+<div className="rounded-xl bg-white border border-gray-100 p-4 shadow-sm space-y-3">
+  {/* 🔍 Search bar */}
+  <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
+    <Search className="h-4 w-4 text-gray-400" />
+    <input
+      value={q}
+      onChange={(e) => setQ(e.target.value)}
+      placeholder="Search"
+      className="flex-1 bg-transparent text-sm focus:outline-none"
+    />
+  </div>
+
+  {/* ⏱ Filters row */}
+  <div className="flex justify-between gap-2 text-sm">
+    <button className="flex-1 flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2v-7H3v7a2 2 0 002 2z" />
+      </svg>
+      Date
+      <span className="ml-1">▾</span>
+    </button>
+
+    <button
+      onClick={() => setSelectedStatus(selectedStatus === 'all' ? 'active' : 'all')}
+      className="flex-1 flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+      </svg>
+      Status
+      <span className="ml-1">▾</span>
+    </button>
+
+    <button className="flex-1 flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4h18M4 8h16M5 12h14M6 16h12M7 20h10" />
+      </svg>
+      Filter
+      <span className="ml-1">▾</span>
+    </button>
+  </div>
+</div>
+
 
       {/* 📱 Mobile — Cards layout */}
       <div className="block md:hidden space-y-3">
