@@ -91,46 +91,56 @@ export default function AdminDashboardPage() {
   }
 
  /* ---------- UI ---------- */
+/* ---------- UI ---------- */
 return (
-  <div className="h-screen md:overflow-hidden overflow-auto bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-6 sm:px-6 lg:px-10 flex flex-col md:justify-between">
+  <div className="h-screen md:overflow-hidden overflow-auto bg-gradient-to-br from-gray-50 via-white to-emerald-50 text-gray-900 px-5 py-6 sm:px-8 lg:px-14 flex flex-col md:justify-between relative">
+    {/* Background Accent */}
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute top-[-20%] right-[-10%] w-[40rem] h-[40rem] bg-emerald-100/40 blur-[100px] rounded-full" />
+      <div className="absolute bottom-[-20%] left-[-10%] w-[35rem] h-[35rem] bg-sky-100/40 blur-[100px] rounded-full" />
+    </div>
+
     {/* HEADER */}
     <motion.header
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 flex-shrink-0"
+      transition={{ duration: 0.4 }}
+      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 z-10"
     >
       <div>
-        <h1 className="text-2xl sm:text-3xl font-semibold flex items-center gap-2">
-          <StoreIcon className="h-6 w-6 text-emerald-600" />
-          Dashboard
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight flex items-center gap-3">
+          <StoreIcon className="h-7 w-7 text-emerald-600" />
+          <span className="bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent">
+            Dashboard
+          </span>
         </h1>
-        <p className="text-gray-500 text-sm">
-          Business overview and activity insights
+        <p className="text-gray-500 text-sm mt-1">
+          Monitor store performance and voucher activity in real-time
         </p>
       </div>
 
       <button
         onClick={handleRefresh}
-        className="flex items-center gap-2 text-sm rounded-md border px-3 py-2 hover:bg-gray-100 transition"
+        className="flex items-center gap-2 text-sm font-medium rounded-xl border border-gray-200 bg-white/80 backdrop-blur-sm px-4 py-2 shadow-sm hover:shadow-md hover:bg-gray-50 transition-all"
       >
-        <RefreshCw className="h-4 w-4 text-gray-600" /> Refresh
+        <RefreshCw className="h-4 w-4 text-emerald-600" /> Refresh
       </button>
     </motion.header>
 
     {/* SUMMARY STATS */}
-    <div className="flex-shrink-0">
+    <div className="flex-shrink-0 mt-8">
       {loading ? (
-        <div className="py-10 text-center text-gray-400 text-sm animate-pulse">
+        <div className="py-16 text-center text-gray-400 text-sm animate-pulse">
           Loading dashboard data…
         </div>
       ) : (
         <AnimatePresence>
           <motion.div
             key="stats"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4"
           >
             <StatCard title="Stores" value={storeStats.total} color="emerald" />
             <StatCard title="Open" value={storeStats.open} color="sky" />
@@ -145,23 +155,23 @@ return (
 
     {/* DASHBOARD CARDS */}
     {!loading && (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 flex-grow mt-6 md:mt-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 flex-grow mt-8 md:mt-0 z-10">
         {/* Latest Stores */}
         <DashboardCard
-          title="🧱 Latest Stores"
+          title="Latest Stores"
           icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
           link="/admin/stores"
         >
           {stores.length === 0 ? (
             <p className="text-sm text-gray-400">No stores yet.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {stores.slice(0, 5).map((s) => (
                 <li
                   key={s.id}
-                  className="flex items-center justify-between border-b border-gray-100 py-1.5 text-sm"
+                  className="flex items-center justify-between border-b border-gray-100 pb-2 text-sm"
                 >
-                  <span className="truncate">{s.name}</span>
+                  <span className="truncate font-medium text-gray-700">{s.name}</span>
                   <span className="text-xs text-gray-400">
                     {new Date(s.created_at).toLocaleDateString()}
                   </span>
@@ -173,22 +183,22 @@ return (
 
         {/* Latest Vouchers */}
         <DashboardCard
-          title="🎁 Latest Vouchers"
+          title="Recent Vouchers"
           icon={<Gift className="h-5 w-5 text-pink-500" />}
           link="/admin/vouchers"
         >
           {vouchers.length === 0 ? (
             <p className="text-sm text-gray-400">No vouchers yet.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {vouchers.slice(0, 5).map((v) => (
                 <li
                   key={v.id}
-                  className="flex items-center justify-between border-b border-gray-100 py-1.5 text-sm"
+                  className="flex items-center justify-between border-b border-gray-100 pb-2 text-sm"
                 >
-                  <span className="truncate">
-                    {v.code || '—'}{' '}
-                    <span className="text-gray-400 text-xs">({v.status})</span>
+                  <span className="truncate font-medium text-gray-700">
+                    {v.code || '—'}
+                    <span className="text-gray-400 text-xs ml-1">({v.status})</span>
                   </span>
                   <span className="text-xs text-gray-400">
                     {new Date(v.created_at).toLocaleDateString()}
@@ -199,22 +209,22 @@ return (
           )}
         </DashboardCard>
 
-        {/* Top Stores by Active Vouchers */}
+        {/* Top Stores */}
         <DashboardCard
-          title="🏆 Top Stores by Active Vouchers"
+          title="Top Performing Stores"
           icon={<TrendingUp className="h-5 w-5 text-indigo-600" />}
         >
           {topStores.length === 0 ? (
             <p className="text-sm text-gray-400">No active vouchers found.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {topStores.map((s) => (
                 <li
                   key={s.id}
-                  className="flex items-center justify-between border-b border-gray-100 py-1.5 text-sm"
+                  className="flex items-center justify-between border-b border-gray-100 pb-2 text-sm"
                 >
-                  <span className="truncate">{s.name}</span>
-                  <span className="text-xs text-emerald-600 font-medium">
+                  <span className="truncate font-medium text-gray-700">{s.name}</span>
+                  <span className="text-xs text-emerald-600 font-semibold">
                     {s.activeCount} active
                   </span>
                 </li>
@@ -226,6 +236,7 @@ return (
     )}
   </div>
 )
+
 
 }
 
