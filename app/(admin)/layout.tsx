@@ -100,11 +100,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* ===== Main Content ===== */}
-<main className="flex-1 flex flex-col justify-between h-full overflow-hidden px-4 sm:px-6 md:px-10 py-4">
+<main
+  className="
+    flex-1 flex flex-col justify-between h-full 
+    overflow-y-auto md:overflow-hidden 
+    px-4 sm:px-6 md:px-10 py-4 
+    pb-20 md:pb-0
+  "
+>
   <div className="flex flex-col flex-grow justify-between h-full">
-          {children}
-        </div>
-      </main>
+    {children}
+  </div>
+</main>
+
 
       {/* ===== Bottom Navigation (Mobile) ===== */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t bg-white/90 backdrop-blur-md py-2 shadow-lg md:hidden">
