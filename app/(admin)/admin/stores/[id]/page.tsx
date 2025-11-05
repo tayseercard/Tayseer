@@ -182,60 +182,12 @@ return (
           setScanning(true);
         }}
       />
-{/* 🟢 Floating Action Button (FAB) */}
-<div className="fixed bottom-5 right-5 z-50">
-  <button
-    onClick={() => setShowFabActions((prev) => !prev)}
-    className="rounded-full bg-emerald-600 p-4 text-white shadow-lg hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 transition"
-  >
-    <Menu className="h-6 w-6" />
-  </button>
 
-  {showFabActions && (
-    <div className="absolute bottom-16 right-0 flex flex-col gap-2 animate-fade-in">
-      <button
-        onClick={() => {
-          setShowFabActions(false);
-          setAdding(true);
-        }}
-        className="flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm text-white shadow-md hover:bg-blue-700 active:scale-[0.98] transition"
-      >
-        <Plus className="h-4 w-4" /> Add Voucher
-      </button>
-
-      <button
-        onClick={() => {
-          setShowFabActions(false);
-          setScanError(null);
-          setScanning(true);
-        }}
-        className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm text-white shadow-md hover:bg-emerald-700 active:scale-[0.98] transition"
-      >
-        <QrCode className="h-4 w-4" /> Scan QR
-      </button>
-    </div>
-  )}
-</div>
 
 
       </div>
 
-      {/* Store Info */}
-      <div className="rounded-2xl border bg-white p-5 shadow-sm">
-        {loadingStore ? (
-          <div className="text-sm text-gray-500">Loading store…</div>
-        ) : store ? (
-          <div>
-            <h2 className="text-lg sm:text-xl font-semibold mb-1">{store.name}</h2>
-            <p className="text-sm text-gray-600">{store.address}</p>
-            <p className="text-sm text-gray-600">
-              {store.phone} · {store.email}
-            </p>
-          </div>
-        ) : (
-          <div className="text-sm text-rose-600">Store not found.</div>
-        )}
-      </div>
+    
 
       {/* Search Bar */}
       <div className="flex items-center gap-2 sticky top-0 bg-gray-50/90 backdrop-blur-sm py-1 z-30">
