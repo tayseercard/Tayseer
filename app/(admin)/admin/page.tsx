@@ -129,13 +129,7 @@ export default function AdminDashboardPage() {
             desc="Activate or redeem vouchers."
             gradient="from-pink-50 to-pink-100"
           />
-          <LinkCard
-            href="/admin/reports"
-            icon={<TrendingUp className="h-6 w-6 text-indigo-500" />}
-            title="Reports & Analytics"
-            desc="View performance and insights."
-            gradient="from-indigo-50 to-indigo-100"
-          />
+         
           <LinkCard
             href="/admin/settings"
             icon={<Settings className="h-6 w-6 text-gray-600" />}
@@ -160,17 +154,16 @@ export default function AdminDashboardPage() {
             transition={{ delay: 0.2 }}
             className="space-y-10"
           >
-            {/* STORES SECTION */}
+            {/* Overview SECTION */}
             <SectionTitle
               icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
-              title="Store Overview"
+              title="Overview"
             />
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               <StatCard title="Total Stores" value={storeStats.total} color="emerald" />
-              <StatCard title="Online" value={storeStats.online} color="sky" />
-              <StatCard title="Offline" value={storeStats.offline} color="amber" />
-              <StatCard title="Open" value={storeStats.open} color="emerald" />
-              <StatCard title="Closed" value={storeStats.closed} color="rose" />
+             <StatCard title="Total Vouchers" value={voucherStats.total} color="indigo" />
+             <StatCard title="Active" value={voucherStats.active} color="emerald" />
+              <StatCard title="Redeemed" value={voucherStats.redeemed} color="rose" />
               <StatCard
                 title="Open Rate"
                 value={Math.round(
@@ -179,18 +172,6 @@ export default function AdminDashboardPage() {
                 suffix="%"
                 color="purple"
               />
-            </div>
-
-            {/* VOUCHERS SECTION */}
-            <SectionTitle
-              icon={<Gift className="h-5 w-5 text-indigo-600" />}
-              title="Voucher Overview"
-            />
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <StatCard title="Total Vouchers" value={voucherStats.total} color="indigo" />
-              <StatCard title="Active" value={voucherStats.active} color="emerald" />
-              <StatCard title="Redeemed" value={voucherStats.redeemed} color="rose" />
-              <StatCard title="Empty" value={voucherStats.empty} color="gray" />
               <StatCard
                 title="Redemption Rate"
                 value={Math.round(
@@ -207,6 +188,8 @@ export default function AdminDashboardPage() {
                 suffix="%"
                 color="cyan"
               />
+
+
             </div>
           </motion.div>
         </AnimatePresence>

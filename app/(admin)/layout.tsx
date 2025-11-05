@@ -58,7 +58,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               { href: '/admin/stores', label: 'Stores', icon: Package },
               { href: '/admin/vouchers', label: 'Vouchers', icon: Gift },
               { href: '/admin/users', label: 'Users', icon: Users },
-              { href: '/admin/reports', label: 'Reports', icon: TrendingUp },
               { href: '/admin/settings', label: 'Settings', icon: Settings },
             ].map(({ href, label, icon: Icon }) => {
               const active = pathname?.startsWith(href)
