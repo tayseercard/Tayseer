@@ -1,18 +1,14 @@
 'use client'
+
 import VoucherHeader from '@/components/VoucherHeader'
 import { useEffect, useMemo, useState } from 'react'
-import { Menu } from '@headlessui/react'
+import { Menu, Combobox } from '@headlessui/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { v4 as uuidv4 } from 'uuid'
 import { Scanner } from '@yudiel/react-qr-scanner'
 import VoucherModal from '@/components/VoucherModal'
 
-import { Stat } from '@/components/ui/stat'
 import {
-  Gift,
-  QrCode,
-  Plus,
-  RefreshCw,
   Search,
   X,
   Calendar,
@@ -23,11 +19,7 @@ import {
 } from 'lucide-react'
 
 /* ---------- Types ---------- */
-type Store = {
-  id: string
-  name: string
-}
-
+type Store = { id: string; name: string }
 type Voucher = {
   id: string
   store_id: string
@@ -45,17 +37,12 @@ export default function AdminVouchersPage() {
   const supabase = createClientComponentClient()
   const [rows, setRows] = useState<any[]>([])
   const [stores, setStores] = useState<any[]>([])
-
   const [loading, setLoading] = useState(true)
   const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null)
   const [adding, setAdding] = useState(false)
   const [addingLoading, setAddingLoading] = useState(false)
   const [storeId, setStoreId] = useState<string | null>(null)
   const [count, setCount] = useState(1)
-
-  const [scanning, setScanning] = useState(false)
-  const [scanError, setScanError] = useState<string | null>(null)
-
   const [q, setQ] = useState('')
   const [selectedStore, setSelectedStore] = useState<'all' | string>('all')
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
@@ -114,30 +101,6 @@ export default function AdminVouchersPage() {
 
   const getStoreName = (id: string) => stores.find((s) => s.id === id)?.name ?? '—'
 
-  /* -------- QR Scan -------- */
-  async function handleScan(result: string | null) {
-    if (!result) return
-    setScanError(null)
-    setScanning(false)
-
-    try {
-      const code = result.includes('/') ? result.split('/').pop()! : result.trim()
-      const { data, error } = await supabase
-        .from('vouchers')
-        .select('*')
-        .eq('code', code)
-        .maybeSingle()
-
-      if (error || !data) {
-        setScanError('Voucher not found.')
-        return
-      }
-      setSelectedVoucher(data)
-    } catch (e: any) {
-      setScanError(e.message || 'Error scanning QR.')
-    }
-  }
-
   /* -------- Create Blank Vouchers -------- */
   async function createBlankVouchers() {
     if (!storeId || count < 1) return alert('Select store and count.')
@@ -167,127 +130,23 @@ export default function AdminVouchersPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
 
-   {/* Header */}
-<VoucherHeader
-  onAdd={() => setAdding(true)}
-/>
+      {/* Header */}
+      <VoucherHeader onAdd={() => setAdding(true)} />
 
+      {/* Filters */}
+      <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
+        <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
+          <Search className="h-4 w-4 text-gray-400" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search vouchers..."
+            className="flex-1 bg-transparent text-sm focus:outline-none"
+          />
+        </div>
+      </div>
 
-{/* ===== Filters Section ===== */}
-<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
-
-  {/* 🔍 Search bar */}
-  <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
-    <Search className="h-4 w-4 text-gray-400" />
-    <input
-      value={q}
-      onChange={(e) => setQ(e.target.value)}
-      placeholder="Search"
-      className="flex-1 bg-transparent text-sm focus:outline-none"
-    />
-  </div>
-
-  {/* ⚙️ Filters Row */}
-  <div className="flex justify-between gap-2 text-sm">
-
-    {/* 🗓 Date Sort Menu */}
-    <Menu as="div" className="relative flex-1">
-      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-        <Calendar className="h-4 w-4 text-gray-500" />
-        Date
-        <ChevronDown className="h-3 w-3" />
-      </Menu.Button>
-      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
-        <Menu.Item>
-          {({ active }) => (
-            <button
-              onClick={() => {
-                setRows([...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
-              }}
-              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
-            >
-              Newest first
-            </button>
-          )}
-        </Menu.Item>
-        <Menu.Item>
-          {({ active }) => (
-            <button
-              onClick={() => {
-                setRows([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
-              }}
-              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
-            >
-              Oldest first
-            </button>
-          )}
-        </Menu.Item>
-      </Menu.Items>
-    </Menu>
-
-    {/* 🎯 Status Filter Menu */}
-    <Menu as="div" className="relative flex-1">
-      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-        <ListChecks className="h-4 w-4 text-gray-500" />
-        Status
-        <ChevronDown className="h-3 w-3" />
-      </Menu.Button>
-      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
-        {['all', 'blank', 'active', 'redeemed', 'expired', 'void'].map((status) => (
-          <Menu.Item key={status}>
-            {({ active }) => (
-              <button
-                onClick={() => setSelectedStatus(status)}
-                className={`w-full text-left px-4 py-2 capitalize flex justify-between ${active ? 'bg-gray-50' : ''}`}
-              >
-                {status}
-                {selectedStatus === status && <Check className="h-4 w-4 text-emerald-600" />}
-              </button>
-            )}
-          </Menu.Item>
-        ))}
-      </Menu.Items>
-    </Menu>
-
-    {/* 🧩 Store Filter Menu */}
-    <Menu as="div" className="relative flex-1">
-      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-        <Filter className="h-4 w-4 text-gray-500" />
-        Filter
-        <ChevronDown className="h-3 w-3" />
-      </Menu.Button>
-      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg max-h-48 overflow-y-auto">
-        <Menu.Item>
-          {({ active }) => (
-            <button
-              onClick={() => setSelectedStore('all')}
-              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
-            >
-              All stores
-            </button>
-          )}
-        </Menu.Item>
-        {stores.map((s) => (
-          <Menu.Item key={s.id}>
-            {({ active }) => (
-              <button
-                onClick={() => setSelectedStore(s.id)}
-                className={`w-full text-left px-4 py-2 flex justify-between ${active ? 'bg-gray-50' : ''}`}
-              >
-                {s.name}
-                {selectedStore === s.id && <Check className="h-4 w-4 text-emerald-600" />}
-              </button>
-            )}
-          </Menu.Item>
-        ))}
-      </Menu.Items>
-    </Menu>
-  </div>
-</div>
-
-
-
-      {/* 📱 Mobile — Cards layout */}
+      {/* Mobile Cards */}
       <div className="block md:hidden space-y-3">
         {loading ? (
           <div className="py-10 text-center text-gray-400">Loading vouchers...</div>
@@ -304,12 +163,10 @@ export default function AdminVouchersPage() {
                 <h3 className="font-semibold text-gray-800">{v.buyer_name ?? '—'}</h3>
                 <StatusPill status={v.status} />
               </div>
-
               <div className="mt-2 text-sm text-gray-600">
                 <p>Recipient: {v.recipient_name ?? '—'}</p>
                 <p>Store: {getStoreName(v.store_id)}</p>
               </div>
-
               <div className="mt-3 flex justify-between items-center text-sm">
                 <div>
                   <span className="text-gray-500">Code: </span>
@@ -317,7 +174,6 @@ export default function AdminVouchersPage() {
                 </div>
                 <span className="font-medium text-emerald-700">{fmtDZD(v.balance)}</span>
               </div>
-
               <p className="mt-1 text-xs text-gray-400">
                 Created: {new Date(v.created_at).toLocaleDateString()}
               </p>
@@ -326,9 +182,9 @@ export default function AdminVouchersPage() {
         )}
       </div>
 
-      {/* 💻 Desktop / Tablet — Table */}
+      {/* Desktop Table */}
       <div className="hidden md:block rounded-xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm overflow-y-auto"
-           style={{ maxHeight: 'calc(100vh - 350px)' }}>
+        style={{ maxHeight: 'calc(100vh - 350px)' }}>
         {loading ? (
           <div className="py-20 text-center text-gray-400">Loading vouchers...</div>
         ) : paginated.length === 0 ? (
@@ -342,24 +198,20 @@ export default function AdminVouchersPage() {
                 <Th>Store</Th>
                 <Th>Code</Th>
                 <Th>Status</Th>
-                <Th>Initial</Th>
                 <Th>Balance</Th>
                 <Th>Created</Th>
               </tr>
             </thead>
             <tbody>
               {paginated.map((v) => (
-                <tr
-                  key={v.id}
+                <tr key={v.id}
                   onClick={() => setSelectedVoucher(v)}
-                  className="border-t hover:bg-gray-50 cursor-pointer"
-                >
+                  className="border-t hover:bg-gray-50 cursor-pointer">
                   <Td>{v.buyer_name ?? '—'}</Td>
                   <Td>{v.recipient_name ?? '—'}</Td>
                   <Td>{getStoreName(v.store_id)}</Td>
                   <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
                   <Td><StatusPill status={v.status} /></Td>
-                  <Td>{fmtDZD(v.initial_amount)}</Td>
                   <Td>{fmtDZD(v.balance)}</Td>
                   <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
                 </tr>
@@ -372,21 +224,17 @@ export default function AdminVouchersPage() {
       {/* Pagination */}
       {!loading && filtered.length > ITEMS_PER_PAGE && (
         <div className="flex justify-center items-center gap-2 mt-4">
-          <button
-            disabled={page === 1}
+          <button disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
+            className="px-3 py-1 border rounded disabled:opacity-50">
             Prev
           </button>
           <span className="text-sm text-gray-600">
             Page {page} of {totalPages}
           </span>
-          <button
-            disabled={page === totalPages}
+          <button disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
+            className="px-3 py-1 border rounded disabled:opacity-50">
             Next
           </button>
         </div>
@@ -415,34 +263,11 @@ export default function AdminVouchersPage() {
           onSubmit={createBlankVouchers}
         />
       )}
-
-      {/* Scanner Modal */}
-      {scanning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="relative bg-white rounded-xl p-4 w-[95%] max-w-md shadow-lg">
-            <button
-              onClick={() => setScanning(false)}
-              className="absolute right-2 top-2 text-gray-500 hover:text-black"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <h2 className="text-center font-medium mb-2">Scan a voucher QR</h2>
-            <Scanner
-              onScan={(results) => handleScan(results[0]?.rawValue || null)}
-              onError={(err) => console.error(err)}
-              constraints={{ facingMode: 'environment' }}
-            />
-            {scanError && (
-              <p className="mt-3 text-center text-sm text-rose-600">{scanError}</p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
 
-/* ---------- Small Helpers ---------- */
+/* ---------- Helpers ---------- */
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>
 }
@@ -464,80 +289,60 @@ function StatusPill({ status }: { status: string }) {
   )
 }
 function fmtDZD(n: number) {
-  return new Intl.NumberFormat('fr-DZ', {
-    style: 'currency',
-    currency: 'DZD',
-    maximumFractionDigits: 0,
-  }).format(n)
+  return new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD', maximumFractionDigits: 0 }).format(n)
 }
 
-/* ---------- AddVoucherModal ---------- */
-function AddVoucherModal({
-  stores,
-  storeId,
-  setStoreId,
-  count,
-  setCount,
-  addingLoading,
-  onClose,
-  onSubmit,
-}: any) {
-  const [search, setSearch] = useState('')
-
-  // Filter stores by name (case-insensitive)
-  const filteredStores = stores.filter((s: any) =>
-    s.name.toLowerCase().includes(search.toLowerCase())
-  )
+/* ---------- AddVoucherModal (with Combobox) ---------- */
+function AddVoucherModal({ stores, storeId, setStoreId, count, setCount, addingLoading, onClose, onSubmit }: any) {
+  const [query, setQuery] = useState('')
+  const filtered =
+    query === ''
+      ? stores
+      : stores.filter((s: any) => s.name.toLowerCase().includes(query.toLowerCase()))
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
       <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute right-3 top-3 text-gray-500 hover:text-black transition"
-        >
+        <button onClick={onClose} className="absolute right-3 top-3 text-gray-500 hover:text-black transition">
           <X className="h-5 w-5" />
         </button>
 
-        {/* Title */}
         <h2 className="text-lg font-semibold mb-3">Create Blank Vouchers</h2>
 
-        <div className="space-y-3">
-          {/* Store Search */}
-          <div>
-            <label className="text-sm text-gray-600">Search Store</label>
-            <input
-              type="text"
-              placeholder="Type store name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            />
-          </div>
+        <div className="space-y-4">
+          {/* Searchable Store Selector */}
+          <Combobox value={storeId} onChange={setStoreId}>
+            <Combobox.Label className="text-sm text-gray-600">Store</Combobox.Label>
+            <div className="relative mt-1">
+              <Combobox.Input
+                className="w-full rounded-md border p-2 text-sm focus:ring-1 focus:ring-emerald-500"
+                onChange={(e) => setQuery(e.target.value)}
+                displayValue={(id: string) => stores.find((s: any) => s.id === id)?.name ?? ''}
+                placeholder="Search store..."
+              />
+              <Combobox.Options className="absolute mt-1 max-h-48 w-full overflow-auto rounded-md bg-white border shadow-lg text-sm z-10">
+                {filtered.length === 0 ? (
+                  <div className="px-4 py-2 text-gray-500">No results</div>
+                ) : (
+                  filtered.map((s: any) => (
+                    <Combobox.Option
+                      key={s.id}
+                      value={s.id}
+                      className={({ active }) =>
+                        `cursor-pointer px-4 py-2 ${
+                          active ? 'bg-emerald-50 text-emerald-700' : 'text-gray-800'
+                        }`
+                      }
+                    >
+                      {s.name}
+                    </Combobox.Option>
+                  ))
+                )}
+              </Combobox.Options>
+            </div>
+          </Combobox>
 
-          {/* Store Select */}
-          <div>
-            <label className="text-sm text-gray-600">Store</label>
-            <select
-              value={storeId ?? ''}
-              onChange={(e) => setStoreId(e.target.value)}
-              className="w-full border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            >
-              <option value="">Select store</option>
-              {filteredStores.length > 0 ? (
-                filteredStores.map((s: any) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))
-              ) : (
-                <option disabled>No store found</option>
-              )}
-            </select>
-          </div>
-
-          {/* Count Input */}
+          {/* Count */}
           <div>
             <label className="text-sm text-gray-600">How many?</label>
             <input
@@ -545,11 +350,11 @@ function AddVoucherModal({
               min={1}
               value={count}
               onChange={(e) => setCount(parseInt(e.target.value))}
-              className="w-full border rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full border rounded-md p-2 text-sm focus:ring-1 focus:ring-emerald-500"
             />
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <button
             disabled={addingLoading}
             onClick={onSubmit}
@@ -562,4 +367,3 @@ function AddVoucherModal({
     </div>
   )
 }
-
