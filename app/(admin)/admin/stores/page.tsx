@@ -1,5 +1,5 @@
 'use client'
-
+import StoresHeader from '@/components/StoresHeader'
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import {
@@ -7,27 +7,20 @@ import {
   LayoutGrid,
   List,
   Plus,
-  Filter,
   Search,
-  Star,
+  X,
   MapPin,
   Phone,
   ChevronRight,
+  Star,
 } from 'lucide-react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Stat } from '@/components/ui/stat'
-import { Badge } from '@/components/ui/badge'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import VoucherHeader from '@/components/VoucherHeader'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Stat } from '@/components/ui/stat'
 
 export default function AdminStoresPage() {
   const supabase = createClientComponentClient()
@@ -50,11 +43,8 @@ export default function AdminStoresPage() {
 
   const [stats, setStats] = useState({
     total: 0,
-    online: 0,
-    offline: 0,
     open: 0,
     closed: 0,
-    topStore: '—',
   })
 
   /* ---------- Load Data ---------- */
@@ -65,12 +55,11 @@ export default function AdminStoresPage() {
       if (error) throw error
       setRows(data || [])
       setFiltered(data || [])
-      setStats((prev) => ({
-        ...prev,
+      setStats({
         total: data?.length || 0,
         open: data?.filter((s) => s.status === 'open').length || 0,
         closed: data?.filter((s) => s.status === 'closed').length || 0,
-      }))
+      })
     } catch (err) {
       console.error('Load stores failed', err)
     } finally {
@@ -111,15 +100,10 @@ export default function AdminStoresPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || 'Failed to create store')
 
-      alert(
-        `✅ Store "${result.store.name}" created successfully.\nTemporary password: ${result.temp_password}`
-      )
-
-      // ✅ Reload and reset
+      alert(`✅ Store "${result.store.name}" created successfully.`)
       await loadStores()
       setOpen(false)
       setForm({ name: '', email: '', phone: '', address: '', wilaya: '' })
@@ -132,129 +116,50 @@ export default function AdminStoresPage() {
 
   /* ---------- Render ---------- */
   return (
-    <div className="flex flex-col gap-5 text-black">
-      {/* ✅ Header */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-        <div className="flex items-center gap-2">
-          <StoreIcon className="h-5 w-5 text-emerald-600" />
-          <h1 className="text-xl font-semibold">Stores</h1>
-        </div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
 
-        <div className="flex items-center gap-2">
+      {/* 🌿 Modern Header */}
+<StoresHeader onAdd={() => setOpen(true)} />
+
+      {/* 🧮 Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Stat title="Total Stores" value={stats.total.toLocaleString()} />
+        <Stat title="Open" value={stats.open.toLocaleString()} />
+        <Stat title="Closed" value={stats.closed.toLocaleString()} />
+      </div>
+
+      {/* 🔍 Search Bar */}
+      <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm flex items-center gap-2">
+        <Search className="h-4 w-4 text-gray-400" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search stores..."
+          className="flex-1 bg-transparent text-sm focus:outline-none"
+        />
+        <div className="flex gap-1">
           <button
             onClick={() => setView('grid')}
-            className={`rounded-md border px-2.5 py-1.5 text-sm ${
-              view === 'grid' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'
-            }`}
+            className={`rounded-md border p-1.5 ${view === 'grid' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'}`}
             title="Grid view"
           >
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button
             onClick={() => setView('list')}
-            className={`rounded-md border px-2.5 py-1.5 text-sm ${
-              view === 'list' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'
-            }`}
+            className={`rounded-md border p-1.5 ${view === 'list' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'}`}
             title="List view"
           >
             <List className="h-4 w-4" />
           </button>
-
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="ml-2 hidden sm:inline-flex bg-emerald-600 hover:bg-emerald-700">
-                <Plus className="h-4 w-4 mr-1" /> Add Store
-              </Button>
-            </DialogTrigger>
-
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Add New Store</DialogTitle>
-                <DialogDescription>
-                  Fill in the store information below. A temporary password will
-                  be generated automatically.
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className="flex flex-col gap-3 py-2">
-                <Input
-                  placeholder="Store name *"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-                <Input
-                  placeholder="Email *"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
-                <Input
-                  placeholder="Phone"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
-                <Input
-                  placeholder="Address"
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                />
-                <Input
-                  type="number"
-                  placeholder="Wilaya (1–58)"
-                  min={1}
-                  max={58}
-                  value={form.wilaya}
-                  onChange={(e) => setForm({ ...form, wilaya: e.target.value })}
-                />
-              </div>
-
-              <DialogFooter className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddStore}
-                  disabled={saving}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {saving ? 'Saving…' : 'Add'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
 
-      {/* ✅ Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <Stat title="Total Stores" value={stats.total.toLocaleString()} />
-        <Stat title="Open" value={stats.open.toLocaleString()} />
-        <Stat title="Closed" value={stats.closed.toLocaleString()} />
-        <Stat title="Top Store" value={stats.topStore} />
-      </div>
-
-      {/* ✅ Search Bar */}
-      <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-sm p-2 rounded-xl border flex items-center gap-2 shadow-sm">
-        <Search className="h-4 w-4 text-gray-400 ml-1" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search Store…"
-          className="flex-1 bg-transparent text-sm focus:outline-none"
-        />
-        <button className="rounded-md border px-2 py-1 text-sm hover:bg-gray-50 flex items-center gap-1">
-          <Filter className="h-4 w-4" /> Filter
-        </button>
-      </div>
-
-      {/* ✅ View Mode */}
+      {/* 📱 Mobile Cards / 💻 Desktop Table */}
       {loading ? (
-        <div className="py-20 text-center text-gray-500 text-sm">
-          Loading stores…
-        </div>
+        <div className="py-20 text-center text-gray-400">Loading stores...</div>
       ) : filtered.length === 0 ? (
-        <div className="py-20 text-center text-gray-500 text-sm">
-          No stores found.
-        </div>
+        <div className="py-20 text-center text-gray-400">No stores found.</div>
       ) : view === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-16">
           {filtered.map((s) => (
@@ -262,9 +167,9 @@ export default function AdminStoresPage() {
           ))}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border">
+        <div className="overflow-x-auto rounded-xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm">
           <table className="w-full text-sm min-w-[700px]">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 border-b">
               <tr>
                 <Th>Name</Th>
                 <Th>Status</Th>
@@ -275,7 +180,7 @@ export default function AdminStoresPage() {
             </thead>
             <tbody>
               {filtered.map((s) => (
-                <tr key={s.id} className="border-t hover:bg-gray-50">
+                <tr key={s.id} className="border-t hover:bg-gray-50 cursor-pointer">
                   <Td>{s.name ?? '—'}</Td>
                   <Td>
                     <Badge kind={s.status === 'open' ? 'green' : 'rose'}>
@@ -285,10 +190,7 @@ export default function AdminStoresPage() {
                   <Td>{s.phone ?? '—'}</Td>
                   <Td>{s.address ?? '—'}</Td>
                   <Td>
-                    <Link
-                      href={`/admin/stores/${s.id}`}
-                      className="text-blue-600 text-xs hover:underline"
-                    >
+                    <Link href={`/admin/stores/${s.id}`} className="text-blue-600 text-xs hover:underline">
                       View
                     </Link>
                   </Td>
@@ -299,14 +201,30 @@ export default function AdminStoresPage() {
         </div>
       )}
 
-      {/* ✅ Floating Add Button (Mobile FAB) */}
+      {/* ➕ Add Store Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <button className="fixed bottom-5 right-5 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-medium text-white shadow-lg hover:bg-emerald-700 md:hidden">
-            <Plus className="h-4 w-4" />
-            Add Store
-          </button>
-        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Store</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-3 py-2">
+            <Input placeholder="Store name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <Input placeholder="Email *" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <Input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+            <Input type="number" placeholder="Wilaya (1–58)" min={1} max={58} value={form.wilaya} onChange={(e) => setForm({ ...form, wilaya: e.target.value })} />
+          </div>
+
+          <DialogFooter className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddStore} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+              {saving ? 'Saving…' : 'Add'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   )
@@ -317,12 +235,10 @@ function StoreCard({ s }: { s: any }) {
   return (
     <Link
       href={`/admin/stores/${s.id}`}
-      className="block rounded-xl border border-gray-200 bg-white p-4 hover:shadow-lg transition-shadow"
+      className="block rounded-xl border border-gray-200 bg-white p-4 hover:shadow-md transition"
     >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="font-medium text-gray-900 truncate">
-          {s.name ?? 'Unnamed'}
-        </h3>
+        <h3 className="font-medium text-gray-900 truncate">{s.name ?? 'Unnamed'}</h3>
         <ChevronRight className="h-4 w-4 text-gray-400" />
       </div>
       <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
@@ -334,9 +250,7 @@ function StoreCard({ s }: { s: any }) {
         <span>{s.phone ?? '—'}</span>
       </div>
       <div className="flex items-center justify-between">
-        <Badge kind={s.status === 'open' ? 'green' : 'rose'}>
-          {s.status ?? '—'}
-        </Badge>
+        <Badge kind={s.status === 'open' ? 'green' : 'rose'}>{s.status ?? '—'}</Badge>
         <div className="flex items-center gap-1 text-amber-500">
           <Star className="h-3 w-3" />
           <span className="text-xs">{s.rating ?? '—'}</span>
@@ -347,13 +261,8 @@ function StoreCard({ s }: { s: any }) {
 }
 
 function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
-      {children}
-    </th>
-  )
+  return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>
 }
-
 function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-3 py-2">{children}</td>
 }
