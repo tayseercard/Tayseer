@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { Menu } from '@headlessui/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { v4 as uuidv4 } from 'uuid'
 import { Scanner } from '@yudiel/react-qr-scanner'
 import VoucherModal from '@/components/VoucherModal'
+
 import { Stat } from '@/components/ui/stat'
 import {
   Gift,
@@ -13,6 +15,11 @@ import {
   RefreshCw,
   Search,
   X,
+  Calendar,
+  Check,
+  ChevronDown,
+  Filter,
+  ListChecks,
 } from 'lucide-react'
 
 /* ---------- Types ---------- */
@@ -190,9 +197,11 @@ export default function AdminVouchersPage() {
 
     
 
-      {/* Filters */}
-      {/* ===== Filters Section ===== */}
-<div className="rounded-xl bg-white border border-gray-100 p-4 shadow-sm space-y-3">
+
+
+{/* ===== Filters Section ===== */}
+<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
+
   {/* 🔍 Search bar */}
   <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
     <Search className="h-4 w-4 text-gray-400" />
@@ -204,36 +213,104 @@ export default function AdminVouchersPage() {
     />
   </div>
 
-  {/* ⏱ Filters row */}
+  {/* ⚙️ Filters Row */}
   <div className="flex justify-between gap-2 text-sm">
-    <button className="flex-1 flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2v-7H3v7a2 2 0 002 2z" />
-      </svg>
-      Date
-      <span className="ml-1">▾</span>
-    </button>
 
-    <button
-      onClick={() => setSelectedStatus(selectedStatus === 'all' ? 'active' : 'all')}
-      className="flex-1 flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-      </svg>
-      Status
-      <span className="ml-1">▾</span>
-    </button>
+    {/* 🗓 Date Sort Menu */}
+    <Menu as="div" className="relative flex-1">
+      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+        <Calendar className="h-4 w-4 text-gray-500" />
+        Date
+        <ChevronDown className="h-3 w-3" />
+      </Menu.Button>
+      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
+        <Menu.Item>
+          {({ active }) => (
+            <button
+              onClick={() => {
+                setRows([...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
+              }}
+              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
+            >
+              Newest first
+            </button>
+          )}
+        </Menu.Item>
+        <Menu.Item>
+          {({ active }) => (
+            <button
+              onClick={() => {
+                setRows([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
+              }}
+              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
+            >
+              Oldest first
+            </button>
+          )}
+        </Menu.Item>
+      </Menu.Items>
+    </Menu>
 
-    <button className="flex-1 flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4h18M4 8h16M5 12h14M6 16h12M7 20h10" />
-      </svg>
-      Filter
-      <span className="ml-1">▾</span>
-    </button>
+    {/* 🎯 Status Filter Menu */}
+    <Menu as="div" className="relative flex-1">
+      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+        <ListChecks className="h-4 w-4 text-gray-500" />
+        Status
+        <ChevronDown className="h-3 w-3" />
+      </Menu.Button>
+      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
+        {['all', 'blank', 'active', 'redeemed', 'expired', 'void'].map((status) => (
+          <Menu.Item key={status}>
+            {({ active }) => (
+              <button
+                onClick={() => setSelectedStatus(status)}
+                className={`w-full text-left px-4 py-2 capitalize flex justify-between ${active ? 'bg-gray-50' : ''}`}
+              >
+                {status}
+                {selectedStatus === status && <Check className="h-4 w-4 text-emerald-600" />}
+              </button>
+            )}
+          </Menu.Item>
+        ))}
+      </Menu.Items>
+    </Menu>
+
+    {/* 🧩 Store Filter Menu */}
+    <Menu as="div" className="relative flex-1">
+      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+        <Filter className="h-4 w-4 text-gray-500" />
+        Filter
+        <ChevronDown className="h-3 w-3" />
+      </Menu.Button>
+      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg max-h-48 overflow-y-auto">
+        <Menu.Item>
+          {({ active }) => (
+            <button
+              onClick={() => setSelectedStore('all')}
+              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
+            >
+              All stores
+            </button>
+          )}
+        </Menu.Item>
+        {stores.map((s) => (
+          <Menu.Item key={s.id}>
+            {({ active }) => (
+              <button
+                onClick={() => setSelectedStore(s.id)}
+                className={`w-full text-left px-4 py-2 flex justify-between ${active ? 'bg-gray-50' : ''}`}
+              >
+                {s.name}
+                {selectedStore === s.id && <Check className="h-4 w-4 text-emerald-600" />}
+              </button>
+            )}
+          </Menu.Item>
+        ))}
+      </Menu.Items>
+    </Menu>
   </div>
 </div>
+
 
 
       {/* 📱 Mobile — Cards layout */}
