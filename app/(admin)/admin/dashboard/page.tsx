@@ -132,9 +132,9 @@ return (
     subtitle="All vouchers"
   />
   <DashboardStatCard
-    title="Active"
+    title="Loaded"
     value={voucherStats.active}
-    subtitle="Currently active"
+    subtitle="Currently Loaded"
     highlight
   />
   <DashboardStatCard
@@ -208,7 +208,7 @@ return (
           icon={<TrendingUp className="h-5 w-5 text-indigo-600" />}
         >
           {topStores.length === 0 ? (
-            <p className="text-sm text-gray-400">No active vouchers found.</p>
+            <p className="text-sm text-gray-400">No Loaded vouchers found.</p>
           ) : (
             <ul className="space-y-3">
               {topStores.map((s) => (
@@ -218,7 +218,7 @@ return (
                 >
                   <span className="truncate font-medium text-gray-700">{s.name}</span>
                   <span className="text-xs text-emerald-600 font-semibold">
-                    {s.activeCount} active
+                    {s.activeCount} Loaded
                   </span>
                 </li>
               ))}
