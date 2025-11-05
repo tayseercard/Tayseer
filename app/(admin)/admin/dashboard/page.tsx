@@ -119,31 +119,31 @@ return (
 />
 
 
-    {/* SUMMARY STATS */}
-    <div className="flex-shrink-0 mt-8">
-      {loading ? (
-        <div className="py-16 text-center text-gray-400 text-sm animate-pulse">
-          Loading dashboard data…
-        </div>
-      ) : (
-        <AnimatePresence>
-          <motion.div
-            key="stats"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4"
-          >
-            <StatCard title="Stores" value={storeStats.total} color="emerald" />
-            <StatCard title="Open" value={storeStats.open} color="sky" />
-            <StatCard title="Closed" value={storeStats.closed} color="rose" />
-            <StatCard title="Vouchers" value={voucherStats.total} color="indigo" />
-            <StatCard title="Active" value={voucherStats.active} color="emerald" />
-            <StatCard title="Redeemed" value={voucherStats.redeemed} color="amber" />
-          </motion.div>
-        </AnimatePresence>
-      )}
-    </div>
+   {/* === SUMMARY STATS (2x2 Grid) === */}
+<div className="mt-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <DashboardStatCard
+    title="Stores"
+    value={storeStats.total}
+    subtitle="Total registered"
+  />
+  <DashboardStatCard
+    title="Vouchers"
+    value={voucherStats.total}
+    subtitle="All vouchers"
+  />
+  <DashboardStatCard
+    title="Active"
+    value={voucherStats.active}
+    subtitle="Currently active"
+    highlight
+  />
+  <DashboardStatCard
+    title="Redeemed"
+    value={voucherStats.redeemed}
+    subtitle="Used vouchers"
+  />
+</div>
+
 
     {/* DASHBOARD CARDS */}
     {!loading && (
@@ -235,41 +235,43 @@ return (
 
 /* ---------- Components ---------- */
 
-function StatCard({
+function DashboardStatCard({
   title,
   value,
-  color,
+  subtitle,
+  highlight = false,
 }: {
   title: string
   value: number
-  color?: string
+  subtitle?: string
+  highlight?: boolean
 }) {
-  const colorMap: Record<string, string> = {
-    emerald: 'from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-100',
-    indigo: 'from-indigo-50 to-indigo-100 text-indigo-700 border-indigo-100',
-    rose: 'from-rose-50 to-rose-100 text-rose-700 border-rose-100',
-    amber: 'from-amber-50 to-amber-100 text-amber-700 border-amber-100',
-    sky: 'from-sky-50 to-sky-100 text-sky-700 border-sky-100',
-    gray: 'from-gray-50 to-gray-100 text-gray-700 border-gray-100',
-  }
-
   return (
-    <motion.div
-      whileHover={{ scale: 1.03 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className={`rounded-xl bg-gradient-to-br ${colorMap[color || 'gray']} 
-        border shadow-sm p-3 sm:p-4 flex flex-col justify-center 
-        min-h-[80px] sm:min-h-[100px] hover:shadow-md transition-all`}
+    <div
+      className={`rounded-2xl border border-gray-100 bg-white/80 backdrop-blur-sm shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-all`}
     >
-      <p className="text-[11px] uppercase font-medium tracking-wide text-gray-500 mb-0.5">
-        {title}
-      </p>
-      <p className="text-xl sm:text-2xl font-semibold leading-none">
-        {value.toLocaleString()}
-      </p>
-    </motion.div>
+      {/* Title Row */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">{title}</p>
+      </div>
+
+      {/* Value */}
+      <div className="mt-1">
+        <p
+          className={`text-2xl font-semibold ${
+            highlight ? 'text-emerald-600' : 'text-gray-800'
+          }`}
+        >
+          {value.toLocaleString()}
+        </p>
+        {subtitle && (
+          <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>
+        )}
+      </div>
+    </div>
   )
 }
+
 
 
 function DashboardCard({
