@@ -139,12 +139,7 @@ export default function AdminStoresPage() {
       {/* 🌿 Header */}
       <StoresHeader onAdd={() => setOpen(true)} />
 
-      {/* 📊 Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <Stat title="Total Stores" value={stats.total.toLocaleString()} />
-        <Stat title="Open" value={stats.open.toLocaleString()} />
-        <Stat title="Closed" value={stats.closed.toLocaleString()} />
-      </div>
+    
 
       {/* ===== Filters Section ===== */}
       <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
