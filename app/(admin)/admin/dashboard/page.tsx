@@ -93,7 +93,12 @@ export default function AdminDashboardPage() {
  /* ---------- UI ---------- */
 /* ---------- UI ---------- */
 return (
-<div className="flex flex-col h-full justify-between space-y-4 overflow-hidden">
+<div  className="
+      relative flex flex-col h-full 
+      overflow-y-auto md:overflow-hidden
+      bg-gradient-to-br from-white via-gray-50 to-emerald-50 
+      text-gray-900 px-4 py-6 sm:px-6 lg:px-10
+    ">
     {/* Background Accent */}
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
       <div className="absolute top-[-20%] right-[-10%] w-[40rem] h-[40rem] bg-emerald-100/40 blur-[100px] rounded-full" />
@@ -315,7 +320,7 @@ function DashboardCard({
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pr-1">
+<div className="flex-1 overflow-y-auto md:overflow-visible scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pr-1">
         {children}
       </div>
     </div>
