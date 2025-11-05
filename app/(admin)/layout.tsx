@@ -115,8 +115,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* ===== Main Content ===== */}
-      <main className="flex-1 relative z-10 px-3 sm:px-5 md:px-8 py-6 md:py-8 transition-all duration-300">
-        <div className="h-full min-h-[85vh] rounded-2xl border border-gray-100 bg-white/90 backdrop-blur-sm p-5 sm:p-8 shadow-lg overflow-hidden">
+<main className="flex-1 relative z-10 px-3 sm:px-5 md:px-8 py-6 md:py-8 h-screen overflow-hidden">
+  <div className="h-full w-full rounded-2xl border border-gray-100 bg-white/90 backdrop-blur-sm p-5 sm:p-8 shadow-lg overflow-hidden flex flex-col">
           {children}
         </div>
       </main>
