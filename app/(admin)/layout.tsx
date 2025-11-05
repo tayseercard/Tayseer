@@ -83,6 +83,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </button>
                 )
               }
+                if (!href) return null // 🟢 Skip invalid entries safely
+
 
               return (
                 <Link
