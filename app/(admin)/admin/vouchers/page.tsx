@@ -25,8 +25,8 @@ type Voucher = {
   id: string
   store_id: string
   code: string
-  buyer_name: string | null
-  recipient_name: string | null
+  buyer_name?: string | null
+  recipient_name?: string | null
   status: string
   initial_amount: number
   balance: number
@@ -34,13 +34,13 @@ type Voucher = {
 }
 
 
-
 /* =================== MAIN PAGE =================== */
 export default function AdminVouchersPage() {
   const supabase = createClientComponentClient();
+const [rows, setRows] = useState<any[]>([])
+const [stores, setStores] = useState<any[]>([])
 
-  const [rows, setRows] = useState<any[]>([]);
-  const [stores, setStores] = useState<any[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null);
 
@@ -420,12 +420,8 @@ function AddVoucherModal({
               onChange={(e) => setStoreId(e.target.value)}
               className="w-full border rounded-md p-2 text-sm"
             >
-              <option value="">Select Store</option>
-              {stores.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
+             
+              
             </select>
           </div>
           <div>
