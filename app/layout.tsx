@@ -16,20 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 /* ======= Metadata ======= */
-export const metadata: Metadata = {
-  title: 'tayseer',
-  description: 'Gift. Reward. Redeem. tayseer vouchers made simple.',
-  manifest: '/manifest.webmanifest',
-  themeColor: '#0A0A0C',
-  icons: {
-    icon: '/icons/icon-192.png',
-    apple: '/icons/icon-192.png',
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-  },
-};
+export const metadata = {
+  title: 'Tayseer',
+  description: 'Smart voucher system',
+  manifest: '/manifest.json',
+  themeColor: '#059669',
+}
 
 /* ======= Viewport ======= */
 export const viewport: Viewport = {
@@ -37,6 +29,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: 'cover',
 };
+
 
 /* ======= Root Layout ======= */
 export default function RootLayout({
