@@ -170,7 +170,6 @@ export default function AdminVouchersPage() {
    {/* Header */}
 <VoucherHeader
   onAdd={() => setAdding(true)}
-  onRefresh={loadData}
 />
 
 
