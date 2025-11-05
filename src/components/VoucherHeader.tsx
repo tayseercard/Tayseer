@@ -1,39 +1,37 @@
 'use client'
 
-import Image from 'next/image'
 import { Plus } from 'lucide-react'
 
 export default function VoucherHeader({ onAdd }: { onAdd: () => void }) {
   return (
     <header
       className="
-        flex items-center justify-between 
-        px-5 py-3
+        flex items-center justify-between
+        px-6 py-4
         rounded-2xl
-        bg-white/70 backdrop-blur-md
+        bg-gradient-to-b from-white/90 to-gray-50/70
         border border-gray-100
-        shadow-sm
+        shadow-[0_4px_16px_rgba(0,0,0,0.04)]
+        backdrop-blur-md
       "
     >
-      {/* === Left: Avatar === */}
-      <div className="flex items-center gap-3">
-        <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200">
-          {/* Replace with dynamic user avatar if available */}
-          <Image
-            src="/avatar-placeholder.png"
-            alt="User Avatar"
-            fill
-            className="object-cover"
-          />
-        </div>
-      </div>
+      {/* === Left: Title === */}
+      <h1 className="
+        text-lg sm:text-xl font-semibold tracking-tight
+        text-gray-900
+      ">
+        <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+          Add Voucher
+        </span>
+      </h1>
 
       {/* === Right: Add Button === */}
       <button
         onClick={onAdd}
         className="
           flex items-center justify-center
-          w-10 h-10 rounded-full
+          w-10 h-10 sm:w-11 sm:h-11
+          rounded-full
           bg-emerald-600 text-white
           shadow-md hover:bg-emerald-700
           active:scale-95 transition
