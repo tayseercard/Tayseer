@@ -113,7 +113,7 @@ return (
     name: 'Djamil',
     email: 'admin@tayseer.app',
     role: 'Admin',
-    avatarUrl: '/images/avatar-admin.png',
+  avatarUrl: 'https://djcotaizasnukiebjtjj.supabase.co/storage/v1/object/public/images/admin-avatar.png',
   }}
   
 />
