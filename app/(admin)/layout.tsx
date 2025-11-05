@@ -7,6 +7,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { scanVoucher } from '@/lib/scanVoucher' // 🟩 Import helper
 import { Scanner } from '@yudiel/react-qr-scanner'
+import VoucherScanner from '@/components/VoucherScanner'
+
 
 import {
   LayoutDashboard,
@@ -155,41 +157,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* ===== Scanner Modal ===== */}
       {scannerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="relative bg-white rounded-xl p-4 w-[95%] max-w-md shadow-lg">
-            <button
-              onClick={() => {
-                setScannerOpen(false)
-                setSelectedVoucher(null)
-                setScanError(null)
-              }}
-              className="absolute right-2 top-2 text-gray-500 hover:text-black"
-            >
-              <X className="h-5 w-5" />
-            </button>
+        <VoucherScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />
 
-            <h2 className="text-center font-medium mb-2">Scan a voucher QR</h2>
-
-            <Scanner
-              onScan={(results) => handleScan(results[0]?.rawValue || null)}
-              onError={(err) => console.error(err)}
-              constraints={{ facingMode: 'environment' }}
-            />
-
-            {scanError && (
-              <p className="mt-3 text-center text-sm text-rose-600">{scanError}</p>
-            )}
-
-            {selectedVoucher && (
-              <div className="mt-4 border rounded-md p-3 text-sm bg-gray-50">
-                <p><strong>Code:</strong> {selectedVoucher.code}</p>
-                <p><strong>Buyer:</strong> {selectedVoucher.buyer_name ?? '—'}</p>
-                <p><strong>Status:</strong> {selectedVoucher.status}</p>
-                <p><strong>Balance:</strong> {selectedVoucher.balance} DZD</p>
-              </div>
-            )}
-          </div>
-        </div>
       )}
     </div>
   )
