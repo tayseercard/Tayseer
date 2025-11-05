@@ -100,8 +100,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* ===== Main Content ===== */}
-      <main className="flex-1 px-3 sm:px-5 md:px-8 py-6 md:py-8 flex items-stretch">
-        <div className="w-full rounded-2xl border border-gray-100 bg-white/90 backdrop-blur-sm p-5 sm:p-8 shadow-lg flex flex-col overflow-hidden">
+<main className="flex-1 flex flex-col justify-between h-full overflow-hidden px-4 sm:px-6 md:px-10 py-4">
+  <div className="flex flex-col flex-grow justify-between h-full">
           {children}
         </div>
       </main>

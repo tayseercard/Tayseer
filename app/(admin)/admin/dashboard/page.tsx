@@ -93,7 +93,7 @@ export default function AdminDashboardPage() {
  /* ---------- UI ---------- */
 /* ---------- UI ---------- */
 return (
-  <div className="h-screen md:overflow-hidden overflow-auto bg-gradient-to-br from-gray-50 via-white to-emerald-50 text-gray-900 px-5 py-6 sm:px-8 lg:px-14 flex flex-col md:justify-between relative">
+<div className="flex flex-col h-full justify-between space-y-4 overflow-hidden">
     {/* Background Accent */}
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
       <div className="absolute top-[-20%] right-[-10%] w-[40rem] h-[40rem] bg-emerald-100/40 blur-[100px] rounded-full" />
@@ -155,9 +155,10 @@ return (
 
     {/* DASHBOARD CARDS */}
     {!loading && (
-<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 mt-6 md:mt-0 z-10">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
         {/* Latest Stores */}
-        <DashboardCard
+        <DashboardCard 
+        
           title="Latest Stores"
           icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
           link="/admin/stores"
@@ -291,16 +292,14 @@ function DashboardCard({
   children: React.ReactNode
 }) {
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: 'spring', stiffness: 250, damping: 20 }}
+    <div
       className="rounded-xl border border-gray-200 bg-white/80 backdrop-blur-sm 
-                 shadow-sm hover:shadow-md transition-all p-4 sm:p-5 flex flex-col 
-                 justify-between min-h-[180px]"
+                 shadow-sm hover:shadow-md transition-all p-4 flex flex-col
+                 overflow-hidden min-h-[220px] max-h-[300px]"
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="flex items-center gap-2 font-semibold text-gray-800 text-sm sm:text-base">
+      <div className="flex items-center justify-between mb-2 flex-shrink-0">
+        <h3 className="flex items-center gap-2 font-semibold text-gray-800 text-sm">
           {icon}
           {title}
         </h3>
@@ -308,19 +307,19 @@ function DashboardCard({
         {link && (
           <Link
             href={link}
-            className="flex items-center text-xs text-emerald-600 hover:text-emerald-700 hover:underline transition"
+            className="text-xs text-emerald-600 hover:text-emerald-700 hover:underline"
           >
-            View all
-            <ArrowRight className="h-3 w-3 ml-1" />
+            View all →
           </Link>
         )}
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pr-1">
         {children}
       </div>
-    </motion.div>
+    </div>
   )
 }
+
 
