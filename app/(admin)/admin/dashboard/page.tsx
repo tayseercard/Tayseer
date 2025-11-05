@@ -113,7 +113,7 @@ return (
     name: 'Djamil',
     email: 'admin@tayseer.app',
     role: 'Admin',
-  avatarUrl: 'https://djcotaizasnukiebjtjj.supabase.co/storage/v1/object/public/images/admin-avatar.png',
+  avatarUrl: 'https://djcotaizasnukiebjtjj.supabase.co/storage/v1/object/sign/images/avatar-admin.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9iNmEyMDQ0Ny03YTVhLTRmMGUtYWM4ZC0xMGFlYWFkNmI5MWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvYXZhdGFyLWFkbWluLnBuZyIsImlhdCI6MTc2MjM1MzE5MiwiZXhwIjoxNzkzODg5MTkyfQ.7HT-5SbTGgo6tVz7Qza1gXcPHU1xO27kfOp3eHYj4Rc',
   }}
   
 />
