@@ -110,9 +110,9 @@ return (
   title="Dashboard"
   icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
   user={{
-    name: 'Omar Medjadj',
-    email: 'omar@tayseer.app',
-    role: 'Super Admin',
+    name: 'Djamil',
+    email: 'admin@tayseer.app',
+    role: 'Admin',
     avatarUrl: '/images/avatar-admin.png',
   }}
   
