@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import {
   Store as StoreIcon,
   Gift,
@@ -9,75 +9,86 @@ import {
   TrendingUp,
   RefreshCw,
   Settings,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import CountUp from 'react-countup';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+  ArrowRight,
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import CountUp from 'react-countup'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-export const dynamic = 'force-dynamic'; // ✅ Prevents prerender error (SSR-safe)
+export const dynamic = 'force-dynamic' // ✅ Prevents prerender error (SSR-safe)
 
 export default function AdminDashboardPage() {
-  const supabase = createClientComponentClient();
-  const [loading, setLoading] = useState(true);
-  const [stores, setStores] = useState<any[]>([]);
-  const [vouchers, setVouchers] = useState<any[]>([]);
+  const supabase = createClientComponentClient()
+  const [loading, setLoading] = useState(true)
+
+  const [stores, setStores] = useState<any[]>([])
+  const [vouchers, setVouchers] = useState<any[]>([])
   const [storeStats, setStoreStats] = useState({
     total: 0,
     open: 0,
     closed: 0,
-    online: 0,
-    offline: 0,
-  });
+  })
   const [voucherStats, setVoucherStats] = useState({
     total: 0,
     active: 0,
     redeemed: 0,
-    empty: 0,
-  });
+  })
 
-  // ✅ Safe refresh (works on both SSR + client)
-  function handleRefresh() {
-    if (typeof window !== 'undefined') {
-      window.location.reload();
-    }
-  }
+  const [topStores, setTopStores] = useState<any[]>([])
 
   /* ---------- Load Data ---------- */
   useEffect(() => {
-    (async () => {
-      setLoading(true);
+    ;(async () => {
+      setLoading(true)
 
       const [{ data: storesData }, { data: vouchersData }] = await Promise.all([
-        supabase.from('stores').select('*'),
-        supabase.from('vouchers').select('*'),
-      ]);
+        supabase.from('stores').select('*').order('created_at', { ascending: false }),
+        supabase.from('vouchers').select('*').order('created_at', { ascending: false }),
+      ])
 
       if (storesData) {
-        setStores(storesData);
+        setStores(storesData)
         setStoreStats({
           total: storesData.length,
           open: storesData.filter((s) => s.status === 'open').length,
           closed: storesData.filter((s) => s.status === 'closed').length,
-          online: storesData.filter((s) => s.type === 'online').length,
-          offline: storesData.filter((s) => s.type === 'offline').length,
-        });
+        })
       }
 
       if (vouchersData) {
-        setVouchers(vouchersData);
+        setVouchers(vouchersData)
         setVoucherStats({
           total: vouchersData.length,
           active: vouchersData.filter((v) => v.status === 'active').length,
           redeemed: vouchersData.filter((v) => v.status === 'redeemed').length,
-          empty: vouchersData.filter(
-            (v) => v.status === 'blank' || v.status === 'precreated'
-          ).length,
-        });
+        })
       }
 
-      setLoading(false);
-    })();
-  }, [supabase]);
+      // 📊 Compute top stores by active vouchers
+      if (storesData && vouchersData) {
+        const grouped: Record<string, number> = {}
+        vouchersData
+          .filter((v) => v.status === 'active')
+          .forEach((v) => {
+            if (v.store_id) grouped[v.store_id] = (grouped[v.store_id] || 0) + 1
+          })
+
+        const ranked = storesData
+          .map((s) => ({ ...s, activeCount: grouped[s.id] || 0 }))
+          .sort((a, b) => b.activeCount - a.activeCount)
+          .slice(0, 5)
+
+        setTopStores(ranked)
+      }
+
+      setLoading(false)
+    })()
+  }, [supabase])
+
+  /* ---------- Refresh ---------- */
+  function handleRefresh() {
+    if (typeof window !== 'undefined') window.location.reload()
+  }
 
   /* ---------- UI ---------- */
   return (
@@ -93,7 +104,7 @@ export default function AdminDashboardPage() {
             <StoreIcon className="h-6 w-6 text-emerald-600" />
             Dashboard
           </h1>
-          <p className="text-gray-500 text-sm">Overview of stores and vouchers</p>
+          <p className="text-gray-500 text-sm">Business overview and activity insights</p>
         </div>
         <button
           onClick={handleRefresh}
@@ -103,44 +114,7 @@ export default function AdminDashboardPage() {
         </button>
       </motion.header>
 
-      {/* QUICK ACTIONS */}
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="space-y-4"
-      >
-        <SectionTitle
-          icon={<QrCode className="h-5 w-5 text-purple-600" />}
-          title="Quick Actions"
-        />
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <LinkCard
-            href="/admin/stores"
-            icon={<StoreIcon className="h-6 w-6 text-emerald-600" />}
-            title="Manage Stores"
-            desc="Add, edit, or view your stores."
-            gradient="from-emerald-50 to-emerald-100"
-          />
-          <LinkCard
-            href="/admin/vouchers"
-            icon={<Gift className="h-6 w-6 text-pink-500" />}
-            title="Manage Vouchers"
-            desc="Activate or redeem vouchers."
-            gradient="from-pink-50 to-pink-100"
-          />
-         
-          <LinkCard
-            href="/admin/settings"
-            icon={<Settings className="h-6 w-6 text-gray-600" />}
-            title="Settings"
-            desc="Manage account & configuration."
-            gradient="from-gray-50 to-gray-100"
-          />
-        </div>
-      </motion.section>
-
-      {/* DASHBOARD STATS */}
+      {/* SUMMARY STATS */}
       {loading ? (
         <div className="py-20 text-center text-gray-400 text-sm animate-pulse">
           Loading dashboard data…
@@ -152,105 +126,165 @@ export default function AdminDashboardPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="space-y-10"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"
           >
-            {/* Overview SECTION */}
-            <SectionTitle
-              icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
-              title="Overview"
-            />
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <StatCard title="Total Stores" value={storeStats.total} color="emerald" />
-             <StatCard title="Total Vouchers" value={voucherStats.total} color="indigo" />
-             <StatCard title="Active" value={voucherStats.active} color="emerald" />
-              <StatCard title="Redeemed" value={voucherStats.redeemed} color="rose" />
-              
-             
-
-
-            </div>
+            <StatCard title="Stores" value={storeStats.total} color="emerald" />
+            <StatCard title="Open" value={storeStats.open} color="sky" />
+            <StatCard title="Closed" value={storeStats.closed} color="rose" />
+            <StatCard title="Vouchers" value={voucherStats.total} color="indigo" />
+            <StatCard title="Active" value={voucherStats.active} color="emerald" />
+            <StatCard title="Redeemed" value={voucherStats.redeemed} color="amber" />
           </motion.div>
         </AnimatePresence>
       )}
+
+      {/* DASHBOARD CARDS */}
+      {!loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {/* Latest Stores */}
+          <DashboardCard
+            title="🧱 Latest Stores"
+            icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
+            link="/admin/stores"
+          >
+            {stores.length === 0 ? (
+              <p className="text-sm text-gray-400">No stores yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {stores.slice(0, 5).map((s) => (
+                  <li
+                    key={s.id}
+                    className="flex items-center justify-between border-b border-gray-100 py-1.5 text-sm"
+                  >
+                    <span className="truncate">{s.name}</span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(s.created_at).toLocaleDateString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </DashboardCard>
+
+          {/* Latest Vouchers */}
+          <DashboardCard
+            title="🎁 Latest Vouchers"
+            icon={<Gift className="h-5 w-5 text-pink-500" />}
+            link="/admin/vouchers"
+          >
+            {vouchers.length === 0 ? (
+              <p className="text-sm text-gray-400">No vouchers yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {vouchers.slice(0, 5).map((v) => (
+                  <li
+                    key={v.id}
+                    className="flex items-center justify-between border-b border-gray-100 py-1.5 text-sm"
+                  >
+                    <span className="truncate">
+                      {v.code || '—'}{' '}
+                      <span className="text-gray-400 text-xs">({v.status})</span>
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(v.created_at).toLocaleDateString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </DashboardCard>
+
+          {/* Top Stores by Active Vouchers */}
+          <DashboardCard
+            title="🏆 Top Stores by Active Vouchers"
+            icon={<TrendingUp className="h-5 w-5 text-indigo-600" />}
+          >
+            {topStores.length === 0 ? (
+              <p className="text-sm text-gray-400">No active vouchers found.</p>
+            ) : (
+              <ul className="space-y-2">
+                {topStores.map((s) => (
+                  <li
+                    key={s.id}
+                    className="flex items-center justify-between border-b border-gray-100 py-1.5 text-sm"
+                  >
+                    <span className="truncate">{s.name}</span>
+                    <span className="text-xs text-emerald-600 font-medium">
+                      {s.activeCount} active
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </DashboardCard>
+        </div>
+      )}
     </div>
-  );
+  )
 }
 
-/* ---------- Reusable Components ---------- */
-
-function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
-  return (
-    <motion.h2
-      initial={{ opacity: 0, y: 5 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="text-lg font-semibold mb-3 flex items-center gap-2"
-    >
-      {icon}
-      {title}
-    </motion.h2>
-  );
-}
+/* ---------- Components ---------- */
 
 function StatCard({
   title,
   value,
-  suffix,
   color,
 }: {
-  title: string;
-  value: number;
-  suffix?: string;
-  color?: string;
+  title: string
+  value: number
+  color?: string
 }) {
   const gradients: any = {
     emerald: 'from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200',
     indigo: 'from-indigo-50 to-indigo-100 text-indigo-700 border-indigo-200',
     rose: 'from-rose-50 to-rose-100 text-rose-700 border-rose-200',
     amber: 'from-amber-50 to-amber-100 text-amber-700 border-amber-200',
-    purple: 'from-purple-50 to-purple-100 text-purple-700 border-purple-200',
-    cyan: 'from-cyan-50 to-cyan-100 text-cyan-700 border-cyan-200',
-    gray: 'from-gray-50 to-gray-100 text-gray-700 border-gray-200',
     sky: 'from-sky-50 to-sky-100 text-sky-700 border-sky-200',
-  };
-
+  }
   return (
     <motion.div
       whileHover={{ scale: 1.03 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className={`rounded-xl bg-gradient-to-br ${gradients[color || 'gray']} border shadow-sm p-4 flex flex-col items-start justify-center`}
+      className={`rounded-xl bg-gradient-to-br ${
+        gradients[color || 'gray']
+      } border shadow-sm p-4 flex flex-col items-start justify-center`}
     >
       <p className="text-[11px] uppercase font-medium text-gray-500">{title}</p>
       <p className="text-2xl font-semibold mt-1">
         <CountUp end={value} duration={1.2} separator="," />
-        {suffix && <span className="text-sm ml-0.5">{suffix}</span>}
       </p>
     </motion.div>
-  );
+  )
 }
 
-function LinkCard({
-  href,
-  icon,
+function DashboardCard({
   title,
-  desc,
-  gradient,
+  icon,
+  link,
+  children,
 }: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  gradient: string;
+  title: string
+  icon: React.ReactNode
+  link?: string
+  children: React.ReactNode
 }) {
   return (
-    <Link
-      href={href}
-      className={`flex flex-col gap-2 rounded-xl border p-4 bg-gradient-to-br ${gradient} hover:shadow-lg hover:-translate-y-1 transition`}
-    >
-      <div className="flex items-center gap-2">
-        {icon}
-        <h3 className="font-medium text-sm">{title}</h3>
+    <div className="rounded-2xl border border-gray-100 bg-white/90 backdrop-blur-sm p-5 shadow-sm hover:shadow-md transition">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="flex items-center gap-2 font-semibold text-gray-800">
+          {icon}
+          {title}
+        </h3>
+        {link && (
+          <Link
+            href={link}
+            className="flex items-center text-xs text-emerald-600 hover:underline"
+          >
+            View all <ArrowRight className="h-3 w-3 ml-1" />
+          </Link>
+        )}
       </div>
-      <p className="text-xs text-gray-600 leading-snug">{desc}</p>
-    </Link>
-  );
+      {children}
+    </div>
+  )
 }
