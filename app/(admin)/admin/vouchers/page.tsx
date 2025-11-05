@@ -170,12 +170,8 @@ export default function AdminVouchersPage() {
    {/* Header */}
 <VoucherHeader
   onAdd={() => setAdding(true)}
-  onScan={() => setScanning(true)}
   onRefresh={loadData}
 />
-
-    
-
 
 
 {/* ===== Filters Section ===== */}
