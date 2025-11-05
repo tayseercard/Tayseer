@@ -92,7 +92,7 @@ export default function AdminDashboardPage() {
 
   /* ---------- UI ---------- */
   return (
-<div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-8 sm:px-6 lg:px-10 flex flex-col justify-between">
+<div className="h-screen w-screen overflow-hidden bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-8 sm:px-6 lg:px-10 flex flex-col justify-center items-center">
       {/* HEADER */}
       <motion.header
         initial={{ opacity: 0, y: -10 }}
