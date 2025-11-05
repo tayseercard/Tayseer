@@ -106,31 +106,15 @@ return (
     </div>
 
     {/* HEADER */}
-    <motion.header
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 z-10"
-    >
-      <div>
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight flex items-center gap-3">
-          <StoreIcon className="h-7 w-7 text-emerald-600" />
-          <span className="bg-gradient-to-r from-emerald-600 to-sky-600 bg-clip-text text-transparent">
-            Dashboard
-          </span>
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Monitor store performance and voucher activity in real-time
-        </p>
-      </div>
-
-      <button
-        onClick={handleRefresh}
-        className="flex items-center gap-2 text-sm font-medium rounded-xl border border-gray-200 bg-white/80 backdrop-blur-sm px-4 py-2 shadow-sm hover:shadow-md hover:bg-gray-50 transition-all"
-      >
-        <RefreshCw className="h-4 w-4 text-emerald-600" /> Refresh
-      </button>
-    </motion.header>
+    <DashboardHeader
+        title="Dashboard"
+        subtitle="Monitor store and voucher performance"
+        icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
+        actions={[
+          { label: 'Settings', icon: <Settings className="h-4 w-4" />, onClick: () => alert('Settings...') },
+          { label: 'Refresh', icon: <RefreshCw className="h-4 w-4" />, onClick: handleRefresh },
+        ]}
+      />
 
     {/* SUMMARY STATS */}
     <div className="flex-shrink-0 mt-8">
