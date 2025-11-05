@@ -160,7 +160,7 @@ return (
 
     {/* DASHBOARD CARDS */}
     {!loading && (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-grow">
+  <div className="mt-8 sm:mt-10 lg:mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow">
         {/* Latest Stores */}
         <DashboardCard 
         
