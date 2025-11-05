@@ -1,20 +1,39 @@
-'use client';
+'use client'
 
-import { useEffect, useMemo, useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { v4 as uuidv4 } from 'uuid';
-import { Scanner } from '@yudiel/react-qr-scanner';
-import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode';
+import { useEffect, useMemo, useState } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { v4 as uuidv4 } from 'uuid'
+import { Scanner } from '@yudiel/react-qr-scanner'
+import VoucherModal from '@/components/VoucherModal'
+import { Stat } from '@/components/ui/stat'
 import {
   Gift,
   QrCode,
   Plus,
-  Menu,
   RefreshCw,
   Search,
   X,
-} from 'lucide-react';
-import { Stat } from '@/components/ui/stat';
+} from 'lucide-react'
+
+/* ---------- Types ---------- */
+type Store = {
+  id: string
+  name: string
+}
+
+type Voucher = {
+  id: string
+  store_id: string
+  code: string
+  buyer_name: string | null
+  recipient_name: string | null
+  status: string
+  initial_amount: number
+  balance: number
+  created_at: string
+}
+
+
 
 /* =================== MAIN PAGE =================== */
 export default function AdminVouchersPage() {
@@ -32,11 +51,24 @@ export default function AdminVouchersPage() {
 
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
-  const [showFabActions, setShowFabActions] = useState(false);
 
   const [q, setQ] = useState('');
   const [selectedStore, setSelectedStore] = useState<'all' | string>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all');
+
+  /* ---------- Pagination ---------- */
+  const ITEMS_PER_PAGE = 10;
+  const [page, setPage] = useState(1);
+
+  const totalPages = useMemo(
+    () => Math.ceil(rows.length / ITEMS_PER_PAGE),
+    [rows]
+  );
+  type Store = {
+  id: string
+  name: string
+}
+
 
   /* -------- Load data -------- */
   async function loadData() {
@@ -70,6 +102,13 @@ export default function AdminVouchersPage() {
     return data;
   }, [rows, q, selectedStore, selectedStatus]);
 
+  /* -------- Paginated data -------- */
+  const paginated = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, page]);
+
+  /* -------- Stats -------- */
   const stats = useMemo(() => {
     const total = rows.length;
     const active = rows.filter((v) => v.status === 'active').length;
@@ -131,19 +170,33 @@ export default function AdminVouchersPage() {
 
   /* -------- UI -------- */
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 px-4 py-6 space-y-8">
+    <div className="min-h-screen bg-gray-50 text-gray-900 px-4 py-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div className="flex items-center gap-2">
           <Gift className="h-6 w-6 text-emerald-600" />
           <h1 className="text-2xl font-semibold">Vouchers</h1>
         </div>
-        <button
-          onClick={loadData}
-          className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-gray-100"
-        >
-          <RefreshCw className="h-4 w-4" /> Refresh
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-2 rounded-md bg-blue-600 text-white px-3 py-2 text-sm hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" /> Add Vouchers
+          </button>
+          <button
+            onClick={() => setScanning(true)}
+            className="flex items-center gap-2 rounded-md bg-emerald-600 text-white px-3 py-2 text-sm hover:bg-emerald-700"
+          >
+            <QrCode className="h-4 w-4" /> Scan QR
+          </button>
+          <button
+            onClick={loadData}
+            className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-gray-100"
+          >
+            <RefreshCw className="h-4 w-4" /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -192,14 +245,17 @@ export default function AdminVouchersPage() {
       </div>
 
       {/* Table */}
-      {loading ? (
-        <div className="py-20 text-center text-gray-400">Loading vouchers...</div>
-      ) : filtered.length === 0 ? (
-        <div className="py-20 text-center text-gray-400">No vouchers found.</div>
-      ) : (
-        <div className="overflow-x-auto border rounded-xl bg-white shadow-sm">
+      <div
+        className="overflow-y-auto border rounded-xl bg-white shadow-sm"
+        style={{ maxHeight: 'calc(100vh - 350px)' }}
+      >
+        {loading ? (
+          <div className="py-20 text-center text-gray-400">Loading vouchers...</div>
+        ) : paginated.length === 0 ? (
+          <div className="py-20 text-center text-gray-400">No vouchers found.</div>
+        ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 border-b sticky top-0 z-10">
               <tr>
                 <Th>Buyer</Th>
                 <Th>Recipient</Th>
@@ -212,7 +268,7 @@ export default function AdminVouchersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((v) => (
+              {paginated.map((v) => (
                 <tr
                   key={v.id}
                   onClick={() => setSelectedVoucher(v)}
@@ -230,10 +286,33 @@ export default function AdminVouchersPage() {
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+
+      {/* Pagination Controls */}
+      {!loading && filtered.length > ITEMS_PER_PAGE && (
+        <div className="flex justify-center items-center gap-2 mt-4">
+          <button
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <span className="text-sm text-gray-600">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
       )}
 
-      {/* Voucher Detail Modal */}
+      {/* Voucher Modal */}
       {selectedVoucher && (
         <VoucherModal
           voucher={selectedVoucher}
@@ -243,56 +322,18 @@ export default function AdminVouchersPage() {
         />
       )}
 
-      {/* Add Blank Voucher Modal */}
+      {/* Add Voucher Modal */}
       {adding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-          <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-            <button
-              onClick={() => setAdding(false)}
-              className="absolute right-3 top-3 text-gray-500 hover:text-black"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            <h2 className="text-lg font-semibold mb-3">Create Blank Vouchers</h2>
-
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm text-gray-600">Store</label>
-                <select
-                  value={storeId ?? ''}
-                  onChange={(e) => setStoreId(e.target.value)}
-                  className="w-full border rounded-md p-2 text-sm"
-                >
-                  <option value="">Select Store</option>
-                  {stores.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">How many?</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={count}
-                  onChange={(e) => setCount(parseInt(e.target.value))}
-                  className="w-full border rounded-md p-2 text-sm"
-                />
-              </div>
-
-              <button
-                disabled={addingLoading}
-                onClick={createBlankVouchers}
-                className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-              >
-                {addingLoading ? 'Creating…' : 'Create Vouchers'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <AddVoucherModal
+          stores={stores}
+          storeId={storeId}
+          setStoreId={setStoreId}
+          count={count}
+          setCount={setCount}
+          addingLoading={addingLoading}
+          onClose={() => setAdding(false)}
+          onSubmit={createBlankVouchers}
+        />
       )}
 
       {/* Scanner Modal */}
@@ -317,213 +358,16 @@ export default function AdminVouchersPage() {
           </div>
         </div>
       )}
-
-      {/* Floating FAB */}
-      <div className="fixed bottom-5 right-5 z-50">
-        <button
-          onClick={() => setShowFabActions((p) => !p)}
-          className="rounded-full bg-emerald-600 p-4 text-white shadow-lg hover:bg-emerald-700 transition"
-        >
-          <Menu className="h-6 w-6" />
-        </button>
-
-        {showFabActions && (
-          <div className="absolute bottom-16 right-0 flex flex-col gap-2 animate-fade-in">
-            <button
-              onClick={() => {
-                setShowFabActions(false);
-                setAdding(true);
-              }}
-              className="flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-sm text-white shadow-md hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" /> Add Vouchers
-            </button>
-
-            <button
-              onClick={() => {
-                setShowFabActions(false);
-                setScanError(null);
-                setScanning(true);
-              }}
-              className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm text-white shadow-md hover:bg-emerald-700"
-            >
-              <QrCode className="h-4 w-4" /> Scan QR
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
 
-/* =================== Voucher Modal =================== */
-function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
-  const [url, setUrl] = useState<string | null>(null);
-  const [buyerName, setBuyerName] = useState(voucher.buyer_name ?? '');
-    const [recipientName, setRecipientName] = useState(voucher.recipient_name ?? '');
-  const [buyerPhone, setBuyerPhone] = useState(voucher.buyer_phone ?? '');
-  const [amount, setAmount] = useState('');
-  const [consumeAmount, setConsumeAmount] = useState('');
-
-  useEffect(() => {
-    voucherToDataUrl(voucher.code).then(setUrl);
-  }, [voucher.code]);
-
-  async function handleActivate() {
-    if (!buyerName || !amount) return alert('Enter buyer name and amount');
-    const { error } = await supabase
-      .from('vouchers')
-      .update({
-        buyer_name: buyerName,
-        recipient_name: recipientName.trim() || null,
-        buyer_phone: buyerPhone || null,
-        initial_amount: Number(amount),
-        balance: Number(amount),
-        status: 'active',
-        activated_at: new Date().toISOString(),
-      })
-      .eq('id', voucher.id);
-    if (error) return alert(error.message);
-    alert('✅ Voucher activated');
-    onRefresh();
-    onClose();
-  }
-
-  async function handleConsume(partial = true) {
-    const value = partial ? Number(consumeAmount) : voucher.balance;
-    if (!value || value <= 0 || value > voucher.balance)
-      return alert('Invalid amount');
-    const newBalance = voucher.balance - value;
-    const newStatus = newBalance <= 0 ? 'redeemed' : 'active';
-    const { error } = await supabase
-      .from('vouchers')
-      .update({ balance: newBalance, status: newStatus })
-      .eq('id', voucher.id);
-    if (error) return alert(error.message);
-    alert('✅ Consumption recorded');
-    onRefresh();
-    onClose();
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-        <button
-          onClick={onClose}
-          className="absolute right-3 top-3 text-gray-500 hover:text-black"
-        >
-          <X className="h-5 w-5" />
-        </button>
-        <h2 className="text-lg font-semibold mb-3">Voucher Details</h2>
-
-        <div className="flex flex-col items-center mb-4">
-          {url ? (
-            <img src={url} alt="QR" className="h-32 w-32 rounded border" />
-          ) : (
-            <div className="w-32 h-32 bg-gray-100 rounded" />
-          )}
-          <a
-            href={voucherDeepLink(voucher.code)}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-blue-600 hover:underline mt-1 break-all"
-          >
-            {voucherDeepLink(voucher.code)}
-          </a>
-        </div>
-
-        {voucher.status === 'blank' ? (
-          <div className="space-y-3">
-            <input
-              placeholder="Buyer name"
-              value={buyerName}
-              onChange={(e) => setBuyerName(e.target.value)}
-              className="w-full border rounded-md p-2 text-sm"
-            />
-            <input
-              placeholder="Phone (optional)"
-              value={buyerPhone}
-              onChange={(e) => setBuyerPhone(e.target.value)}
-              className="w-full border rounded-md p-2 text-sm"
-            />
-            <input
-              type="number"
-              placeholder="Amount (DZD)"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-full border rounded-md p-2 text-sm"
-            />
-
-             <div>
-                <label className="text-sm text-gray-600">To Whom (Recipient)</label>
-                <input
-                  value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                  placeholder="e.g. For my son, friend, etc."
-                  className="w-full border rounded-md p-2 text-sm"
-                />
-              </div>
-
-            <button
-              onClick={handleActivate}
-              className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
-            >
-              Activate
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3 text-sm">
-            <Info label="Buyer" value={voucher.buyer_name ?? '—'} />
-            <Info label="Phone" value={voucher.buyer_phone ?? '—'} />
-            <Info label="To" value={voucher.recipient_name ?? '—'} />
-            <Info label="Status" value={voucher.status} />
-            <Info label="Balance" value={fmtDZD(voucher.balance)} />
-            {voucher.status === 'active' && (
-              <>
-                <input
-                  type="number"
-                  placeholder="Consume amount (DZD)"
-                  value={consumeAmount}
-                  onChange={(e) => setConsumeAmount(e.target.value)}
-                  className="w-full border rounded-md p-2 text-sm"
-                />
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <button
-                    onClick={() => handleConsume(true)}
-                    className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
-                  >
-                    Consume Partial
-                  </button>
-                  <button
-                    onClick={() => handleConsume(false)}
-                    className="flex-1 rounded-md bg-rose-600 px-4 py-2 text-sm text-white hover:bg-rose-700"
-                  >
-                    Redeem All
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* =================== Small helpers =================== */
+/* ---------- Small Helpers ---------- */
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>;
 }
 function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-3 py-2">{children}</td>;
-}
-function Info({ label, value }: { label: string; value: any }) {
-  return (
-    <div className="flex justify-between border-b py-1">
-      <span className="text-gray-500">{label}</span>
-      <span className="font-medium text-gray-900">{value}</span>
-    </div>
-  );
 }
 function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
@@ -545,4 +389,64 @@ function fmtDZD(n: number) {
     currency: 'DZD',
     maximumFractionDigits: 0,
   }).format(n);
+}
+
+/* ---------- AddVoucherModal ---------- */
+function AddVoucherModal({
+  stores,
+  storeId,
+  setStoreId,
+  count,
+  setCount,
+  addingLoading,
+  onClose,
+  onSubmit,
+}: any) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
+      <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+        <button
+          onClick={onClose}
+          className="absolute right-3 top-3 text-gray-500 hover:text-black"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <h2 className="text-lg font-semibold mb-3">Create Blank Vouchers</h2>
+        <div className="space-y-3">
+          <div>
+            <label className="text-sm text-gray-600">Store</label>
+            <select
+              value={storeId ?? ''}
+              onChange={(e) => setStoreId(e.target.value)}
+              className="w-full border rounded-md p-2 text-sm"
+            >
+              <option value="">Select Store</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm text-gray-600">How many?</label>
+            <input
+              type="number"
+              min={1}
+              value={count}
+              onChange={(e) => setCount(parseInt(e.target.value))}
+              className="w-full border rounded-md p-2 text-sm"
+            />
+          </div>
+          <button
+            disabled={addingLoading}
+            onClick={onSubmit}
+            className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {addingLoading ? 'Creating…' : 'Create Vouchers'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
