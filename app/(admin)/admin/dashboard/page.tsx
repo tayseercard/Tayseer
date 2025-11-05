@@ -106,15 +106,21 @@ return (
     </div>
 
     {/* HEADER */}
-    <DashboardHeader
-        title="Dashboard"
-        subtitle="Monitor store and voucher performance"
-        icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
-        actions={[
-          { label: 'Settings', icon: <Settings className="h-4 w-4" />, onClick: () => alert('Settings...') },
-          { label: 'Refresh', icon: <RefreshCw className="h-4 w-4" />, onClick: handleRefresh },
-        ]}
-      />
+  <DashboardHeader
+  title="Dashboard"
+  icon={<StoreIcon className="h-5 w-5 text-emerald-600" />}
+  user={{
+    name: 'Omar Medjadj',
+    email: 'omar@tayseer.app',
+    role: 'Super Admin',
+    avatarUrl: '/images/avatar-admin.png',
+  }}
+  actions={[
+    { label: 'Settings', icon: <Settings className="h-4 w-4" />, onClick: () => alert('Settings...') },
+    { label: 'Refresh', icon: <RefreshCw className="h-4 w-4" />, onClick: handleRefresh },
+  ]}
+/>
+
 
     {/* SUMMARY STATS */}
     <div className="flex-shrink-0 mt-8">
