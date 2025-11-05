@@ -8,7 +8,16 @@ export default function StoresHeader({
   onAdd: () => void
 }) {
   return (
-    <header className="relative flex items-center justify-between px-4 py-3 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-100 shadow-sm">
+    <header  className="
+        flex items-center justify-between
+        px-6 py-4
+        rounded-2xl
+        bg-gradient-to-b from-white/90 to-gray-50/70
+        border border-gray-100
+        shadow-[0_4px_16px_rgba(0,0,0,0.04)]
+        backdrop-blur-md
+      "
+    >
      {/* === Left: Title === */}
       <h1 className="
         text-lg sm:text-xl font-semibold tracking-tight
@@ -22,8 +31,15 @@ export default function StoresHeader({
       {/* === Right: Add Button === */}
       <button
         onClick={onAdd}
-        className="flex items-center justify-center h-9 w-9 rounded-full bg-emerald-600 text-white shadow-md hover:bg-emerald-700 active:scale-95 transition-all"
-        title="Add Store"
+        className="
+          flex items-center justify-center
+          w-10 h-10 sm:w-11 sm:h-11
+          rounded-full
+          bg-emerald-600 text-white
+          shadow-md hover:bg-emerald-700
+          active:scale-95 transition
+        "
+        aria-label="Add Store"
       >
         <Plus className="h-5 w-5" />
       </button>
