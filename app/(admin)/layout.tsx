@@ -55,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     crumbs.length > 0 ? crumbs[crumbs.length - 1].replace(/-/g, ' ') : 'Dashboard'
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-emerald-50">
+<div className="h-screen md:overflow-hidden overflow-auto bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-8 sm:px-6 lg:px-10 flex flex-col md:justify-between">
       {/* ===== Desktop Top Navigation ===== */}
       <header className="hidden md:flex flex-col w-full sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-gray-100 shadow-sm">
         <div className="flex items-center justify-between px-6 py-3">
