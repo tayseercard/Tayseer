@@ -164,30 +164,8 @@ export default function AdminDashboardPage() {
              <StatCard title="Total Vouchers" value={voucherStats.total} color="indigo" />
              <StatCard title="Active" value={voucherStats.active} color="emerald" />
               <StatCard title="Redeemed" value={voucherStats.redeemed} color="rose" />
-              <StatCard
-                title="Open Rate"
-                value={Math.round(
-                  (storeStats.open / (storeStats.total || 1)) * 100
-                )}
-                suffix="%"
-                color="purple"
-              />
-              <StatCard
-                title="Redemption Rate"
-                value={Math.round(
-                  (voucherStats.redeemed / (voucherStats.total || 1)) * 100
-                )}
-                suffix="%"
-                color="violet"
-              />
-              <StatCard
-                title="Active %"
-                value={Math.round(
-                  (voucherStats.active / (voucherStats.total || 1)) * 100
-                )}
-                suffix="%"
-                color="cyan"
-              />
+              
+             
 
 
             </div>
