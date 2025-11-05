@@ -5,21 +5,17 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { scanVoucher } from '@/lib/scanVoucher' // 🟩 Import helper
-import { Scanner } from '@yudiel/react-qr-scanner'
+import { scanVoucher } from '@/lib/scanVoucher'
 import VoucherScanner from '@/components/VoucherScanner'
-
 
 import {
   LayoutDashboard,
   Package,
   Settings,
   LogOut,
-  Gift,
   Users,
   QrCode,
   ArrowLeft,
-  X,
   QrCodeIcon,
 } from 'lucide-react'
 
@@ -27,11 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const supabase = createClientComponentClient()
   const router = useRouter()
   const pathname = usePathname()
-  const [email] = useState('admin@tayseer.com')
-
   const [scannerOpen, setScannerOpen] = useState(false)
-  const [scanError, setScanError] = useState<string | null>(null)
-  const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null)
 
   async function handleLogout() {
     try {
@@ -42,20 +34,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }
 
-  /* ---------- Scan Handler ---------- */
-  async function handleScan(result: string | null) {
-    const { data, error } = await scanVoucher(supabase, result)
-    if (error) setScanError(error)
-    else setSelectedVoucher(data)
-  }
-
   /* ---------- Breadcrumb ---------- */
   const crumbs = pathname?.split('/').filter(Boolean).slice(1)
   const breadcrumbTitle =
     crumbs.length > 0 ? crumbs[crumbs.length - 1].replace(/-/g, ' ') : 'Dashboard'
 
   return (
-<div className="h-screen md:overflow-hidden overflow-auto bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-8 sm:px-6 lg:px-10 flex flex-col md:justify-between">
+    <div className="h-screen md:overflow-hidden overflow-auto flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900">
       {/* ===== Desktop Top Navigation ===== */}
       <header className="hidden md:flex flex-col w-full sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-gray-100 shadow-sm">
         <div className="flex items-center justify-between px-6 py-3">
@@ -71,7 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               { href: '/admin/vouchers', label: 'Vouchers', icon: QrCodeIcon },
               { href: '/admin/users', label: 'Users', icon: Users },
               { href: '/admin/settings', label: 'Settings', icon: Settings },
-          ].map(({ href, label, icon: Icon }) => {
+            ].map(({ href, label, icon: Icon }) => {
               const active = pathname?.startsWith(href)
               return (
                 <Link
@@ -115,8 +100,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* ===== Main Content ===== */}
-<main className="flex-1 relative z-10 px-3 sm:px-5 md:px-8 py-6 md:py-8 h-screen overflow-hidden">
-  <div className="h-full w-full rounded-2xl border border-gray-100 bg-white/90 backdrop-blur-sm p-5 sm:p-8 shadow-lg overflow-hidden flex flex-col">
+      <main className="flex-1 px-3 sm:px-5 md:px-8 py-6 md:py-8 flex items-stretch">
+        <div className="w-full rounded-2xl border border-gray-100 bg-white/90 backdrop-blur-sm p-5 sm:p-8 shadow-lg flex flex-col overflow-hidden">
           {children}
         </div>
       </main>
@@ -141,10 +126,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </nav>
 
       {/* ===== Scanner Modal ===== */}
-      {scannerOpen && (
-        <VoucherScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />
-
-      )}
+      {scannerOpen && <VoucherScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />}
     </div>
   )
 }
