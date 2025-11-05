@@ -204,13 +204,7 @@ const [stores, setStores] = useState<any[]>([])
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <Stat title="Total" value={stats.total.toLocaleString()} />
-        <Stat title="Active" value={stats.active.toLocaleString()} />
-        <Stat title="Redeemed" value={stats.redeemed.toLocaleString()} />
-        <Stat title="Blank" value={stats.blank.toLocaleString()} />
-      </div>
+      
 
       {/* Filters */}
 <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm">
