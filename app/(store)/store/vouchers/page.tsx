@@ -1,590 +1,498 @@
-'use client';
+'use client'
 
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { ArrowLeft, Menu, Plus, QrCode, X } from 'lucide-react';
-import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode';
+import VoucherHeader from '@/components/VoucherHeader'
+import { useEffect, useMemo, useState } from 'react'
+import { Menu, Combobox } from '@headlessui/react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { v4 as uuidv4 } from 'uuid'
+import { Scanner } from '@yudiel/react-qr-scanner'
+import VoucherModal from '@/components/VoucherModal'
 
-import { Scanner } from '@yudiel/react-qr-scanner'; // ✅ modern QR scanner
+import {
+  Search,
+  X,
+  Calendar,
+  Check,
+  ChevronDown,
+  Filter,
+  ListChecks,
+} from 'lucide-react'
 
-type StoreRow = {
-  id: string;
-  name: string | null;
-  address: string | null;
-  phone: string | null;
-  email: string | null;
-  wilaya: number | null;
-  created_at: string | null;
-};
+/* ---------- Types ---------- */
+type Store = { id: string; name: string }
+type Voucher = {
+  id: string
+  store_id: string
+  code: string
+  buyer_name?: string | null
+  recipient_name?: string | null
+  status: string
+  initial_amount: number
+  balance: number
+  created_at: string
+}
 
-type VoucherRow = {
-  id: string;
-  code: string;
-  buyer_name: string | null;
-  recipient_name: string | null;
-  buyer_phone?: string | null;
-  initial_amount: number;
-  balance: number;
-  status: 'blank' | 'active' | 'redeemed' | 'expired' | 'void';
-  expires_at: string | null;
-  activated_at?: string | null;
-  created_at: string;
-};
+/* =================== MAIN PAGE =================== */
+export default function AdminVouchersPage() {
+  const supabase = createClientComponentClient()
+  const [rows, setRows] = useState<any[]>([])
+  const [stores, setStores] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [addingLoading, setAddingLoading] = useState(false)
+  const [storeId, setStoreId] = useState<string | null>(null)
+  const [count, setCount] = useState(1)
+  const [q, setQ] = useState('')
+  const [selectedStore, setSelectedStore] = useState<'all' | string>('all')
+  const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
+  
+  /* ---------- Pagination ---------- */
+  const ITEMS_PER_PAGE = 10
+  const [page, setPage] = useState(1)
+  const totalPages = useMemo(() => Math.ceil(rows.length / ITEMS_PER_PAGE), [rows])
 
-export default function StoreDashboard() {
-  const supabase = createClientComponentClient();
-  const router = useRouter();
-
-  const [stores, setStores] = useState<StoreRow[]>([]);
-  const [storeId, setStoreId] = useState<string | null>(null);
-  const [vouchers, setVouchers] = useState<VoucherRow[]>([]);
-  const [loadingStores, setLoadingStores] = useState(true);
-  const [loadingVouchers, setLoadingVouchers] = useState(false);
-  const [q, setQ] = useState('');
-    const [showFabActions, setShowFabActions] = useState(false);
-
-    
-
-
-  // 🔍 Modal & scanning states
-  const [scanning, setScanning] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [selectedVoucher, setSelectedVoucher] = useState<VoucherRow | null>(null);
-  const [loadingVoucherDetail, setLoadingVoucherDetail] = useState(false);
-
-  /* ========== Load stores ========== */
-  useEffect(() => {
-    (async () => {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session) {
-        router.replace('/store/');
-        return;
-      }
-
-      setLoadingStores(true);
-      const { data: own } = await supabase
-        .from('stores')
-        .select('id, name, address, phone, email, wilaya, created_at')
-        .eq('owner_user_id', session.session.user.id);
-
-      const { data: member } = await supabase
-        .from('store_users')
-        .select('store_id, stores!inner(id, name, address, phone, email, wilaya, created_at)')
-        .eq('user_id', session.session.user.id);
-
-      const fromMembership = (member ?? []).map((m: any) => m.stores) as StoreRow[];
-      const unique = new Map<string, StoreRow>();
-      (own ?? []).forEach((s) => unique.set(s.id, s as StoreRow));
-      fromMembership.forEach((s) => unique.set(s.id, s as StoreRow));
-
-      const list = Array.from(unique.values()).sort((a, b) =>
-        (a.name ?? '').localeCompare(b.name ?? '')
-      );
-
-      setStores(list);
-      setLoadingStores(false);
-      if (list.length > 0) setStoreId(list[0].id);
-      else router.replace('/store/');
-    })();
-  }, [router, supabase]);
-
-  /* ========== Load vouchers ========== */
-  async function loadVouchers(id: string) {
-    setLoadingVouchers(true);
-    const { data, error } = await supabase
-      .from('vouchers')
-      .select(
-        'id, code, buyer_name,recipient_name, buyer_phone, initial_amount, balance, status, expires_at, activated_at, created_at'
-      )
-      .eq('store_id', id)
-      .order('created_at', { ascending: false })
-      .limit(300);
-    setLoadingVouchers(false);
-    if (!error && Array.isArray(data)) setVouchers(data as VoucherRow[]);
+  /* -------- Load data -------- */
+  async function loadData() {
+    setLoading(true)
+    const [{ data: vouchers }, { data: storesData }] = await Promise.all([
+      supabase.from('vouchers').select('*').order('created_at', { ascending: false }),
+      supabase.from('stores').select('id, name'),
+    ])
+    setRows(vouchers || [])
+    setStores(storesData || [])
+    setLoading(false)
   }
 
   useEffect(() => {
-    if (storeId) loadVouchers(storeId);
-  }, [storeId]);
+    loadData()
+  }, [])
 
+  /* -------- Filters -------- */
   const filtered = useMemo(() => {
-    const t = q.trim().toLowerCase();
-    if (!t) return vouchers;
-    return vouchers.filter(
-      (v) =>
-        (v.code ?? '').toLowerCase().includes(t) ||
-        (v.buyer_name ?? '').toLowerCase().includes(t)
-    );
-  }, [vouchers, q]);
-
-  /* ========== Handle Scan ========== */
-  async function handleScan(result: string | null) {
-    if (!result) return;
-    setScanning(false);
-    setScanError(null);
-
-    try {
-      const code = result.includes('/') ? result.split('/').pop()! : result.trim();
-      const { data, error } = await supabase
-        .from('vouchers')
-        .select('*')
-        .eq('code', code)
-        .maybeSingle();
-
-      if (error || !data) {
-        setScanError('Voucher not found.');
-        return;
-      }
-      setSelectedVoucher(data);
-    } catch (e: any) {
-      setScanError(e.message || 'Error reading QR.');
+    let data = rows
+    if (selectedStore !== 'all') data = data.filter((v) => v.store_id === selectedStore)
+    if (selectedStatus !== 'all') data = data.filter((v) => v.status === selectedStatus)
+    if (q.trim()) {
+      const t = q.trim().toLowerCase()
+      data = data.filter(
+        (v) =>
+          v.code?.toLowerCase().includes(t) ||
+          v.buyer_name?.toLowerCase().includes(t)
+      )
     }
+    return data
+  }, [rows, q, selectedStore, selectedStatus])
+
+  /* -------- Paginated data -------- */
+  const paginated = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE
+    return filtered.slice(start, start + ITEMS_PER_PAGE)
+  }, [filtered, page])
+
+  /* -------- Stats -------- */
+  const stats = useMemo(() => {
+    const total = rows.length
+    const active = rows.filter((v) => v.status === 'active').length
+    const redeemed = rows.filter((v) => v.status === 'redeemed').length
+    const blank = rows.filter((v) => v.status === 'blank').length
+    return { total, active, redeemed, blank }
+  }, [rows])
+
+  const getStoreName = (id: string) => stores.find((s) => s.id === id)?.name ?? '—'
+
+  /* -------- Create Blank Vouchers -------- */
+  async function createBlankVouchers() {
+    if (!storeId || count < 1) return alert('Select store and count.')
+    setAddingLoading(true)
+
+    const rowsToInsert = Array.from({ length: count }).map(() => ({
+      store_id: storeId,
+      code: 'TSR-' + uuidv4().split('-')[0].toUpperCase(),
+      status: 'blank',
+      initial_amount: 0,
+      balance: 0,
+    }))
+
+    const { error } = await supabase.from('vouchers').insert(rowsToInsert)
+    setAddingLoading(false)
+
+    if (error) return alert('❌ Error: ' + error.message)
+
+    alert(`✅ Created ${count} blank voucher(s).`)
+    setAdding(false)
+    setStoreId(null)
+    setCount(1)
+    loadData()
   }
 
-  /* ========== Manual click open ========== */
-  async function openVoucher(v: VoucherRow) {
-    setLoadingVoucherDetail(true);
-    const { data } = await supabase.from('vouchers').select('*').eq('id', v.id).maybeSingle();
-    setLoadingVoucherDetail(false);
-    if (data) setSelectedVoucher(data);
-  }
-
+  /* -------- UI -------- */
   return (
-  <div className="min-h-dvh bg-gray-50 text-black">
-    <div className="mx-auto max-w-6xl p-4 sm:p-6 space-y-5">
-
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <button
-          onClick={() => router.push('/admin/stores')}
-          className="inline-flex items-center gap-1 text-gray-600 hover:text-black text-sm"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back
-        </button>
-
-{/* 🟢 Floating Action Button (FAB) */}
-<div className="fixed bottom-5 right-5 z-50">
-  <button
-    onClick={() => setShowFabActions((prev) => !prev)}
-    className="rounded-full bg-emerald-600 p-4 text-white shadow-lg hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-300 transition"
-  >
-    <Menu className="h-6 w-6" />
-  </button>
-
-  {showFabActions && (
-    <div className="absolute bottom-16 right-0 flex flex-col gap-2 animate-fade-in">
-     
-
-      <button
-        onClick={() => {
-          setShowFabActions(false);
-          setScanError(null);
-          setScanning(true);
-        }}
-        className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm text-white shadow-md hover:bg-emerald-700 active:scale-[0.98] transition"
-      >
-        <QrCode className="h-4 w-4" /> Scan QR
-      </button>
-    </div>
-  )}
-</div>
-
-
-      </div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
 
       
 
-      {/* Search Bar */}
-      <div className="flex items-center gap-2 sticky top-0 bg-gray-50/90 backdrop-blur-sm py-1 z-30">
-        <input
-          className="flex-1 rounded-lg border px-3 py-2 text-sm"
-          placeholder="Search vouchers by code or buyer…"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
+{/* ===== Filters Section ===== */}
+<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
+
+  {/* 🔍 Search bar */}
+  <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
+    <Search className="h-4 w-4 text-gray-400" />
+    <input
+      value={q}
+      onChange={(e) => setQ(e.target.value)}
+      placeholder="Search"
+      className="flex-1 bg-transparent text-sm focus:outline-none"
+    />
+  </div>
+
+  {/* ⚙️ Filters Row */}
+  <div className="flex justify-between gap-2 text-sm">
+
+    {/* 🗓 Date Sort Menu */}
+    <Menu as="div" className="relative flex-1">
+      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+        <Calendar className="h-4 w-4 text-gray-500" />
+        Date
+        <ChevronDown className="h-3 w-3" />
+      </Menu.Button>
+      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
+        <Menu.Item>
+          {({ active }) => (
+            <button
+              onClick={() => {
+                setRows([...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
+              }}
+              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
+            >
+              Newest first
+            </button>
+          )}
+        </Menu.Item>
+        <Menu.Item>
+          {({ active }) => (
+            <button
+              onClick={() => {
+                setRows([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
+              }}
+              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
+            >
+              Oldest first
+            </button>
+          )}
+        </Menu.Item>
+      </Menu.Items>
+    </Menu>
+
+    {/* 🎯 Status Filter Menu */}
+    <Menu as="div" className="relative flex-1">
+      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+        <ListChecks className="h-4 w-4 text-gray-500" />
+        Status
+        <ChevronDown className="h-3 w-3" />
+      </Menu.Button>
+      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
+        {['all', 'blank', 'active', 'redeemed', 'expired', 'void'].map((status) => (
+          <Menu.Item key={status}>
+            {({ active }) => (
+              <button
+                onClick={() => setSelectedStatus(status)}
+                className={`w-full text-left px-4 py-2 capitalize flex justify-between ${active ? 'bg-gray-50' : ''}`}
+              >
+                {status}
+                {selectedStatus === status && <Check className="h-4 w-4 text-emerald-600" />}
+              </button>
+            )}
+          </Menu.Item>
+        ))}
+      </Menu.Items>
+    </Menu>
+
+    
+  </div>
+</div>
+
+
+      {/* Mobile Cards */}
+      <div className="block md:hidden space-y-3">
+        {loading ? (
+          <div className="py-10 text-center text-gray-400">Loading vouchers...</div>
+        ) : paginated.length === 0 ? (
+          <div className="py-10 text-center text-gray-400">No vouchers found.</div>
+        ) : (
+          paginated.map((v) => (
+            <div
+              key={v.id}
+              onClick={() => setSelectedVoucher(v)}
+              className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="font-semibold text-gray-800">{v.buyer_name ?? '—'}</h3>
+                <StatusPill status={v.status} />
+              </div>
+              <div className="mt-2 text-sm text-gray-600">
+                <p>Recipient: {v.recipient_name ?? '—'}</p>
+                <p>Store: {getStoreName(v.store_id)}</p>
+              </div>
+              <div className="mt-3 flex justify-between items-center text-sm">
+                <div>
+                  <span className="text-gray-500">Code: </span>
+                  <code className="bg-gray-100 rounded px-1 py-0.5 text-xs">{v.code}</code>
+                </div>
+                
+                <span className="font-medium text-emerald-700">{fmtDZD(v.balance)}</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                Created: {new Date(v.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          ))
+        )}
       </div>
 
-      {/* Vouchers Section */}
-      {loadingVouchers ? (
-        <div className="py-8 text-center text-gray-500 text-sm">
-          Loading vouchers…
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="py-8 text-center text-gray-500 text-sm">
-          No vouchers found.
-        </div>
-      ) : (
-        <>
-          {/* 🧱 Table (desktop) */}
-          <div className="hidden md:block overflow-hidden rounded-2xl border bg-white">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <Th>Buyer</Th>
-                  <th>Recipient</th>
-                  <Th>Code</Th>
-                  <Th>Status</Th>
-                  <Th>Initial</Th>
-                  <Th>Balance</Th>
-                  <Th>Created</Th>
+      {/* Desktop Table */}
+      <div className="hidden md:block rounded-xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm overflow-y-auto"
+        style={{ maxHeight: 'calc(100vh - 350px)' }}>
+        {loading ? (
+          <div className="py-20 text-center text-gray-400">Loading vouchers...</div>
+        ) : paginated.length === 0 ? (
+          <div className="py-20 text-center text-gray-400">No vouchers found.</div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b sticky top-0 z-10">
+              <tr>
+                <Th>Buyer</Th>
+                <Th>Recipient</Th>
+                <Th>Store</Th>
+                <Th>Code</Th>
+                <Th>Status</Th>
+                <Th>Balance</Th>
+                <Th>Created</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginated.map((v) => (
+                <tr key={v.id}
+                  onClick={() => setSelectedVoucher(v)}
+                  className="border-t hover:bg-gray-50 cursor-pointer">
+                  <Td>{v.buyer_name ?? '—'}</Td>
+                  <Td>{v.recipient_name ?? '—'}</Td>
+                  <Td>{getStoreName(v.store_id)}</Td>
+                  <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
+                  <Td><StatusPill status={v.status} /></Td>
+                  <Td>{fmtDZD(v.balance)}</Td>
+                  <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
                 </tr>
-              </thead>
-              <tbody>
-                {filtered.map((v) => (
-                  <tr
-                    key={v.id}
-                    onClick={() => openVoucher(v)}
-                    className="border-t cursor-pointer hover:bg-gray-50 transition"
-                  >
-                    <Td>{v.buyer_name ?? '—'}</Td>
-                    <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
-                    <Td><StatusPill status={v.status} /></Td>
-                    <Td>{fmtDZD(v.initial_amount)}</Td>
-                    <Td>{fmtDZD(v.balance)}</Td>
-                    <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
-          {/* 🧩 Cards (mobile) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
-            {filtered.map((v) => (
-              <div
-                key={v.id}
-                onClick={() => openVoucher(v)}
-                className="rounded-xl border bg-white p-4 shadow-sm hover:shadow-md transition cursor-pointer"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-gray-900 text-sm">
-                    {v.buyer_name || '—'}
-                  </h3>
-                  <StatusPill status={v.status} />
-                </div>
-                <div className="text-xs text-gray-600 mb-1">
-                  Code: <span className="font-mono bg-gray-100 px-1 py-0.5 rounded">
-                    {v.code}
-                  </span>
-                </div>
-                <div className="text-xs text-gray-600 mb-1">
-                  Balance: {fmtDZD(v.balance)} / Init: {fmtDZD(v.initial_amount)}
-                </div>
-                <div className="text-xs text-gray-500">
-                  Created: {new Date(v.created_at).toLocaleDateString()}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-  
-
-      {/* ✅ Scanner Modal */}
-      {scanning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="relative bg-white rounded-xl p-4 w-[95%] max-w-md shadow-lg">
-            <button
-              onClick={() => setScanning(false)}
-              className="absolute right-2 top-2 text-gray-500 hover:text-black"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <h2 className="text-center font-medium mb-2">Scan a voucher QR</h2>
-
-            <Scanner
-              onScan={(results) => handleScan(results[0]?.rawValue || null)}
-              onError={(err) => console.error(err)}
-              constraints={{ facingMode: 'environment' }}
-            />
-
-            {scanError && (
-              <p className="mt-3 text-center text-sm text-rose-600">{scanError}</p>
-            )}
-          </div>
+      {/* Pagination */}
+      {!loading && filtered.length > ITEMS_PER_PAGE && (
+        <div className="flex justify-center items-center gap-2 mt-4">
+          <button disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50">
+            Prev
+          </button>
+          <span className="text-sm text-gray-600">
+            Page {page} of {totalPages}
+          </span>
+          <button disabled={page === totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="px-3 py-1 border rounded disabled:opacity-50">
+            Next
+          </button>
         </div>
       )}
 
       {/* Voucher Modal */}
-           {selectedVoucher && (
-             <VoucherModal
-               voucher={selectedVoucher}
-               supabase={supabase}
-               onClose={() => setSelectedVoucher(null)}
-             />
-           )}
-     
-           
+      {selectedVoucher && (
+        <VoucherModal
+          voucher={selectedVoucher}
+          supabase={supabase}
+          onClose={() => setSelectedVoucher(null)}
+          onRefresh={loadData}
+        />
+      )}
+
+      {/* Add Voucher Modal */}
+      {adding && (
+        <AddVoucherModal
+          stores={stores}
+          storeId={storeId}
+          setStoreId={setStoreId}
+          count={count}
+          setCount={setCount}
+          addingLoading={addingLoading}
+          onClose={() => setAdding(false)}
+          onSubmit={createBlankVouchers}
+        />
+      )}
     </div>
-  </div>
-);
+  )
 }
 
 /* ---------- Helpers ---------- */
-
-
-/* --- Voucher Modal --- */
-function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
-  const [url, setUrl] = useState<string | null>(null);
-
-  const [buyerName, setBuyerName] = useState(voucher.buyer_name ?? '');
-  const [recipientName, setRecipientName] = useState(voucher.recipient_name ?? '');
-  const [buyerPhone, setBuyerPhone] = useState(voucher.buyer_phone ?? '');
-  const [amount, setAmount] = useState(
-    voucher.initial_amount && voucher.initial_amount > 0
-      ? voucher.initial_amount
-      : ''
-  );
-
-  const [consumeAmount, setConsumeAmount] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    voucherToDataUrl(voucher.code).then(setUrl);
-  }, [voucher.code]);
-
-  /* 🟢 Activate voucher */
-  async function handleActivate() {
-    if (!buyerName || !amount) {
-      alert('Please enter buyer name and amount.');
-      return;
-    }
-    setSaving(true);
-    const { error } = await supabase
-      .from('vouchers')
-      .update({
-        buyer_name: buyerName.trim(),
-        buyer_phone: buyerPhone.trim() || null,
-        recipient_name: recipientName.trim() || null,
-        initial_amount: Number(amount),
-        balance: Number(amount),
-        status: 'active',
-        activated_at: new Date().toISOString(),
-      })
-      .eq('id', voucher.id);
-    setSaving(false);
-    if (error) return alert('❌ ' + error.message);
-    alert('✅ Voucher activated successfully');
-    onRefresh();
-    onClose();
-  }
-
-  /* 🔵 Consume part or full voucher */
-  async function handleConsume(partial = true) {
-    const consumeValue = partial ? Number(consumeAmount) : voucher.balance;
-    if (!consumeValue || consumeValue <= 0)
-      return alert('Enter a valid amount to consume.');
-    if (consumeValue > voucher.balance)
-      return alert('Amount exceeds current balance.');
-
-    if (!confirm(`Confirm consuming ${fmtDZD(consumeValue)} ?`)) return;
-
-    const newBalance = voucher.balance - consumeValue;
-    const newStatus = newBalance <= 0 ? 'redeemed' : 'active';
-
-    const { error } = await supabase
-      .from('vouchers')
-      .update({
-        balance: newBalance,
-        status: newStatus,
-      })
-      .eq('id', voucher.id);
-
-    if (error) return alert('❌ ' + error.message);
-
-    alert(
-      newStatus === 'redeemed'
-        ? '✅ Voucher fully consumed.'
-        : `✅ ${fmtDZD(consumeValue)} consumed. Remaining ${fmtDZD(newBalance)}.`
-    );
-
-    onRefresh();
-    onClose();
-  }
-
-  return (
-     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-            <button
-              onClick={onClose}
-              className="absolute right-3 top-3 text-gray-500 hover:text-black"
-            >
-              <X className="h-5 w-5" />
-            </button>
-    
-            <h2 className="text-lg font-semibold mb-3">Voucher Details</h2>
-    
-            {/* QR */}
-            <div className="flex flex-col items-center mb-4">
-              {url ? (
-                <img src={url} alt="QR" className="h-32 w-32 rounded border" />
-              ) : (
-                <div className="w-32 h-32 bg-gray-100 rounded" />
-              )}
-              <a
-                href={voucherDeepLink(voucher.code)}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-blue-600 hover:underline mt-1 break-all"
-              >
-                {voucherDeepLink(voucher.code)}
-              </a>
-            </div>
-    
-            {/* Blank → Activation form */}
-            {voucher.status === 'blank' ? (
-              <>
-                <div className="space-y-3 mb-4">
-                  <div>
-                    <label className="text-sm text-gray-600">Buyer Name</label>
-                    <input
-                      value={buyerName}
-                      onChange={(e) => setBuyerName(e.target.value)}
-                      className="w-full border rounded-md p-2 text-sm"
-                    />
-                  </div>
-    
-                  <div>
-                    <label className="text-sm text-gray-600">Buyer Phone</label>
-                    <input
-                      value={buyerPhone}
-                      onChange={(e) => setBuyerPhone(e.target.value)}
-                      className="w-full border rounded-md p-2 text-sm"
-                    />
-                  </div>
-    
-                  <div>
-                    <label className="text-sm text-gray-600">Amount (DZD)</label>
-                    <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full border rounded-md p-2 text-sm"
-                      min={1}
-                    />
-                  </div>
-                </div>
-    
-                <button
-                  onClick={handleActivate}
-                  disabled={saving}
-                  className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-                >
-                  {saving ? 'Saving…' : 'Activate Voucher'}
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="space-y-2 text-sm mb-4">
-                  <Info label="Buyer" value={voucher.buyer_name ?? '—'} />
-                  <Info label="Phone" value={voucher.buyer_phone ?? '—'} />
-                  <Info label="Status" value={voucher.status} />
-                  <Info label="Balance" value={fmtDZD(voucher.balance)} />
-                  <Info label="Initial" value={fmtDZD(voucher.initial_amount)} />
-                  <Info label="Activated" value={voucher.activated_at ?? '—'} />
-                </div>
-    
-                {/* Active → Consumption controls */}
-                {voucher.status === 'active' && (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm text-gray-600">
-                        Consume Amount (DZD)
-                      </label>
-                      <input
-                        type="number"
-                        value={consumeAmount}
-                        onChange={(e) => setConsumeAmount(e.target.value)}
-                        placeholder="e.g. 1000"
-                        className="w-full border rounded-md p-2 text-sm"
-                      />
-                    </div>
-    
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <button
-                        onClick={() => handleConsume(true)}
-                        className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                      >
-                        Consume Partial
-                      </button>
-                      <button
-                        onClick={() => handleConsume(false)}
-                        className="flex-1 rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
-                      >
-                        Consume All
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-    
-            <button
-              onClick={onClose}
-              className="w-full mt-4 rounded-md border px-4 py-2 text-sm hover:bg-gray-50"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-  );
-}
-
-function VoucherQr({ code }: { code: string }) {
-  const [url, setUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      const u = await voucherToDataUrl(code);
-      if (active) setUrl(u);
-    })();
-    return () => {
-      active = false;
-    };
-  }, [code]);
-
-  if (!url) return <div className="w-32 h-32 bg-gray-100 rounded" />;
-  return <img src={url} alt="Voucher QR" className="h-32 w-32 rounded border" />;
-}
-
-function Info({ label, value }: { label: string; value: any }) {
-  return (
-    <div className="flex justify-between border-b py-1">
-      <span className="text-gray-500">{label}</span>
-      <span className="font-medium text-gray-900">{value}</span>
-    </div>
-  );
-}
 function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>
-  );
+  return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>
 }
-function Td({ children, colSpan, className = '' }: { children: React.ReactNode; colSpan?: number; className?: string }) {
-  return <td colSpan={colSpan} className={`px-3 py-2 ${className}`}>{children}</td>;
+function Td({ children }: { children: React.ReactNode }) {
+  return <td className="px-3 py-2">{children}</td>
 }
-function StatusPill({ status }: { status: VoucherRow['status'] }) {
+function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
     active: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
     redeemed: 'bg-blue-50 text-blue-700 ring-blue-200',
     expired: 'bg-amber-50 text-amber-700 ring-amber-200',
     void: 'bg-rose-50 text-rose-700 ring-rose-200',
     blank: 'bg-gray-50 text-gray-700 ring-gray-200',
-  };
+  }
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 ${map[status] ?? map.blank}`}>
       {status}
     </span>
-  );
+  )
 }
 function fmtDZD(n: number) {
-  try {
-    return new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD', maximumFractionDigits: 0 }).format(n);
-  } catch {
-    return `${n} DZD`;
-  }
+  return new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD', maximumFractionDigits: 0 }).format(n)
 }
+
+/* ---------- AddVoucherModal (with Combobox) ---------- */
+/* ---------- AddVoucherModal (Tayseer UI) ---------- */
+function AddVoucherModal({
+  stores,
+  storeId,
+  setStoreId,
+  count,
+  setCount,
+  addingLoading,
+  onClose,
+  onSubmit,
+}: any) {
+  const [query, setQuery] = useState('')
+  const filtered =
+    query === ''
+      ? stores
+      : stores.filter((s: any) => s.name.toLowerCase().includes(query.toLowerCase()))
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 overflow-auto">
+      <div
+        className="
+          relative w-full max-w-sm rounded-2xl 
+          bg-white/95 border border-[var(--c-bank)]/20 
+          shadow-[0_8px_30px_rgba(0,0,0,0.08)] 
+          backdrop-blur-md p-6 space-y-4 
+          animate-in fade-in-0 zoom-in-95 duration-200
+        "
+      >
+        {/* ✖ Close */}
+        <button
+          onClick={onClose}
+          className="
+            absolute right-3 top-3 text-[var(--c-text)]/60 
+            hover:text-[var(--c-text)] transition-colors
+          "
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        {/* 🏷 Title */}
+        <h2 className="text-lg font-semibold text-[var(--c-primary)]">
+          Create Blank Vouchers
+        </h2>
+
+        {/* 🏬 Store selector */}
+        <div className="space-y-2">
+          <Combobox value={storeId} onChange={setStoreId}>
+            <Combobox.Label className="text-sm text-[var(--c-text)]/70">
+              Store
+            </Combobox.Label>
+            <div className="relative mt-1">
+              <Combobox.Input
+                className="
+                  w-full rounded-lg border border-[var(--c-bank)]/30
+                  p-2.5 text-sm bg-white/90 backdrop-blur-sm
+                  focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+                  transition
+                "
+                onChange={(e) => setQuery(e.target.value)}
+                displayValue={(id: string) =>
+                  stores.find((s: any) => s.id === id)?.name ?? ''
+                }
+                placeholder="Search store..."
+              />
+              <Combobox.Options
+                className="
+                  absolute mt-1 max-h-48 w-full overflow-auto 
+                  rounded-lg bg-white border border-[var(--c-bank)]/20 
+                  shadow-lg text-sm z-10
+                "
+              >
+                {filtered.length === 0 ? (
+                  <div className="px-4 py-2 text-[var(--c-text)]/60">
+                    No results
+                  </div>
+                ) : (
+                  filtered.map((s: any) => (
+                    <Combobox.Option
+                      key={s.id}
+                      value={s.id}
+                      className={({ active }) =>
+                        `cursor-pointer px-4 py-2 ${
+                          active
+                            ? 'bg-[var(--c-accent)]/10 text-[var(--c-accent)]'
+                            : 'text-[var(--c-text)]'
+                        }`
+                      }
+                    >
+                      {s.name}
+                    </Combobox.Option>
+                  ))
+                )}
+              </Combobox.Options>
+            </div>
+          </Combobox>
+        </div>
+
+        {/* 🔢 Count */}
+        <div className="space-y-2">
+          <label className="text-sm text-[var(--c-text)]/70">How many?</label>
+          <input
+            type="number"
+            min={1}
+            value={count}
+            onChange={(e) => setCount(parseInt(e.target.value))}
+            className="
+              w-full rounded-lg border border-[var(--c-bank)]/30
+              p-2.5 text-sm bg-white/90 backdrop-blur-sm
+              focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+            "
+          />
+        </div>
+
+        {/* 🟠 Submit */}
+        <button
+          disabled={addingLoading}
+          onClick={onSubmit}
+          className="
+            w-full rounded-lg bg-[var(--c-accent)] text-white font-medium text-sm 
+            px-4 py-2.5 hover:bg-[var(--c-accent)]/90 
+            active:scale-95 transition-all disabled:opacity-50
+          "
+        >
+          {addingLoading ? 'Creating…' : 'Create Vouchers'}
+        </button>
+
+        {/* 💡 Hint */}
+        <p className="text-xs text-center text-[var(--c-text)]/60">
+          Each voucher will be assigned a unique QR code automatically.
+        </p>
+      </div>
+    </div>
+  )
+}
+

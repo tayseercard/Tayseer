@@ -265,7 +265,7 @@ function DashboardStatCard({
   value: number
   subtitle?: string
   highlight?: boolean
-    suffix?: string
+  suffix?: string
 
 }) {
   return (
@@ -274,14 +274,13 @@ function DashboardStatCard({
                  flex flex-col justify-between hover:shadow-md transition-all"
     >
       <p className="text-sm text-[var(--c-text)]/70">{title}</p>
-      <p
-        className={`text-2xl font-semibold ${
-          highlight ? 'text-[var(--c-accent)]' : 'text-[var(--c-bank)]'
-        }`}
-      >
-        {value.toLocaleString()}
-      </p>
+      
+ <p className="text-2xl font-semibold mt-1 text-[var(--c-secondary)]">
+        <CountUp end={value || 0} duration={1.2} separator="," />
+        {suffix && <span className="text-sm ml-0.5 text-[var(--c-primary)]/70">{suffix}</span>}
+            </p>
       {subtitle && <p className="text-xs text-[var(--c-text)]/60 mt-0.5">{subtitle}</p>}
+
     </div>
   )
 }
