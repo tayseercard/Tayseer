@@ -60,7 +60,7 @@ export default function RootLayout({
         {/* 🌐 Optional: PWA updater or toast */}
         {/* <PWAUpdater /> */}
 
-        <div className="min-h-screen flex flex-col">{children}</div>
+        <div className="flex flex-col">{children}</div>
       </body>
     </html>
   );
