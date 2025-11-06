@@ -134,7 +134,7 @@ export default function AdminStoresPage() {
 
   /* ---------- Render ---------- */
 return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8 overflow-y-auto">
 
       {/* 🌿 Header */}
       <StoresHeader onAdd={() => setOpen(true)} />
