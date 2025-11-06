@@ -107,31 +107,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* ===== Main Content ===== */}
       <main
-       className="
-    fixed bottom-0 left-0 right-0 z-70
-    flex justify-around items-end
-    border-t border-[var(--c-accent)]/20
-    bg-[var(--c-primary)] text-[var(--c-text)]
-    hover:text-amber-200
-    backdrop-blur-md
-    py-2
-    shadow-[0_-4px_16px_rgba(0,0,0,0.08)]
-    md:hidden
-  "
+        className="
+          flex-1 flex flex-col justify-between h-full 
+          overflow-y-auto md:overflow-hidden 
+          px-4 sm:px-6 md:px-10 py-4 
+          pb-20 md:pb-0
+        "
       >
         <div className="flex flex-col flex-grow justify-between h-full">{children}</div>
       </main>
 
       {/* ===== Bottom Navigation (Mobile) ===== */}
       <nav className="fixed bottom-0 left-0 right-0 z-70 flex justify-around border-t border-[var(--c-accent)]/20 bg-[var(--c-primary)] text-[var(--c-text)] hover-[var(--c-text)] backdrop-blur-md py-2 shadow-lg md:hidden">
-         {/* Left side buttons — raised */}
-  <div className="flex flex-col items-center -translate-y-1 sm:-translate-y-1.5 hover:text-2xl">
-    <NavLink href="/admin/dashboard" icon={LayoutDashboard} label="Home" />
-  </div>
+        <NavLink href="/admin/dashboard" icon={LayoutDashboard} label="Home" />
+        <NavLink href="/admin/stores" icon={Package} label="Stores" />
 
-  <div className="flex flex-col items-center -translate-y-1 sm:-translate-y-1.5">
-    <NavLink href="/admin/stores" icon={Package} label="Stores" />
-  </div>
         {/* Floating Scan Button */}
         <div className="relative flex items-center justify-center">
           <button
@@ -142,14 +132,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
 
- {/* Right side buttons */}
-  <div className="flex flex-col items-center -translate-y-1 sm:-translate-y-1.5">
-    <NavLink href="/admin/vouchers" icon={Gift} label="Vouchers" />
-  </div>
-
-  <div className="flex flex-col items-center -translate-y-1 sm:-translate-y-1.5">
-    <NavLink href="/admin/settings" icon={Settings} label="Settings" />
-  </div>
+        <NavLink href="/admin/vouchers" icon={Gift} label="Vouchers" />
+        <NavLink href="/admin/settings" icon={Settings} label="Settings" />
       </nav>
 
       {/* ===== Scanner Modal ===== */}
@@ -175,10 +159,10 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`flex flex-col items-center hover:text-accent text-[11px] ${
+      className={`flex flex-col items-center text-[11px] ${
         active
-          ? 'text-[var(--c-accent)] font-medium'
-          : 'text-white/70 hover:text-[var(--c-accent)]'
+          ? 'text-[--c-gring-amber-400] font-medium'
+          : 'text-white/70 hover:text-[var(--c-gring-amber-400)]'
       }`}
     >
       <Icon className="h-5 w-5 mb-0.5" />
