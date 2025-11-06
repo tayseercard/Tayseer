@@ -116,7 +116,7 @@ return (
         email: 'admin@tayseer.app',
         role: 'Admin',
         avatarUrl:
-          'https://djcotaizasnukiebjtjj.supabase.co/storage/v1/object/sign/images/avatar-admin.png?...',
+          'https://djcotaizasnukiebjtjj.supabase.co/storage/v1/object/sign/images/icon-192%20-2.png?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9iNmEyMDQ0Ny03YTVhLTRmMGUtYWM4ZC0xMGFlYWFkNmI5MWQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJpbWFnZXMvaWNvbi0xOTIgLTIucG5nIiwiaWF0IjoxNzYyNDE3MTIxLCJleHAiOjE3OTM5NTMxMjF9.tAhftH22ZO4mTF0Y49virgX4Cx_fyY_UkIVMriIhegc',
       }}
     />
 
