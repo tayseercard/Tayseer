@@ -20,8 +20,6 @@ export default function DashboardHeader({
 }) {
   return (
     <header className="relative flex flex-col gap-5 px-4 py-5 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-100 shadow-sm">
-     
-
       {/* === Bottom Row: User Info === */}
       {user && (
         <div className="flex items-center gap-4 border-t border-gray-100 pt-4">
