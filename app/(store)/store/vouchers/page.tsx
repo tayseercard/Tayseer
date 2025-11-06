@@ -308,15 +308,16 @@ export default function StoreDashboard() {
         </div>
       )}
 
-      {/* ✅ Voucher Detail Modal */}
-      {selectedVoucher && (
-        <VoucherModal
-          voucher={selectedVoucher}
-          supabase={supabase}
-          onClose={() => setSelectedVoucher(null)}
-          onRefresh={loadVouchers}
-        />
-      )}
+      {/* Voucher Modal */}
+           {selectedVoucher && (
+             <VoucherModal
+               voucher={selectedVoucher}
+               supabase={supabase}
+               onClose={() => setSelectedVoucher(null)}
+             />
+           )}
+     
+           
     </div>
   </div>
 );
@@ -405,141 +406,130 @@ function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-      <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-        <button
-          onClick={onClose}
-          className="absolute right-3 top-3 text-gray-500 hover:text-black"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
-        <h2 className="text-lg font-semibold mb-3"></h2>
-
-        {/* QR */}
-        <div className="flex flex-col items-center mb-4">
-          {url ? (
-            <img src={url} alt="QR" className="h-32 w-32 rounded border" />
-          ) : (
-            <div className="w-32 h-32 bg-gray-100 rounded" />
-          )}
-          <a
-            href={voucherDeepLink(voucher.code)}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-blue-600 hover:underline mt-1 break-all"
-          >
-            {voucherDeepLink(voucher.code)}
-          </a>
-        </div>
-
-        {/* Blank → Activation form */}
-        {voucher.status === 'blank' ? (
-          <>
-            <div className="space-y-3 mb-4">
-              <div>
-                <label className="text-sm text-gray-600">Buyer Name</label>
-                <input
-                  value={buyerName}
-                  onChange={(e) => setBuyerName(e.target.value)}
-                  className="w-full border rounded-md p-2 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">Buyer Phone</label>
-                <input
-                  value={buyerPhone}
-                  onChange={(e) => setBuyerPhone(e.target.value)}
-                  className="w-full border rounded-md p-2 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-600">Amount (DZD)</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full border rounded-md p-2 text-sm"
-                  min={1}
-                />
-              </div>
-            </div>
-            <div>
-                <label className="text-sm text-gray-600">To Whom (Recipient)</label>
-                <input
-                  value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                  placeholder="e.g. For my son, friend, etc."
-                  className="w-full border rounded-md p-2 text-sm"
-                />
-              </div>
-
-
+     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
             <button
-              onClick={handleActivate}
-              disabled={saving}
-              className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              onClick={onClose}
+              className="absolute right-3 top-3 text-gray-500 hover:text-black"
             >
-              {saving ? 'Saving…' : 'Activate Voucher'}
+              <X className="h-5 w-5" />
             </button>
-          </>
-        ) : (
-          <>
-            <div className="space-y-2 text-sm mb-4">
-              <Info label="Buyer" value={voucher.buyer_name ?? '—'} />
-              <Info label="Phone" value={voucher.buyer_phone ?? '—'} />
-              <Info label="To" value={voucher.recipient_name ?? '—'} />
-              <Info label="Status" value={voucher.status} />
-              <Info label="Balance" value={fmtDZD(voucher.balance)} />
-              <Info label="Initial" value={fmtDZD(voucher.initial_amount)} />
-              <Info label="Activated" value={voucher.activated_at ?? '—'} />
+    
+            <h2 className="text-lg font-semibold mb-3">Voucher Details</h2>
+    
+            {/* QR */}
+            <div className="flex flex-col items-center mb-4">
+              {url ? (
+                <img src={url} alt="QR" className="h-32 w-32 rounded border" />
+              ) : (
+                <div className="w-32 h-32 bg-gray-100 rounded" />
+              )}
+              <a
+                href={voucherDeepLink(voucher.code)}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-blue-600 hover:underline mt-1 break-all"
+              >
+                {voucherDeepLink(voucher.code)}
+              </a>
             </div>
-
-            {/* Active → Consumption controls */}
-            {voucher.status === 'active' && (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm text-gray-600">
-                    Consume Amount (DZD)
-                  </label>
-                  <input
-                    type="number"
-                    value={consumeAmount}
-                    onChange={(e) => setConsumeAmount(e.target.value)}
-                    placeholder="e.g. 1000"
-                    className="w-full border rounded-md p-2 text-sm"
-                  />
+    
+            {/* Blank → Activation form */}
+            {voucher.status === 'blank' ? (
+              <>
+                <div className="space-y-3 mb-4">
+                  <div>
+                    <label className="text-sm text-gray-600">Buyer Name</label>
+                    <input
+                      value={buyerName}
+                      onChange={(e) => setBuyerName(e.target.value)}
+                      className="w-full border rounded-md p-2 text-sm"
+                    />
+                  </div>
+    
+                  <div>
+                    <label className="text-sm text-gray-600">Buyer Phone</label>
+                    <input
+                      value={buyerPhone}
+                      onChange={(e) => setBuyerPhone(e.target.value)}
+                      className="w-full border rounded-md p-2 text-sm"
+                    />
+                  </div>
+    
+                  <div>
+                    <label className="text-sm text-gray-600">Amount (DZD)</label>
+                    <input
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full border rounded-md p-2 text-sm"
+                      min={1}
+                    />
+                  </div>
                 </div>
-
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <button
-                    onClick={() => handleConsume(true)}
-                    className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                  >
-                    Consume Partial
-                  </button>
-                  <button
-                    onClick={() => handleConsume(false)}
-                    className="flex-1 rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
-                  >
-                    Consume All
-                  </button>
+    
+                <button
+                  onClick={handleActivate}
+                  disabled={saving}
+                  className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {saving ? 'Saving…' : 'Activate Voucher'}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2 text-sm mb-4">
+                  <Info label="Buyer" value={voucher.buyer_name ?? '—'} />
+                  <Info label="Phone" value={voucher.buyer_phone ?? '—'} />
+                  <Info label="Status" value={voucher.status} />
+                  <Info label="Balance" value={fmtDZD(voucher.balance)} />
+                  <Info label="Initial" value={fmtDZD(voucher.initial_amount)} />
+                  <Info label="Activated" value={voucher.activated_at ?? '—'} />
                 </div>
-              </div>
+    
+                {/* Active → Consumption controls */}
+                {voucher.status === 'active' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm text-gray-600">
+                        Consume Amount (DZD)
+                      </label>
+                      <input
+                        type="number"
+                        value={consumeAmount}
+                        onChange={(e) => setConsumeAmount(e.target.value)}
+                        placeholder="e.g. 1000"
+                        className="w-full border rounded-md p-2 text-sm"
+                      />
+                    </div>
+    
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button
+                        onClick={() => handleConsume(true)}
+                        className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                      >
+                        Consume Partial
+                      </button>
+                      <button
+                        onClick={() => handleConsume(false)}
+                        className="flex-1 rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+                      >
+                        Consume All
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
-
-        <button
-          onClick={onClose}
-          className="w-full mt-4 rounded-md border px-4 py-2 text-sm hover:bg-gray-50"
-        >
-          Close
-        </button>
-      </div>
-    </div>
+    
+            <button
+              onClick={onClose}
+              className="w-full mt-4 rounded-md border px-4 py-2 text-sm hover:bg-gray-50"
+            >
+              Close
+            </button>
+          </div>
+        </div>
   );
 }
 

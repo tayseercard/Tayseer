@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode'
 
 type Voucher = {
+  recipient_name: string
   id: string
   code: string
   buyer_name: string | null
@@ -30,16 +31,69 @@ export default function VoucherModal({
 }) {
   const [url, setUrl] = useState<string | null>(null)
   const [buyerName, setBuyerName] = useState(voucher.buyer_name ?? '')
+  const [recipientName, setRecipientName] = useState(voucher.recipient_name ?? '')
   const [buyerPhone, setBuyerPhone] = useState(voucher.buyer_phone ?? '')
   const [amount, setAmount] = useState(
-    voucher.initial_amount > 0 ? voucher.initial_amount : ''
+    voucher.initial_amount && voucher.initial_amount > 0 ? voucher.initial_amount : ''
   )
+  const [autoFilled, setAutoFilled] = useState(false)
   const [consumeAmount, setConsumeAmount] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // used for debounce
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     voucherToDataUrl(voucher.code).then(setUrl)
   }, [voucher.code])
+
+  // 🧠 Live lookup of client info as the user types phone
+  useEffect(() => {
+    if (!buyerPhone || buyerPhone.length < 6) {
+      setAutoFilled(false)
+      return
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const user = sessionData.session?.user
+        if (!user) return
+
+        // get store_id of this user
+        const { data: roleRow } = await supabase
+          .from('me_effective_role')
+          .select('store_id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        const storeId = roleRow?.store_id
+        if (!storeId) return
+
+        // check if client exists
+        const { data: existing } = await supabase
+          .from('clients')
+          .select('full_name')
+          .eq('store_id', storeId)
+          .eq('phone', buyerPhone)
+          .maybeSingle()
+
+        if (existing) {
+          setBuyerName(existing.full_name || buyerName)
+          setAutoFilled(true)
+        } else {
+          setAutoFilled(false)
+        }
+      } catch (err) {
+        console.error('Auto-fill failed:', err)
+      }
+    }, 400) // wait 400 ms after typing stops
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [buyerPhone])
 
   /* 🟢 Activate voucher */
   async function handleActivate() {
@@ -90,172 +144,168 @@ export default function VoucherModal({
   }
 
   return (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-    <div
-      className="
-        relative w-full max-w-md rounded-2xl
-        bg-[var(--bg)]/95 backdrop-blur-md
-        border border-[var(--c-bank)]/25
-        shadow-[0_8px_24px_rgba(0,0,0,0.08)]
-        p-5 animate-[fadeIn_0.25s_ease-out]
-      "
-    >
-      {/* === Close Button === */}
-      <button
-        onClick={onClose}
-        className="absolute right-2 top-2 text-[var(--c-text)]/60 hover:text-[var(--c-text)] transition"
-      >
-        <X className="h-4 w-4" />
-      </button>
-
-      {/* === Header: Title + Status === */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base sm:text-lg font-semibold text-[var(--c-primary)] tracking-tight">
-          Voucher Details
-        </h2>
-        <span
-          className={`
-            text-xs px-2 py-1 rounded-full font-medium capitalize
-            ${
-              voucher.status === 'active'
-                ? 'bg-[var(--c-accent)]/10 text-[var(--c-accent)]'
-                : voucher.status === 'blank'
-                ? 'bg-[var(--c-bank)]/10 text-[var(--c-bank)]'
-                : 'bg-gray-100 text-gray-600'
-            }
-          `}
-        >
-          {voucher.status}
-        </span>
-      </div>
-
-      {/* === Blank → Activation Form === */}
-      {voucher.status === 'blank' ? (
-        <>
-          <div className="space-y-3 mb-4">
-            <Input label="Buyer Name" value={buyerName} onChange={setBuyerName} />
-            <Input label="Buyer Phone" value={buyerPhone} onChange={setBuyerPhone} />
-            <Input
-              label="Amount (DZD)"
-              type="number"
-              value={amount}
-              onChange={setAmount}
-            />
-          </div>
-          <button
-            onClick={handleActivate}
-            disabled={saving}
-            className="
-              w-full rounded-lg bg-[var(--c-accent)]
-              px-4 py-2 text-sm font-medium text-white
-              hover:bg-[var(--c-accent)]/90
-              active:scale-[0.97] transition disabled:opacity-50
-            "
-          >
-            {saving ? 'Saving…' : 'Activate Voucher'}
-          </button>
-        </>
-      ) : (
-        <>
-          {/* === Active → Details + Consumption Controls === */}
-          {voucher.status === 'active' && (
-            <div className="space-y-3 mt-2">
-
-              {/* === Buyer Info + QR === */}
-              <div className="grid grid-cols-2 gap-3 items-center mb-3">
-                {/* Left: Buyer Info */}
-                <div className="space-y-1 text-xs sm:text-sm">
-                  <Info label="Buyer" value={voucher.buyer_name ?? '—'} />
-                  <Info label="Phone" value={voucher.buyer_phone ?? '—'} />
-                  <Info label="To whom" value={voucher.to_whom ?? '—'} />
-                  <Info label="Initial" value={fmtDZD(voucher.initial_amount)} />
-                  <Info label="Balance" value={fmtDZD(voucher.balance)} />
-                </div>
-
-                {/* Right: QR */}
-                <div className="flex flex-col items-center justify-center">
-                  {url ? (
-                    <img
-                      src={url}
-                      alt="QR"
-                      className="h-24 w-24 sm:h-28 sm:w-28 rounded-lg border border-[var(--c-bank)]/30 shadow-sm bg-white/80 p-1.5"
-                    />
-                  ) : (
-                    <div className="w-24 h-24 rounded-lg bg-[var(--section-bg)]/60" />
-                  )}
-                  <a
-                    href={voucherDeepLink(voucher.code)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="
-                      text-[10px] text-[var(--c-bank)] hover:underline mt-1 break-all text-center
-                    "
-                  >
-                    {voucher.activated_at ?? '—'}
-                  </a>
-                </div>
-              </div>
-
-              {/* === Consume Controls === */}
-              <Input
-                label="Consume Amount (DZD)"
-                type="number"
-                value={consumeAmount}
-                onChange={setConsumeAmount}
-                placeholder="e.g. 1000"
-              />
-
-              <div className="grid grid-cols-2 gap-2 mt-1">
-                <button
-                  onClick={() => handleConsume(true)}
-                  className="
-                    rounded-md bg-[var(--c-bank)] text-white
-                    px-3 py-2 text-sm font-medium
-                    hover:bg-[var(--c-bank)]/90 active:scale-[0.97]
-                    transition
-                  "
-                >
-                  Consume Partial
-                </button>
-                <button
-                  onClick={() => handleConsume(false)}
-                  className="
-                    rounded-md bg-[var(--c-accent)] text-white
-                    px-3 py-2 text-sm font-medium
-                    hover:bg-[var(--c-accent)]/90 active:scale-[0.97]
-                    transition
-                  "
-                >
-                  Consume All
-                </button>
-              </div>
-
-              <p className="text-[11px] text-[var(--c-text)]/60 text-center">
-                💡 Enter an amount or consume the full voucher.
-              </p>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* === Close Button === */}
-      <button
-        onClick={onClose}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
+      <div
         className="
-          w-full mt-5 rounded-lg border border-[var(--c-bank)]/30
-          px-4 py-2 text-sm text-[var(--c-text)]/80
-          hover:bg-white/60 active:scale-[0.97] transition
+          relative w-full max-w-md rounded-2xl
+          bg-[var(--bg)]/95 backdrop-blur-md
+          border border-[var(--c-bank)]/25
+          shadow-[0_8px_24px_rgba(0,0,0,0.08)]
+          p-5 animate-[fadeIn_0.25s_ease-out]
         "
       >
-        Close
-      </button>
-    </div>
-  </div>
-)
+        {/* === Close === */}
+        <button
+          onClick={onClose}
+          className="absolute right-2 top-2 text-[var(--c-text)]/60 hover:text-[var(--c-text)] transition"
+        >
+          <X className="h-4 w-4" />
+        </button>
 
+        {/* === Title === */}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base sm:text-lg font-semibold text-[var(--c-primary)] tracking-tight">
+            Voucher Details
+          </h2>
+          <span
+            className={`
+              text-xs px-2 py-1 rounded-full font-medium capitalize
+              ${
+                voucher.status === 'active'
+                  ? 'bg-[var(--c-accent)]/10 text-[var(--c-accent)]'
+                  : voucher.status === 'blank'
+                  ? 'bg-[var(--c-bank)]/10 text-[var(--c-bank)]'
+                  : 'bg-gray-100 text-gray-600'
+              }
+            `}
+          >
+            {voucher.status}
+          </span>
+        </div>
+
+        {/* === Blank → Activation form === */}
+        {voucher.status === 'blank' ? (
+          <>
+            <div className="space-y-3 mb-4">
+              <Input label="Buyer Name" value={buyerName} onChange={setBuyerName} />
+
+              <div className="relative">
+                <label className="text-sm text-gray-600">Buyer Phone</label>
+                <input
+                  value={buyerPhone}
+                  onChange={(e) => setBuyerPhone(e.target.value)}
+                  placeholder="e.g. 0555 22 33 44"
+                  className="w-full border rounded-md p-2 text-sm focus:border-[var(--c-accent)] outline-none"
+                />
+                {autoFilled && (
+                  <p className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[var(--c-accent)] font-medium">
+                    Existing client ✓
+                  </p>
+                )}
+              </div>
+
+              <Input
+                label="Amount (DZD)"
+                type="number"
+                value={amount}
+                onChange={setAmount}
+              />
+            </div>
+            <button
+              onClick={handleActivate}
+              disabled={saving}
+              className="
+                w-full rounded-lg bg-[var(--c-accent)]
+                px-4 py-2 text-sm font-medium text-white
+                hover:bg-[var(--c-accent)]/90
+                active:scale-[0.97] transition disabled:opacity-50
+              "
+            >
+              {saving ? 'Saving…' : 'Activate Voucher'}
+            </button>
+          </>
+        ) : (
+          <>
+            {/* === Active voucher details === */}
+            {voucher.status === 'active' && (
+              <div className="space-y-3 mt-2">
+                <div className="grid grid-cols-2 gap-3 items-center mb-3">
+                  <div className="space-y-1 text-xs sm:text-sm">
+                    <Info label="Buyer" value={voucher.buyer_name ?? '—'} />
+                    <Info label="Phone" value={voucher.buyer_phone ?? '—'} />
+                    <Info label="To whom" value={voucher.to_whom ?? '—'} />
+                    <Info label="Initial" value={fmtDZD(voucher.initial_amount)} />
+                    <Info label="Balance" value={fmtDZD(voucher.balance)} />
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center">
+                    {url ? (
+                      <img
+                        src={url}
+                        alt="QR"
+                        className="h-24 w-24 sm:h-28 sm:w-28 rounded-lg border border-[var(--c-bank)]/30 shadow-sm bg-white/80 p-1.5"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 rounded-lg bg-[var(--section-bg)]/60" />
+                    )}
+                    <a
+                      href={voucherDeepLink(voucher.code)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] text-[var(--c-bank)] hover:underline mt-1 break-all text-center"
+                    >
+                      {voucher.activated_at ?? '—'}
+                    </a>
+                  </div>
+                </div>
+
+                <Input
+                  label="Consume Amount (DZD)"
+                  type="number"
+                  value={consumeAmount}
+                  onChange={setConsumeAmount}
+                  placeholder="e.g. 1000"
+                />
+
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <button
+                    onClick={() => handleConsume(true)}
+                    className="rounded-md bg-[var(--c-bank)] text-white px-3 py-2 text-sm font-medium hover:bg-[var(--c-bank)]/90 active:scale-[0.97] transition"
+                  >
+                    Consume Partial
+                  </button>
+                  <button
+                    onClick={() => handleConsume(false)}
+                    className="rounded-md bg-[var(--c-accent)] text-white px-3 py-2 text-sm font-medium hover:bg-[var(--c-accent)]/90 active:scale-[0.97] transition"
+                  >
+                    Consume All
+                  </button>
+                </div>
+
+                <p className="text-[11px] text-[var(--c-text)]/60 text-center">
+                  💡 Enter an amount or consume the full voucher.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        <button
+          onClick={onClose}
+          className="
+            w-full mt-5 rounded-lg border border-[var(--c-bank)]/30
+            px-4 py-2 text-sm text-[var(--c-text)]/80
+            hover:bg-white/60 active:scale-[0.97] transition
+          "
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  )
 }
 
-/* --- Reusable small components --- */
+/* --- Small Components --- */
 function Info({ label, value }: { label: string; value: any }) {
   return (
     <div className="flex justify-between border-b border-[var(--c-bank)]/10 py-1">
