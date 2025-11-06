@@ -78,14 +78,15 @@ export default function AdminDashboardPage() {
 
   /* ---------- UI ---------- */
   return (
-    <div
-      className="
-        relative flex flex-col h-full 
-        overflow-y-auto md:overflow-hidden
-        bg-[var(--bg)] text-[var(--c-text)]
-        px-4 py-6 sm:px-6 lg:px-10
-      "
-    >
+   <div
+  className="
+    relative flex flex-col 
+    bg-[var(--bg)] text-[var(--c-text)]
+    px-4 py-6 sm:px-6 lg:px-10
+    min-h-[calc(100vh-70px)] md:min-h-screen 
+    overflow-y-auto
+  "
+>
     
 
       {/* === HEADER === */}
