@@ -117,29 +117,48 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex flex-col flex-grow justify-between h-full">{children}</div>
       </main>
 
-      {/* ===== Bottom Navigation (Mobile) ===== */}
-      <nav className="fixed bottom-0 left-0 right-0 z-70 flex justify-around border-t border-[var(--c-accent)]/20 bg-[var(--c-primary)] text-[var(--c-text)] hover-[var(--c-text)] backdrop-blur-md py-2 shadow-lg md:hidden">
-        <NavLink href="/admin/dashboard" icon={LayoutDashboard} label="Home" />
-        <NavLink href="/admin/stores" icon={Package} label="Stores" />
+{/* ===== Bottom Navigation (Mobile) ===== */}
+<nav
+  className="
+    fixed bottom-0 left-0 right-0 z-70
+    flex justify-around items-center
+    border-t border-[var(--c-accent)]/20
+    bg-[var(--c-primary)] text-[var(--c-text)]
+    backdrop-blur-lg
+    py-3 shadow-xl md:hidden
+    h-[70px]
+  "
+>
+  {/* Move links upward slightly for better reach */}
+  <div className="flex flex-1 justify-around items-end pb-4">
+    <NavLink href="/admin/dashboard" icon={LayoutDashboard} label="Home" />
+    <NavLink href="/admin/stores" icon={Package} label="Stores" />
 
-        {/* Floating Scan Button */}
-        <div className="relative flex items-center justify-center">
-          <button
-            onClick={() => setScannerOpen(true)}
-            className="absolute -top-5 bg-[var(--c-accent)] text-white p-3 rounded-full shadow-lg hover:bg-[#c53e00] active:scale-95 transition"
-          >
-            <QrCode className="h-5 w-5" />
-          </button>
-        </div>
+    {/* Floating Scan Button */}
+    <div className="relative flex items-center justify-center -mt-10">
+      <button
+        onClick={() => setScannerOpen(true)}
+        className="
+          bg-[var(--c-accent)] text-white 
+          p-4 rounded-full shadow-lg
+          hover:bg-[var(--c-accent)]/90 active:scale-95
+          transition-all duration-150
+        "
+      >
+        <QrCode className="h-6 w-6" />
+      </button>
+    </div>
 
-        <NavLink href="/admin/vouchers" icon={Gift} label="Vouchers" />
-        <NavLink href="/admin/settings" icon={Settings} label="Settings" />
-      </nav>
+    <NavLink href="/admin/vouchers" icon={Gift} label="Vouchers" />
+    <NavLink href="/admin/settings" icon={Settings} label="Settings" />
+  </div>
+</nav>
 
-      {/* ===== Scanner Modal ===== */}
-      {scannerOpen && (
-        <VoucherScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />
-      )}
+{/* ===== Scanner Modal ===== */}
+{scannerOpen && (
+  <VoucherScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />
+)}
+
     </div>
   )
 }
