@@ -86,22 +86,18 @@ export default function AdminDashboardPage() {
         px-4 py-6 sm:px-6 lg:px-10
       "
     >
-      {/* === Subtle brand background glows === */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] right-[-10%] w-[40rem] h-[40rem] bg-[var(--c-accent)]/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[30rem] h-[30rem] bg-[var(--c-bank)]/5 blur-[120px] rounded-full" />
-      </div>
+    
 
       {/* === HEADER === */}
-      <DashboardHeader
-        user={{
-          name: 'Djamil',
-          email: 'admin@tayseer.app',
-          role: 'Admin',
-          avatarUrl:
-            'https://djcotaizasnukiebjtjj.supabase.co/storage/v1/object/sign/images/avatar-admin.png?...',
-        }}
-      />
+    <DashboardHeader
+  user={{
+    name: 'Djamil',
+    email: 'admin@tayseer.app',
+    role: 'Admin',
+    avatarUrl: '/icon-192-2.png',
+  }}
+/>
+
 
       {/* === SUMMARY STATS === */}
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
