@@ -46,7 +46,7 @@ export default function AdminVouchersPage() {
   const [q, setQ] = useState('')
   const [selectedStore, setSelectedStore] = useState<'all' | string>('all')
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
-
+  
   /* ---------- Pagination ---------- */
   const ITEMS_PER_PAGE = 10
   const [page, setPage] = useState(1)
@@ -108,7 +108,7 @@ export default function AdminVouchersPage() {
 
     const rowsToInsert = Array.from({ length: count }).map(() => ({
       store_id: storeId,
-      code: 'MKD-' + uuidv4().split('-')[0].toUpperCase(),
+      code: 'TSR-' + uuidv4().split('-')[0].toUpperCase(),
       status: 'blank',
       initial_amount: 0,
       balance: 0,
@@ -274,6 +274,7 @@ export default function AdminVouchersPage() {
                   <span className="text-gray-500">Code: </span>
                   <code className="bg-gray-100 rounded px-1 py-0.5 text-xs">{v.code}</code>
                 </div>
+                
                 <span className="font-medium text-emerald-700">{fmtDZD(v.balance)}</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
