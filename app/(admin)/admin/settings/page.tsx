@@ -1,21 +1,47 @@
 'use client'
 
 import { useState } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { LogOut } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import StoresPasswordList from './StoresPasswordList'
 
 export default function SettingsPage({ stores }: { stores: any[] }) {
   const [activeTab, setActiveTab] = useState<'profile' | 'roles' | 'stores'>('stores')
+  const supabase = createClientComponentClient()
+  const router = useRouter()
+
+  async function handleLogout() {
+    const { error } = await supabase.auth.signOut()
+    if (error) alert('❌ Logout failed: ' + error.message)
+    else router.push('/auth/login')
+  }
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 py-6">
       <div className="max-w-5xl mx-auto space-y-6">
 
         {/* === Page Title === */}
-        <header>
-          <h1 className="text-xl font-semibold text-[var(--c-primary)]">Settings</h1>
-          <p className="text-sm text-[var(--c-text)]/70">
-            Manage admin preferences and system access
-          </p>
+        <header className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-[var(--c-primary)]">Settings</h1>
+            <p className="text-sm text-[var(--c-text)]/70">
+              Manage admin preferences and system access
+            </p>
+          </div>
+
+          {/* 🔒 Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="
+              flex items-center gap-2 rounded-lg border border-[var(--c-bank)]/30
+              px-3 py-2 text-sm text-[var(--c-bank)] font-medium
+              hover:bg-[var(--c-bank)] hover:text-white transition-all
+            "
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
         </header>
 
         {/* === Horizontal Tabs === */}
@@ -44,7 +70,7 @@ export default function SettingsPage({ stores }: { stores: any[] }) {
 
         {/* === Active Content === */}
         <div className="bg-white rounded-xl shadow-sm border border-[var(--c-bank)]/10 p-4 sm:p-6">
-          {activeTab === 'profile' && <ProfileSettings />}
+          {activeTab === 'profile' && <ProfileSettings onLogout={handleLogout} />}
           {activeTab === 'roles' && <RolesSettings />}
           {activeTab === 'stores' && <StoresPasswordList stores={stores} />}
         </div>
@@ -54,9 +80,22 @@ export default function SettingsPage({ stores }: { stores: any[] }) {
 }
 
 /* Placeholder subcomponents */
-function ProfileSettings() {
-  return <p className="text-sm text-[var(--c-text)]/70">Profile settings coming soon…</p>
+function ProfileSettings({ onLogout }: { onLogout: () => void }) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+      <p className="text-sm text-[var(--c-text)]/70">Profile settings coming soon…</p>
+      <button
+        onClick={onLogout}
+        className="mt-3 sm:mt-0 flex items-center gap-2 rounded-lg border border-[var(--c-bank)]/30
+          px-3 py-2 text-sm text-[var(--c-bank)] hover:bg-[var(--c-bank)] hover:text-white transition-all"
+      >
+        <LogOut className="w-4 h-4" />
+        Logout
+      </button>
+    </div>
+  )
 }
+
 function RolesSettings() {
   return <p className="text-sm text-[var(--c-text)]/70">Role management section…</p>
 }

@@ -1,24 +1,30 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import StoreHeader from '@/components/store/StoreHeader'
 import {
   Gift,
   Users,
   CreditCard,
   TrendingUp,
-  RefreshCw,
   Settings,
   QrCode,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import CountUp from 'react-countup';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+  ArrowRight,
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import CountUp from 'react-countup'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function StoreDashboardPage() {
-  const supabase = createClientComponentClient();
-
-  const [loading, setLoading] = useState(true);
+  const supabase = createClientComponentClient()
+  const [loading, setLoading] = useState(true)
+  const [store, setStore] = useState<{
+    name: string
+    email: string
+    role: string
+    logoUrl?: string
+  } | null>(null)
   const [voucherStats, setVoucherStats] = useState({
     total: 0,
     active: 0,
@@ -26,45 +32,61 @@ export default function StoreDashboardPage() {
     empty: 0,
     totalValue: 0,
     redeemedValue: 0,
-  });
-
+  })
   const [clientStats, setClientStats] = useState({
     totalClients: 0,
     repeatClients: 0,
-  });
+  })
+ useEffect(() => {
+    ;(async () => {
+      setLoading(true)
 
-  /* ---------- Load Store Data ---------- */
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const user = session?.user
+      if (!user) return
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData.session?.user;
-      if (!user) return;
+      // 🔹 Get the store linked to this user
+      const { data: storeRow } = await supabase
+        .from('stores')
+        .select('name, email, logo_url')
+        .eq('owner_user_id', user.id)
+        .maybeSingle()
 
-      // Fetch store_id for this user
+      setStore({
+        name: storeRow?.name || 'Store',
+        email: storeRow?.email || user.email || 'No email',
+        role: 'Store Owner',
+        logoUrl: storeRow?.logo_url || '/icon-192.png',
+      })
+
+      // 🔹 Fetch store_id
       const { data: roleRow } = await supabase
         .from('me_effective_role')
         .select('store_id')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .maybeSingle()
 
-      const storeId = roleRow?.store_id;
-      if (!storeId) return;
+      const storeId = roleRow?.store_id
+      if (!storeId) {
+        setLoading(false)
+        return
+      }
 
-      // Fetch vouchers belonging to this store
+      // 🔹 Fetch vouchers
       const { data: vouchersData } = await supabase
         .from('vouchers')
         .select('*')
-        .eq('store_id', storeId);
+        .eq('store_id', storeId)
 
-      // Fetch clients (linked to store)
+      // 🔹 Fetch clients
       const { data: clientsData } = await supabase
         .from('clients')
         .select('*')
-        .eq('store_id', storeId);
+        .eq('store_id', storeId)
 
-      // ---------- Compute stats ----------
+      // Calculate stats
       if (vouchersData) {
         setVoucherStats({
           total: vouchersData.length,
@@ -73,53 +95,38 @@ export default function StoreDashboardPage() {
           empty: vouchersData.filter(
             (v) => v.status === 'blank' || v.status === 'precreated'
           ).length,
-          totalValue: vouchersData.reduce((sum, v) => sum + (v.amount || 0), 0),
+          totalValue: vouchersData.reduce(
+            (sum, v) => sum + (v.initial_amount || 0),
+            0
+          ),
           redeemedValue: vouchersData
             .filter((v) => v.status === 'redeemed')
-            .reduce((sum, v) => sum + (v.amount || 0), 0),
-        });
+            .reduce((sum, v) => sum + (v.initial_amount || 0), 0),
+        })
       }
 
       if (clientsData) {
         setClientStats({
           totalClients: clientsData.length,
           repeatClients: clientsData.filter((c) => c.visits > 1).length,
-        });
+        })
       }
 
-      setLoading(false);
-    })();
-  }, [supabase]);
+      setLoading(false)
+    })()
+  }, [supabase])
 
-  /* ---------- UI ---------- */
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-8 sm:px-6 lg:px-10 space-y-8">
-      {/* HEADER */}
-      <motion.header
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-      >
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold flex items-center gap-2">
-            <Gift className="h-6 w-6 text-emerald-600" />
-            Store Dashboard
-          </h1>
-          <p className="text-gray-500 text-sm">
-            Overview of your vouchers and customers
-          </p>
-        </div>
-        <button
-          onClick={() => window.location.reload()}
-          className="flex items-center gap-2 text-sm rounded-md border px-3 py-2 hover:bg-gray-100 transition"
-        >
-          <RefreshCw className="h-4 w-4 text-gray-600" /> Refresh
-        </button>
-      </motion.header>
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 md:px-10 py-8 space-y-8">
+      {/* ===== Header ===== */}
+            <StoreHeader store={store || { name: 'Loading…', email: '', role: '', logoUrl: '' }} />
 
-      {/* CONTENT */}
+      
+
+      {/* ===== Content ===== */}
       {loading ? (
-        <div className="py-20 text-center text-gray-400 text-sm animate-pulse">
+        <div className="py-20 text-center text-[var(--c-text)]/50 text-sm animate-pulse">
           Loading store dashboard…
         </div>
       ) : (
@@ -131,168 +138,152 @@ export default function StoreDashboardPage() {
             transition={{ delay: 0.1 }}
             className="space-y-10"
           >
-            {/* VOUCHER SECTION */}
-            <SectionTitle
-              icon={<Gift className="h-5 w-5 text-emerald-600" />}
-              title="Voucher Overview"
-            />
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <StatCard title="Total Vouchers" value={voucherStats.total} color="emerald" />
-              <StatCard title="Active" value={voucherStats.active} color="sky" />
-              <StatCard title="Redeemed" value={voucherStats.redeemed} color="rose" />
-              <StatCard title="Empty" value={voucherStats.empty} color="gray" />
-              <StatCard
-                title="Redemption Rate"
-                value={Math.round(
-                  (voucherStats.redeemed / (voucherStats.total || 1)) * 100
-                )}
-                suffix="%"
-                color="violet"
-              />
-              <StatCard
-                title="Active %"
-                value={Math.round(
-                  (voucherStats.active / (voucherStats.total || 1)) * 100
-                )}
-                suffix="%"
-                color="cyan"
-              />
-            </div>
+            {/* === Voucher Overview === */}
+           <SectionTitle icon={<Gift />} title="Voucher Overview" href="/store/vouchers" />
 
-            {/* FINANCIAL SECTION */}
-            <SectionTitle
-              icon={<CreditCard className="h-5 w-5 text-indigo-600" />}
-              title="Financial Summary"
-            />
+ <div className="mt-8 grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  
+        <DashboardStatCard title="Total" value={voucherStats.total} subtitle="All vouchers" />
+        <DashboardStatCard
+          title="active"
+          value={voucherStats.active}
+          subtitle="Currently active"
+          highlight
+        />
+        <DashboardStatCard
+          title="Redeemed"
+          value={voucherStats.redeemed}
+          subtitle="Used vouchers"
+        />
+      </div>
+
+
+            {/* === Financial Summary === */}
+            <SectionTitle icon={<CreditCard />} title="Financial Summary" />
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <StatCard
-                title="Total Value Issued"
+              <DashboardStatCard
+                title="Total Value"
                 value={voucherStats.totalValue}
                 suffix=" DA"
-                color="emerald"
               />
-              <StatCard
-                title="Total Redeemed"
+              <DashboardStatCard
+                title="Redeemed Value"
                 value={voucherStats.redeemedValue}
                 suffix=" DA"
-                color="rose"
               />
-              <StatCard
-                title="Redemption Value %"
-                value={Math.round(
-                  (voucherStats.redeemedValue / (voucherStats.totalValue || 1)) * 100
-                )}
-                suffix="%"
-                color="purple"
-              />
+              
             </div>
 
-            {/* CLIENT SECTION */}
-            <SectionTitle
-              icon={<Users className="h-5 w-5 text-sky-600" />}
-              title="Client Overview"
-            />
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <StatCard title="Total Clients" value={clientStats.totalClients} color="sky" />
-              <StatCard
-                title="Repeat Clients"
-                value={clientStats.repeatClients}
-                color="emerald"
-              />
-            </div>
-
-            {/* QUICK ACTIONS */}
-            <SectionTitle
-              icon={<QrCode className="h-5 w-5 text-purple-600" />}
-              title="Quick Actions"
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <LinkCard
-                href="/store/vouchers"
-                icon={<Gift className="h-5 w-5 text-emerald-600" />}
-                title="View Vouchers"
-                desc="Activate, redeem, or manage vouchers."
-                gradient="from-emerald-50 to-emerald-100"
-              />
-              <LinkCard
-                href="/store/clients"
-                icon={<Users className="h-5 w-5 text-sky-500" />}
-                title="View Clients"
-                desc="Manage customer profiles and purchases."
-                gradient="from-sky-50 to-sky-100"
-              />
-              <LinkCard
-                href="/store/reports"
-                icon={<TrendingUp className="h-5 w-5 text-indigo-500" />}
-                title="Reports"
-                desc="See voucher performance and stats."
-                gradient="from-indigo-50 to-indigo-100"
-              />
-              <LinkCard
-                href="/store/settings"
-                icon={<Settings className="h-5 w-5 text-gray-600" />}
-                title="Store Settings"
-                desc="Manage store info and configuration."
-                gradient="from-gray-50 to-gray-100"
-              />
-            </div>
+            {/* === Clients === */}            <SectionTitle icon={<Users />} title="Client Overview" href="/store/clients" />
+<div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+  <DashboardStatCard title="Total Clients" value={clientStats.totalClients} />
+</div>
+          
           </motion.div>
         </AnimatePresence>
       )}
     </div>
-  );
+  )
 }
 
 /* ---------- Reusable Components ---------- */
-
-function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
+function SectionTitle({
+  icon,
+  title,
+  href,
+}: {
+  icon: React.ReactNode
+  title: string
+  href?: string
+}) {
   return (
-    <motion.h2
+    <motion.div
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      className="text-lg font-semibold mb-3 flex items-center gap-2"
+      className="flex items-center justify-between mb-3"
     >
-      {icon}
-      {title}
-    </motion.h2>
-  );
+      <div className="flex items-center gap-2 text-[var(--c-primary)]">
+        <div className="p-1 rounded-md bg-[var(--c-accent)]/15 text-[var(--c-accent)]">
+          {icon}
+        </div>
+        <h2 className="text-lg font-semibold">{title}</h2>
+      </div>
+
+      {href && (
+        <Link
+          href={href}
+          className="
+            flex items-center gap-1 text-sm font-medium
+            text-[var(--c-accent)] hover:text-[var(--c-accent)]/80
+            transition-all group
+          "
+        >
+          <span>See all</span>
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </Link>
+      )}
+    </motion.div>
+  )
 }
 
 function StatCard({
   title,
   value,
   suffix,
-  color,
 }: {
-  title: string;
-  value: number;
-  suffix?: string;
-  color?: string;
+  title: string
+  value: number
+  suffix?: string
 }) {
-  const gradients: any = {
-    emerald: 'from-emerald-50 to-emerald-100 text-emerald-700 border-emerald-200',
-    indigo: 'from-indigo-50 to-indigo-100 text-indigo-700 border-indigo-200',
-    rose: 'from-rose-50 to-rose-100 text-rose-700 border-rose-200',
-    amber: 'from-amber-50 to-amber-100 text-amber-700 border-amber-200',
-    purple: 'from-purple-50 to-purple-100 text-purple-700 border-purple-200',
-    cyan: 'from-cyan-50 to-cyan-100 text-cyan-700 border-cyan-200',
-    gray: 'from-gray-50 to-gray-100 text-gray-700 border-gray-200',
-    sky: 'from-sky-50 to-sky-100 text-sky-700 border-sky-200',
-  };
-
   return (
     <motion.div
       whileHover={{ scale: 1.03 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className={`rounded-xl bg-gradient-to-br ${gradients[color || 'gray']} border shadow-sm p-4 flex flex-col items-start justify-center`}
+      className="
+        rounded-xl border border-[var(--c-bank)]/20
+        bg-[var(--c-primary)]/5 hover:bg-[var(--c-accent)]/10
+        shadow-sm p-4 flex flex-col items-start justify-center transition
+      "
     >
-      <p className="text-[11px] uppercase font-medium text-gray-500">{title}</p>
-      <p className="text-2xl font-semibold mt-1">
+      <p className="text-[11px] uppercase font-medium text-[var(--c-text)]/60">{title}</p>
+      <p className="text-2xl font-semibold mt-1 text-[var(--c-primary)]">
         <CountUp end={value || 0} duration={1.2} separator="," />
-        {suffix && <span className="text-sm ml-0.5">{suffix}</span>}
+        {suffix && <span className="text-sm ml-0.5 text-[var(--c-text)]/70">{suffix}</span>}
       </p>
     </motion.div>
-  );
+  )
+}
+
+function DashboardStatCard({
+  title,
+  value,
+  subtitle,
+  highlight = false,
+  suffix,
+}: {
+  title: string
+  value: number
+  subtitle?: string
+  highlight?: boolean
+    suffix?: string
+
+}) {
+  return (
+    <div
+      className="rounded-2xl border border-[var(--c-secondary)]/10 bg-white shadow-sm p-4 
+                 flex flex-col justify-between hover:shadow-md transition-all"
+    >
+      <p className="text-sm text-[var(--c-text)]/70">{title}</p>
+      <p
+        className={`text-2xl font-semibold ${
+          highlight ? 'text-[var(--c-accent)]' : 'text-[var(--c-bank)]'
+        }`}
+      >
+        {value.toLocaleString()}
+      </p>
+      {subtitle && <p className="text-xs text-[var(--c-text)]/60 mt-0.5">{subtitle}</p>}
+    </div>
+  )
 }
 
 function LinkCard({
@@ -300,21 +291,27 @@ function LinkCard({
   icon,
   title,
   desc,
-  gradient,
 }: {
-  href: string;
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  gradient: string;
+  href: string
+  icon: React.ReactNode
+  title: string
+  desc: string
 }) {
   return (
     <Link
       href={href}
-      className={`flex flex-col gap-2 rounded-xl border p-4 bg-gradient-to-br ${gradient} hover:shadow-lg hover:-translate-y-1 transition`}
+      className="
+        flex flex-col gap-2 rounded-xl border border-[var(--c-bank)]/20
+        p-4 bg-[var(--c-primary)]/5 hover:bg-[var(--c-accent)]/10
+        text-[var(--c-text)] hover:shadow-md hover:-translate-y-0.5
+        transition-all duration-200
+      "
     >
-      <div className="flex items-center gap-2">{icon}<h3 className="font-medium text-sm">{title}</h3></div>
-      <p className="text-xs text-gray-600 leading-snug">{desc}</p>
+      <div className="flex items-center gap-2 text-[var(--c-accent)]">
+        {icon}
+        <h3 className="font-medium text-sm text-[var(--c-text)]">{title}</h3>
+      </div>
+      <p className="text-xs text-[var(--c-text)]/70 leading-snug">{desc}</p>
     </Link>
-  );
+  )
 }
