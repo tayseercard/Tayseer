@@ -109,7 +109,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main
         className="
           flex-1 flex flex-col justify-between h-full 
-          overflow-y-auto md:overflow-hidden 
+          md:overflow-hidden 
           px-4 sm:px-6 md:px-10 py-4 
           pb-20 md:pb-0
         "
@@ -180,8 +180,8 @@ function NavLink({
       href={href}
       className={`flex flex-col items-center text-[11px] ${
         active
-          ? 'text-[--c-gring-amber-400] font-medium'
-          : 'text-white/70 hover:text-[var(--c-gring-amber-400)]'
+          ? 'text-[--c-accent] font-medium'
+          : 'text-white/70 hover:text-[var(--c-accent)]'
       }`}
     >
       <Icon className="h-5 w-5 mb-0.5" />
