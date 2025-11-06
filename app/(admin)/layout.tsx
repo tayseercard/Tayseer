@@ -118,7 +118,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </main>
 
       {/* ===== Bottom Navigation (Mobile) ===== */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t border-[var(--c-accent)]/20 bg-[var(--c-primary)] text-[var(--c-text)] backdrop-blur-md py-2 shadow-lg md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-70 flex justify-around border-t border-[var(--c-accent)]/20 bg-[var(--c-primary)] text-[var(--c-text)] hover-[var(--c-text)] backdrop-blur-md py-2 shadow-lg md:hidden">
         <NavLink href="/admin/dashboard" icon={LayoutDashboard} label="Home" />
         <NavLink href="/admin/stores" icon={Package} label="Stores" />
 
@@ -159,10 +159,10 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`flex flex-col items-center text-[11px] ${
+      className={`flex flex-col items-center hover:text-accent text-[11px] ${
         active
           ? 'text-[--c-gring-amber-400] font-medium'
-          : 'text-white/70 hover:text-[var(--c-gring-amber-400)]'
+          : 'text-white/70 hover:text-[var(--c-amber-900)]'
       }`}
     >
       <Icon className="h-5 w-5 mb-0.5" />
