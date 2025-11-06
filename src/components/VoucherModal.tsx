@@ -103,9 +103,9 @@ export default function VoucherModal({
       {/* === Close Button === */}
       <button
         onClick={onClose}
-        className="absolute right-3 top-3 text-[var(--c-text)]/60 hover:text-[var(--c-text)] transition"
+        className="absolute right-2 top-2 text-[var(--c-text)]/60 hover:text-[var(--c-text)] transition"
       >
-        <X className="h-5 w-5" />
+        <X className="h-4 w-4" />
       </button>
 
       {/* === Header: Title + Status === */}
