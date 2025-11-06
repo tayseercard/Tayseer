@@ -133,7 +133,7 @@ export default function AdminStoresPage() {
   }
 
   /* ---------- Render ---------- */
-  return (
+return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
 
       {/* 🌿 Header */}
@@ -301,30 +301,113 @@ export default function AdminStoresPage() {
       )}
 
       {/* ➕ Add Store Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add New Store</DialogTitle>
-          </DialogHeader>
+     <Dialog open={open} onOpenChange={setOpen}>
+  <DialogContent
+    className="
+      sm:max-w-md rounded-2xl border border-[var(--c-bank)]/20
+      bg-white/95 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.08)]
+      text-[var(--c-text)]
+      p-6 space-y-4 animate-in fade-in-0 zoom-in-95 duration-200
+    "
+  >
+    {/* === Header === */}
+    <DialogHeader className="space-y-1">
+      <DialogTitle className="text-lg font-semibold text-[var(--c-primary)]">
+        Add New Store
+      </DialogTitle>
+      <p className="text-sm text-[var(--c-text)]/70">
+        Fill in the store details below.
+      </p>
+    </DialogHeader>
 
-          <div className="flex flex-col gap-3 py-2">
-            <Input placeholder="Store name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            <Input placeholder="Email *" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            <Input placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            <Input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-            <Input type="number" placeholder="Wilaya (1–58)" min={1} max={58} value={form.wilaya} onChange={(e) => setForm({ ...form, wilaya: e.target.value })} />
-          </div>
+    {/* === Form Fields === */}
+    <div className="flex flex-col gap-3 pt-2">
+      <Input
+        placeholder="Store name *"
+        value={form.name}
+        onChange={(e) => setForm({ ...form, name: e.target.value })}
+        className="
+          border border-[var(--c-bank)]/30 rounded-lg
+          focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+          bg-white/90 backdrop-blur-sm text-sm
+        "
+      />
+      <Input
+        placeholder="Email *"
+        type="email"
+        value={form.email}
+        onChange={(e) => setForm({ ...form, email: e.target.value })}
+        className="
+          border border-[var(--c-bank)]/30 rounded-lg
+          focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+          bg-white/90 backdrop-blur-sm text-sm
+        "
+      />
+      <Input
+        placeholder="Phone"
+        value={form.phone}
+        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        className="
+          border border-[var(--c-bank)]/30 rounded-lg
+          focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+          bg-white/90 backdrop-blur-sm text-sm
+        "
+      />
+      <Input
+        placeholder="Address"
+        value={form.address}
+        onChange={(e) => setForm({ ...form, address: e.target.value })}
+        className="
+          border border-[var(--c-bank)]/30 rounded-lg
+          focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+          bg-white/90 backdrop-blur-sm text-sm
+        "
+      />
+      <Input
+        type="number"
+        placeholder="Wilaya (1–58)"
+        min={1}
+        max={58}
+        value={form.wilaya}
+        onChange={(e) => setForm({ ...form, wilaya: e.target.value })}
+        className="
+          border border-[var(--c-bank)]/30 rounded-lg
+          focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+          bg-white/90 backdrop-blur-sm text-sm
+        "
+      />
+    </div>
 
-          <DialogFooter className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddStore} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
-              {saving ? 'Saving…' : 'Add'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+    {/* === Footer Buttons === */}
+    <DialogFooter className="flex justify-end gap-2 pt-2">
+      <Button
+        variant="outline"
+        onClick={() => setOpen(false)}
+        className="
+          border border-[var(--c-bank)]/40 
+          text-[var(--c-text)]/80 hover:bg-[var(--section-bg)]
+          rounded-lg transition
+        "
+      >
+        Cancel
+      </Button>
+
+      <Button
+        onClick={handleAddStore}
+        disabled={saving}
+        className="
+          rounded-lg bg-[var(--c-accent)] text-white font-medium
+          px-4 py-2 text-sm
+          hover:bg-[var(--c-accent)]/90 active:scale-95 transition
+          disabled:opacity-50
+        "
+      >
+        {saving ? 'Saving…' : 'Add Store'}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
     </div>
   )
 }

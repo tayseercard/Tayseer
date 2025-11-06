@@ -1,61 +1,74 @@
-'use client';
+'use client'
 
-import { ArrowLeft, QrCode, Plus } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import type { StoreRow } from '@/types/tables';
-
+import { ArrowLeft, QrCode, Plus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import type { StoreRow } from '@/types/tables'
 
 export default function StoreIdHeader({
   store,
   onAddVoucher,
 }: {
-    store?: StoreRow | null;  // ✅ full type
-  onAddVoucher?: () => void;
-  onScanQR?: () => void;
+  store?: StoreRow | null
+  onAddVoucher?: () => void
 }) {
-  const router = useRouter();
+  const router = useRouter()
 
   return (
-    <header className="relative flex flex-col gap-5 px-4 py-5 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-100 shadow-sm">
+    <header
+      className="
+        flex flex-col gap-4
+        px-6 py-4
+        rounded-2xl
+        bg-[var(--c-primary)]
+        border border-[var(--c-bank)]/20
+        shadow-[0_4px_16px_rgba(0,0,0,0.06)]
+        backdrop-blur-md
+        text-white
+      "
+    >
       {/* === Top Row: Back + Title === */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push('/admin/stores')}
-            className="flex items-center gap-1 text-gray-600 hover:text-black text-sm"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
+          
 
-          <h1 className="text-xl font-semibold text-gray-900">
+          <h1 className="text-xl font-semibold text-white">
             {store?.name || 'Store Details'}
           </h1>
         </div>
 
-        {/* Actions */}
+        {/* === Actions === */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={onAddVoucher}
-            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 active:scale-[0.98] transition"
-          >
-            <Plus className="h-4 w-4" /> Add Voucher
-          </button>
-        
+          
+
+          {onAddVoucher && (
+            <button
+              onClick={onAddVoucher}
+              className="
+                inline-flex items-center gap-2 rounded-full 
+                bg-[var(--c-accent)] px-3 py-2 text-sm font-medium text-white 
+                hover:bg-[var(--c-accent)]/90 active:scale-[0.97] transition
+              "
+            >
+              <Plus className="h-4 w-4" />
+              Add Voucher
+            </button>
+          )}
         </div>
       </div>
 
-      {/* === Store Info === */}
+      {/* === Bottom: Store Info === */}
       {store && (
-        <div className="text-sm text-gray-600 space-y-1 pl-7">
-          <p>{store.address}</p>
-          <p>
-            {store.phone && <span>{store.phone}</span>}
-            {store.phone && store.email && ' · '}
-            {store.email && <span>{store.email}</span>}
-          </p>
+        <div className="text-sm text-white/80 space-y-1 ">
+          {store.address && <p>{store.address}</p>}
+          {(store.phone || store.email) && (
+            <p>
+              {store.phone && <span>{store.phone}</span>}
+              {store.phone && store.email && ' · '}
+              {store.email && <span>{store.email}</span>}
+            </p>
+          )}
         </div>
       )}
     </header>
-  );
+  )
 }

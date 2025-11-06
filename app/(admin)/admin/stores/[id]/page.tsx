@@ -171,28 +171,25 @@ export default function AdminStoreDetailPage() {
 
 /* -------- Render -------- */
 return (
-  <div className="min-h-dvh bg-gray-50 text-gray-900">
+  <div className="min-h-dvh bg-[var(--bg)] text-[var(--c-text)]">
     <div className="mx-auto max-w-6xl p-4 sm:p-6 space-y-6">
-      
+
       <StoreIdHeader
         store={store}
         onAddVoucher={() => setAdding(true)}
-        onScanQR={() => {
-          setScanError(null);
-          setScanning(true);
-        }}
+        
       />
 
-
-
-      </div>
-
-    
-
       {/* Search Bar */}
-      <div className="flex items-center gap-2 sticky top-0 bg-gray-50/90 backdrop-blur-sm py-1 z-30">
+      <div className="flex items-center gap-2 sticky top-0 bg-[var(--bg)]/90 backdrop-blur-sm py-1 z-30">
         <input
-          className="flex-1 rounded-lg border px-3 py-2 text-sm"
+          className="
+            flex-1 rounded-lg border border-[var(--c-bank)]/30 
+            bg-white/80 backdrop-blur-sm 
+            px-3 py-2 text-sm
+            placeholder-[var(--c-text)]/40 focus:outline-none 
+            focus:ring-2 focus:ring-[var(--c-accent)]/40
+          "
           placeholder="Search vouchers by code or buyer…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -201,19 +198,19 @@ return (
 
       {/* Vouchers Section */}
       {loadingVouchers ? (
-        <div className="py-8 text-center text-gray-500 text-sm">
+        <div className="py-8 text-center text-[var(--c-text)]/60 text-sm">
           Loading vouchers…
         </div>
       ) : filtered.length === 0 ? (
-        <div className="py-8 text-center text-gray-500 text-sm">
+        <div className="py-8 text-center text-[var(--c-text)]/60 text-sm">
           No vouchers found.
         </div>
       ) : (
         <>
           {/* 🧱 Table (desktop) */}
-          <div className="hidden md:block overflow-hidden rounded-2xl border bg-white">
+          <div className="hidden md:block overflow-hidden rounded-2xl border border-[var(--c-bank)]/20 bg-white shadow-sm">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-[var(--section-bg)] border-b border-[var(--c-bank)]/10">
                 <tr>
                   <Th>Buyer</Th>
                   <Th>Code</Th>
@@ -228,10 +225,14 @@ return (
                   <tr
                     key={v.id}
                     onClick={() => openVoucher(v)}
-                    className="border-t cursor-pointer hover:bg-gray-50 transition"
+                    className="border-t border-[var(--c-bank)]/10 cursor-pointer hover:bg-[var(--section-bg)] transition"
                   >
                     <Td>{v.buyer_name ?? '—'}</Td>
-                    <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
+                    <Td>
+                      <code className="rounded bg-[var(--section-bg)] px-1.5 py-0.5">
+                        {v.code}
+                      </code>
+                    </Td>
                     <Td><StatusPill status={v.status} /></Td>
                     <Td>{fmtDZD(v.initial_amount)}</Td>
                     <Td>{fmtDZD(v.balance)}</Td>
@@ -248,23 +249,27 @@ return (
               <div
                 key={v.id}
                 onClick={() => openVoucher(v)}
-                className="rounded-xl border bg-white p-4 shadow-sm hover:shadow-md transition cursor-pointer"
+                className="
+                  rounded-2xl border border-[var(--c-bank)]/20 
+                  bg-white/90 backdrop-blur-sm 
+                  p-4 shadow-sm hover:shadow-md transition cursor-pointer
+                "
               >
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-gray-900 text-sm">
+                  <h3 className="font-medium text-[var(--c-primary)] text-sm">
                     {v.buyer_name || '—'}
                   </h3>
                   <StatusPill status={v.status} />
                 </div>
-                <div className="text-xs text-gray-600 mb-1">
-                  Code: <span className="font-mono bg-gray-100 px-1 py-0.5 rounded">
+                <div className="text-xs text-[var(--c-text)]/70 mb-1">
+                  Code: <span className="font-mono bg-[var(--section-bg)] px-1 py-0.5 rounded">
                     {v.code}
                   </span>
                 </div>
-                <div className="text-xs text-gray-600 mb-1">
+                <div className="text-xs text-[var(--c-text)]/70 mb-1">
                   Balance: {fmtDZD(v.balance)} / Init: {fmtDZD(v.initial_amount)}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-[var(--c-text)]/60">
                   Created: {new Date(v.created_at).toLocaleDateString()}
                 </div>
               </div>
@@ -276,69 +281,44 @@ return (
       {/* ✅ Add Voucher Modal */}
       {adding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-          <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl border border-[var(--c-bank)]/20">
             <button
               onClick={() => setAdding(false)}
-              className="absolute right-3 top-3 text-gray-500 hover:text-black"
+              className="absolute right-3 top-3 text-[var(--c-text)]/60 hover:text-[var(--c-text)]"
             >
               <X className="h-5 w-5" />
             </button>
-            <h2 className="text-lg font-semibold mb-3">Create Blank Vouchers</h2>
-            <label className="text-sm text-gray-600 mb-1 block">Number to create</label>
+            <h2 className="text-lg font-semibold mb-3 text-[var(--c-primary)]">
+              Create Blank Vouchers
+            </h2>
+            <label className="text-sm text-[var(--c-text)]/70 mb-1 block">
+              Number to create
+            </label>
             <input
               type="number"
               min={1}
               value={countToAdd}
               onChange={(e) => setCountToAdd(parseInt(e.target.value))}
-              className="w-full border rounded-md p-2 mb-4 text-sm"
+              className="
+                w-full border border-[var(--c-bank)]/30 rounded-md p-2 mb-4 text-sm
+                focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+              "
             />
             <button
               disabled={addingLoading}
               onClick={createBlankVouchers}
-              className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="
+                w-full rounded-md bg-[var(--c-accent)] px-4 py-2 text-sm font-medium text-white 
+                hover:bg-[var(--c-accent)]/90 active:scale-95 transition disabled:opacity-50
+              "
             >
               {addingLoading ? 'Creating…' : 'Create'}
             </button>
           </div>
         </div>
       )}
-
-      {/* ✅ Scanner Modal */}
-      {scanning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="relative bg-white rounded-xl p-4 w-[95%] max-w-md shadow-lg">
-            <button
-              onClick={() => setScanning(false)}
-              className="absolute right-2 top-2 text-gray-500 hover:text-black"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <h2 className="text-center font-medium mb-2">Scan a voucher QR</h2>
-
-            <Scanner
-              onScan={(results) => handleScan(results[0]?.rawValue || null)}
-              onError={(err) => console.error(err)}
-              constraints={{ facingMode: 'environment' }}
-            />
-
-            {scanError && (
-              <p className="mt-3 text-center text-sm text-rose-600">{scanError}</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ✅ Voucher Detail Modal */}
-      {selectedVoucher && (
-        <VoucherModal
-          voucher={selectedVoucher}
-          supabase={supabase}
-          onClose={() => setSelectedVoucher(null)}
-          onRefresh={loadVouchers}
-        />
-      )}
     </div>
+  </div>
 );
 
 }

@@ -395,7 +395,17 @@ function fmtDZD(n: number) {
 }
 
 /* ---------- AddVoucherModal (with Combobox) ---------- */
-function AddVoucherModal({ stores, storeId, setStoreId, count, setCount, addingLoading, onClose, onSubmit }: any) {
+/* ---------- AddVoucherModal (Tayseer UI) ---------- */
+function AddVoucherModal({
+  stores,
+  storeId,
+  setStoreId,
+  count,
+  setCount,
+  addingLoading,
+  onClose,
+  onSubmit,
+}: any) {
   const [query, setQuery] = useState('')
   const filtered =
     query === ''
@@ -403,28 +413,63 @@ function AddVoucherModal({ stores, storeId, setStoreId, count, setCount, addingL
       : stores.filter((s: any) => s.name.toLowerCase().includes(query.toLowerCase()))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-      <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-        <button onClick={onClose} className="absolute right-3 top-3 text-gray-500 hover:text-black transition">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3">
+      <div
+        className="
+          relative w-full max-w-sm rounded-2xl 
+          bg-white/95 border border-[var(--c-bank)]/20 
+          shadow-[0_8px_30px_rgba(0,0,0,0.08)] 
+          backdrop-blur-md p-6 space-y-4 
+          animate-in fade-in-0 zoom-in-95 duration-200
+        "
+      >
+        {/* ✖ Close */}
+        <button
+          onClick={onClose}
+          className="
+            absolute right-3 top-3 text-[var(--c-text)]/60 
+            hover:text-[var(--c-text)] transition-colors
+          "
+        >
           <X className="h-5 w-5" />
         </button>
 
-        <h2 className="text-lg font-semibold mb-3">Create Blank Vouchers</h2>
+        {/* 🏷 Title */}
+        <h2 className="text-lg font-semibold text-[var(--c-primary)]">
+          Create Blank Vouchers
+        </h2>
 
-        <div className="space-y-4">
-          {/* Searchable Store Selector */}
+        {/* 🏬 Store selector */}
+        <div className="space-y-2">
           <Combobox value={storeId} onChange={setStoreId}>
-            <Combobox.Label className="text-sm text-gray-600">Store</Combobox.Label>
+            <Combobox.Label className="text-sm text-[var(--c-text)]/70">
+              Store
+            </Combobox.Label>
             <div className="relative mt-1">
               <Combobox.Input
-                className="w-full rounded-md border p-2 text-sm focus:ring-1 focus:ring-emerald-500"
+                className="
+                  w-full rounded-lg border border-[var(--c-bank)]/30
+                  p-2.5 text-sm bg-white/90 backdrop-blur-sm
+                  focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+                  transition
+                "
                 onChange={(e) => setQuery(e.target.value)}
-                displayValue={(id: string) => stores.find((s: any) => s.id === id)?.name ?? ''}
+                displayValue={(id: string) =>
+                  stores.find((s: any) => s.id === id)?.name ?? ''
+                }
                 placeholder="Search store..."
               />
-              <Combobox.Options className="absolute mt-1 max-h-48 w-full overflow-auto rounded-md bg-white border shadow-lg text-sm z-10">
+              <Combobox.Options
+                className="
+                  absolute mt-1 max-h-48 w-full overflow-auto 
+                  rounded-lg bg-white border border-[var(--c-bank)]/20 
+                  shadow-lg text-sm z-10
+                "
+              >
                 {filtered.length === 0 ? (
-                  <div className="px-4 py-2 text-gray-500">No results</div>
+                  <div className="px-4 py-2 text-[var(--c-text)]/60">
+                    No results
+                  </div>
                 ) : (
                   filtered.map((s: any) => (
                     <Combobox.Option
@@ -432,7 +477,9 @@ function AddVoucherModal({ stores, storeId, setStoreId, count, setCount, addingL
                       value={s.id}
                       className={({ active }) =>
                         `cursor-pointer px-4 py-2 ${
-                          active ? 'bg-emerald-50 text-emerald-700' : 'text-gray-800'
+                          active
+                            ? 'bg-[var(--c-accent)]/10 text-[var(--c-accent)]'
+                            : 'text-[var(--c-text)]'
                         }`
                       }
                     >
@@ -443,29 +490,43 @@ function AddVoucherModal({ stores, storeId, setStoreId, count, setCount, addingL
               </Combobox.Options>
             </div>
           </Combobox>
-
-          {/* Count */}
-          <div>
-            <label className="text-sm text-gray-600">How many?</label>
-            <input
-              type="number"
-              min={1}
-              value={count}
-              onChange={(e) => setCount(parseInt(e.target.value))}
-              className="w-full border rounded-md p-2 text-sm focus:ring-1 focus:ring-emerald-500"
-            />
-          </div>
-
-          {/* Submit */}
-          <button
-            disabled={addingLoading}
-            onClick={onSubmit}
-            className="w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 active:scale-[0.98] transition disabled:opacity-50"
-          >
-            {addingLoading ? 'Creating…' : 'Create Vouchers'}
-          </button>
         </div>
+
+        {/* 🔢 Count */}
+        <div className="space-y-2">
+          <label className="text-sm text-[var(--c-text)]/70">How many?</label>
+          <input
+            type="number"
+            min={1}
+            value={count}
+            onChange={(e) => setCount(parseInt(e.target.value))}
+            className="
+              w-full rounded-lg border border-[var(--c-bank)]/30
+              p-2.5 text-sm bg-white/90 backdrop-blur-sm
+              focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+            "
+          />
+        </div>
+
+        {/* 🟠 Submit */}
+        <button
+          disabled={addingLoading}
+          onClick={onSubmit}
+          className="
+            w-full rounded-lg bg-[var(--c-accent)] text-white font-medium text-sm 
+            px-4 py-2.5 hover:bg-[var(--c-accent)]/90 
+            active:scale-95 transition-all disabled:opacity-50
+          "
+        >
+          {addingLoading ? 'Creating…' : 'Create Vouchers'}
+        </button>
+
+        {/* 💡 Hint */}
+        <p className="text-xs text-center text-[var(--c-text)]/60">
+          Each voucher will be assigned a unique QR code automatically.
+        </p>
       </div>
     </div>
   )
 }
+

@@ -22,113 +22,183 @@ export default async function NewStorePage({
   const err = searchParams?.error ?? "";
 
   async function createStoreAction(formData: FormData) {
-  "use server";
+    "use server";
 
-  const payload = {
-    name: formData.get("name")?.toString(),
-    email: formData.get("email")?.toString(),
-    phone: formData.get("phone")?.toString(),
-    address: formData.get("address")?.toString(),
-    wilaya: Number(formData.get("wilaya")),
-  };
+    const payload = {
+      name: formData.get("name")?.toString(),
+      email: formData.get("email")?.toString(),
+      phone: formData.get("phone")?.toString(),
+      address: formData.get("address")?.toString(),
+      wilaya: Number(formData.get("wilaya")),
+    };
 
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "https://tayseercard.vercel.app";
+    const base =
+      process.env.NEXT_PUBLIC_BASE_URL || "https://tayseercard.vercel.app";
 
-  const res = await fetch(`${base}/api/admin/add-store`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+    const res = await fetch(`${base}/api/admin/add-store`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
 
-  const result = await res.json();
-  if (!res.ok) {
-    redirect(`/admin/stores/new?error=${encodeURIComponent(result.error)}`);
+    const result = await res.json();
+    if (!res.ok) {
+      redirect(`/admin/stores/new?error=${encodeURIComponent(result.error)}`);
+    }
+
+    redirect(`/admin/stores/new?ok=1`);
   }
 
-  redirect(`/admin/stores/new?ok=1`);
-}
-
-
   return (
-    <div className="space-y-6 text-black">
-      <h1 className="text-xl font-semibold">Add Store</h1>
+    <div
+      className="
+        space-y-6 text-[var(--c-text)]
+        bg-[var(--bg)] min-h-screen
+        rounded-3xl border border-[var(--c-bank)]/15 shadow-sm
+        p-6 sm:p-8
+      "
+    >
+      <h1
+        className="
+          text-xl font-semibold text-[var(--c-primary)]
+          tracking-tight flex items-center gap-2
+        "
+      >
+        Add Store
+      </h1>
 
+      {/* ✅ Success */}
       {ok && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <div
+          className="
+            rounded-lg border border-[var(--c-accent)]/40 
+            bg-[var(--c-accent)]/10 px-4 py-3 text-sm text-[var(--c-accent)]
+          "
+        >
           ✅ Store created and magic link sent!
         </div>
       )}
+
+      {/* ❌ Error */}
       {!!err && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+        <div
+          className="
+            rounded-lg border border-rose-300 
+            bg-rose-50/80 px-4 py-3 text-sm text-rose-700
+          "
+        >
           {err}
         </div>
       )}
 
+      {/* 🧾 Form */}
       <form
         action={createStoreAction}
-        className="grid max-w-xl gap-4 rounded-2xl border bg-white p-5 shadow-sm"
+        className="
+          grid max-w-xl gap-4 rounded-2xl
+          border border-[var(--c-bank)]/20 
+          bg-white/90 backdrop-blur-sm
+          p-5 shadow-sm
+        "
       >
         <div>
-          <label className="block text-sm text-gray-600">Store name *</label>
+          <label className="block text-sm text-[var(--c-text)]/80">
+            Store name *
+          </label>
           <input
             name="name"
             required
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+            className="
+              mt-1 w-full rounded-md border border-[var(--c-bank)]/30
+              px-3 py-2 text-sm bg-white
+              focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+            "
             placeholder="Confiserie du bonheur"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600">Owner email *</label>
+          <label className="block text-sm text-[var(--c-text)]/80">
+            Owner email *
+          </label>
           <input
             name="email"
             type="email"
             required
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+            className="
+              mt-1 w-full rounded-md border border-[var(--c-bank)]/30
+              px-3 py-2 text-sm bg-white
+              focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+            "
             placeholder="owner@example.com"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm text-gray-600">Phone</label>
+            <label className="block text-sm text-[var(--c-text)]/80">
+              Phone
+            </label>
             <input
               name="phone"
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              className="
+                mt-1 w-full rounded-md border border-[var(--c-bank)]/30
+                px-3 py-2 text-sm bg-white
+                focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+              "
               placeholder="+213 ..."
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600">Wilaya</label>
+            <label className="block text-sm text-[var(--c-text)]/80">
+              Wilaya
+            </label>
             <input
               name="wilaya"
               type="number"
               min={1}
               max={58}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+              className="
+                mt-1 w-full rounded-md border border-[var(--c-bank)]/30
+                px-3 py-2 text-sm bg-white
+                focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+              "
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm text-gray-600">Address</label>
+          <label className="block text-sm text-[var(--c-text)]/80">
+            Address
+          </label>
           <input
             name="address"
-            className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+            className="
+              mt-1 w-full rounded-md border border-[var(--c-bank)]/30
+              px-3 py-2 text-sm bg-white
+              focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+            "
           />
         </div>
 
+        {/* ✅ Submit Button */}
         <div className="pt-2">
           <button
             type="submit"
-            className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+            className="
+              rounded-lg bg-[var(--c-accent)] 
+              px-4 py-2 text-sm font-medium text-white
+              hover:bg-[var(--c-accent)]/90 active:scale-95 transition
+              shadow-sm
+            "
           >
             Create & Send Magic Link
           </button>
         </div>
 
-        <p className="text-xs text-gray-500">
-          The owner receives a magic link and logs in to <code>/store</code>.
+        <p className="text-xs text-[var(--c-text)]/60">
+          The owner receives a magic link and logs in to{" "}
+          <code className="text-[var(--c-bank)] font-medium">/store</code>.
         </p>
       </form>
     </div>

@@ -414,7 +414,7 @@ function VoucherModal({ voucher, supabase, onClose, onRefresh }: any) {
           <X className="h-5 w-5" />
         </button>
 
-        <h2 className="text-lg font-semibold mb-3">Voucher Details</h2>
+        <h2 className="text-lg font-semibold mb-3"></h2>
 
         {/* QR */}
         <div className="flex flex-col items-center mb-4">
