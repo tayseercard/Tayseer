@@ -47,7 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       "
     >
       {/* ===== Desktop Top Navigation ===== */}
-      <header className="hidden md:flex flex-col w-full sticky top-0 z-50 bg-[var(--c-primary)] text-white border-b border-[var(--c-bank)]/20 shadow-sm">
+      <header className="hidden md:flex flex-col w-full sticky top-0 z-50 bg-[var(--c-bg)] text-[var(--c-text)]  border-b border-[var(--c-bank)]/20 shadow-sm">
         <div className="flex items-center justify-between px-6 py-3">
           {/* Logo */}
           <div className="relative h-8 w-28">
@@ -71,7 +71,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all whitespace-nowrap ${
                     active
                       ? 'bg-[var(--c-accent)] text-white shadow-sm'
-                      : 'bg-white/10 text-white/80 hover:bg-[var(--c-accent)]/20'
+                      : 'bg-white/10 text-[var(--c-text)]  hover:bg-[var(--c-accent)]/20'
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -84,7 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="text-xs text-white/80 hover:text-[var(--c-accent)] flex items-center gap-1"
+            className="text-xs text-[var(--c-text)] hover:text-[var(--c-accent)] flex items-center gap-1"
           >
             <LogOut className="h-4 w-4" />
             Logout
@@ -92,7 +92,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 px-6 py-2 border-t border-[var(--c-bank)]/30 text-sm text-white/80 bg-[var(--c-primary)]/95 backdrop-blur-sm">
+        <div className="flex items-center gap-2 px-6 py-2 border-t border-gray-400 text-sm text-[var(--c-text)] bg-[var(--c-bg)] ">
           <button
             onClick={() => router.back()}
             className="flex items-center gap-1 hover:text-[var(--c-accent)] transition"
@@ -100,8 +100,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <ArrowLeft className="h-4 w-4" />
             Back
           </button>
-          <span className="text-white/40">/</span>
-          <span className="font-medium text-white capitalize">{breadcrumbTitle}</span>
+          <span className="text-[var(--c-text)]">/</span>
+          <span className="font-medium text-[var(--c-text)] capitalize">{breadcrumbTitle}</span>
         </div>
       </header>
 
@@ -118,7 +118,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </main>
 
       {/* ===== Bottom Navigation (Mobile) ===== */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t border-[var(--c-secondary)]/20 bg-[var(--c-primary)] text-white backdrop-blur-md py-2 shadow-lg md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t border-[var(--c-accent)]/20 bg-[var(--c-primary)] text-[var(--c-text)] backdrop-blur-md py-2 shadow-lg md:hidden">
         <NavLink href="/admin/dashboard" icon={LayoutDashboard} label="Home" />
         <NavLink href="/admin/stores" icon={Package} label="Stores" />
 
