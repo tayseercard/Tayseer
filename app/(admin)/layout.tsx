@@ -43,7 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       className="
         h-screen flex flex-col 
         bg-[var(--bg)] text-[var(--c-text)] 
-        md:overflow-hidden overflow-auto
+        md:overflow-hidden 
       "
     >
       {/* ===== Desktop Top Navigation ===== */}
