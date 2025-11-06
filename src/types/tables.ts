@@ -17,7 +17,7 @@ export type VoucherRow = {
   buyer_phone?: string | null;
   initial_amount: number;
   balance: number;
-  status: 'blank' | 'loaded' | 'redeemed' | 'expired' | 'void';
+  status: 'blank' | 'active' | 'redeemed' | 'expired' | 'void';
   expires_at: string | null;
   activated_at?: string | null;
   created_at: string;

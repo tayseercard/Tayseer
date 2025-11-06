@@ -19,33 +19,44 @@ export default function DashboardHeader({
   actions?: { label: string; onClick: () => void; icon?: React.ReactNode }[]
 }) {
   return (
-    <header className="relative flex flex-col gap-5 px-4 py-5 rounded-xl bg-white/70 backdrop-blur-sm border border-gray-100 shadow-sm">
-      {/* === Bottom Row: User Info === */}
-      {user && (
-        <div className="flex items-center gap-4 border-t border-gray-100 pt-4">
-          {user.avatarUrl ? (
-            <img
-              src={user.avatarUrl}
-              alt="User avatar"
-              className="h-12 w-12 rounded-full object-cover border border-gray-200"
-            />
-          ) : (
-            <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-semibold text-lg">
-              {user.name?.[0]?.toUpperCase() || 'U'}
-            </div>
-          )}
+    <header
+      className="
+        relative flex flex-col gap-5 px-6 py-6
+        rounded-2xl border border-[var(--c-bank)]/25 
+        bg-[var(--c-primary)] text-white shadow-md
+        before:absolute before:inset-x-0 before:top-0 before:h-[4px]
+         before:rounded-t-2xl
+      "
+    >
+     
 
-          <div>
-            <p className="text-base font-medium text-gray-800 leading-tight">
-              {user.name}
-            </p>
-            <p className="text-sm text-gray-500">{user.email}</p>
-            <p className="text-xs text-emerald-600 font-medium mt-0.5 uppercase tracking-wide">
-              {user.role || 'Admin'}
-            </p>
-          </div>
-        </div>
-      )}
+    {/* === Bottom Row: User Info === */}
+{user && (
+  <div className="flex items-center gap-4">
+    {user.avatarUrl ? (
+      <img
+        src={user.avatarUrl}
+        alt="User avatar"
+        className="h-12 w-12 rounded-full object-cover border border-white/20"
+      />
+    ) : (
+      <div className="h-12 w-12 rounded-full bg-[var(--c-accent)]/20 flex items-center justify-center text-[var(--c-accent)] font-semibold text-lg">
+        {user.name?.[0]?.toUpperCase() || 'U'}
+      </div>
+    )}
+
+    <div>
+      <p className="text-base font-medium text-white leading-tight">
+        {user.name}
+      </p>
+      <p className="text-sm text-white/70">{user.email}</p>
+      <p className="text-xs text-[var(--c-accent)] font-medium mt-0.5 uppercase tracking-wide">
+        {user.role || 'Admin'}
+      </p>
+    </div>
+  </div>
+)}
+
     </header>
   )
 }
