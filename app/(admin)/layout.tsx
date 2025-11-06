@@ -123,7 +123,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     fixed bottom-0 left-0 right-0 z-70
     flex justify-around items-center
     border-t border-[var(--c-accent)]/20
-    bg-[var(--c-primary)] text-[var(--c-text)]
+    bg-[var(--c-primary)] text-[var(--c-accent)]
     backdrop-blur-lg
     py-3 shadow-xl md:hidden
     h-[70px]
