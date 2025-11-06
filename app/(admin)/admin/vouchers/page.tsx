@@ -413,7 +413,7 @@ function AddVoucherModal({
       : stores.filter((s: any) => s.name.toLowerCase().includes(query.toLowerCase()))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 overflow-auto">
       <div
         className="
           relative w-full max-w-sm rounded-2xl 
