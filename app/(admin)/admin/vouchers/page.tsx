@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Scanner } from '@yudiel/react-qr-scanner'
 import VoucherModal from '@/components/VoucherModal'
 
+
 import {
   Search,
   X,
@@ -101,30 +102,46 @@ export default function AdminVouchersPage() {
 
   const getStoreName = (id: string) => stores.find((s) => s.id === id)?.name ?? '—'
 
-  /* -------- Create Blank Vouchers -------- */
-  async function createBlankVouchers() {
-    if (!storeId || count < 1) return alert('Select store and count.')
-    setAddingLoading(true)
+ async function createBlankVouchers() {
+  if (!storeId || count < 1)
+    return alert('Select store and count.')
 
+  setAddingLoading(true)
+
+  try {
     const rowsToInsert = Array.from({ length: count }).map(() => ({
       store_id: storeId,
-      code: 'TSR-' + uuidv4().split('-')[0].toUpperCase(),
+      code: 'TSR-' + uuidv4().replace(/-/g, '').slice(0, 10).toUpperCase(), // longer unique code
       status: 'blank',
       initial_amount: 0,
       balance: 0,
     }))
 
-    const { error } = await supabase.from('vouchers').insert(rowsToInsert)
-    setAddingLoading(false)
+    // ✅ Only ONE insert call
+    const { data, error: insertError } = await supabase
+      .from('vouchers')
+      .insert(rowsToInsert)
+      .select('id, code, store_id')
 
-    if (error) return alert('❌ Error: ' + error.message)
+    if (insertError) throw insertError
 
     alert(`✅ Created ${count} blank voucher(s).`)
+
+    // 🖨️ Open print page for this store
+    window.open(`/admin/vouchers/print/${storeId}`, '_blank')
+
+    // Reset state
     setAdding(false)
     setStoreId(null)
     setCount(1)
     loadData()
+  } catch (err: any) {
+    console.error('Voucher creation failed:', err)
+    alert('❌ Error: ' + (err.message || err))
+  } finally {
+    setAddingLoading(false)
   }
+}
 
   /* -------- UI -------- */
   return (

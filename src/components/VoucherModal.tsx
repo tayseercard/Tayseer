@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode'
 
 type Voucher = {
-  recipient_name: string
+  recipient_name: string | null
   id: string
   code: string
   buyer_name: string | null
@@ -32,16 +32,17 @@ export default function VoucherModal({
   const [url, setUrl] = useState<string | null>(null)
   const [buyerName, setBuyerName] = useState(voucher.buyer_name ?? '')
   const [recipientName, setRecipientName] = useState(voucher.recipient_name ?? '')
-  const [buyerPhone, setBuyerPhone] = useState(voucher.buyer_phone ?? '')
-  const [amount, setAmount] = useState(
-    voucher.initial_amount && voucher.initial_amount > 0 ? voucher.initial_amount : ''
-  )
+  const [buyerPhone, setBuyerPhone] = useState(voucher.buyer_phone ? formatPhone(voucher.buyer_phone) : '')
+  const [amount, setAmount] = useState(voucher.initial_amount && voucher.initial_amount > 0 ? voucher.initial_amount : '')
   const [autoFilled, setAutoFilled] = useState(false)
   const [consumeAmount, setConsumeAmount] = useState('')
   const [saving, setSaving] = useState(false)
 
   // used for debounce
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+  // Phone number validation
+  const [phoneValid, setPhoneValid] = useState(true)
+
 
   useEffect(() => {
     voucherToDataUrl(voucher.code).then(setUrl)
@@ -76,7 +77,7 @@ export default function VoucherModal({
           .from('clients')
           .select('full_name')
           .eq('store_id', storeId)
-          .eq('phone', buyerPhone)
+          .eq('phone', cleanPhone(buyerPhone))
           .maybeSingle()
 
         if (existing) {
@@ -96,26 +97,84 @@ export default function VoucherModal({
   }, [buyerPhone])
 
   /* 🟢 Activate voucher */
-  async function handleActivate() {
-    if (!buyerName || !amount) return alert('Please enter buyer name and amount.')
-    setSaving(true)
-    const { error } = await supabase
+ async function handleActivate() {
+  if (!buyerName || !amount)
+    return alert('Please enter buyer name and amount.')
+
+  if (!isValidPhone(buyerPhone))
+    return alert('Invalid phone number format.')
+
+  setSaving(true)
+
+  try {
+    // 🧠 1️⃣ Get session user
+    const { data: sessionData } = await supabase.auth.getSession()
+    const user = sessionData.session?.user
+    if (!user) throw new Error('No session found')
+
+    // 🏪 2️⃣ Get store_id for this store user
+    const { data: roleRow, error: roleError } = await supabase
+      .from('me_effective_role')
+      .select('store_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (roleError) throw roleError
+
+    const storeId = roleRow?.store_id
+    if (!storeId) throw new Error('Missing store_id')
+
+    const phoneClean = cleanPhone(buyerPhone)
+
+    // 👥 3️⃣ Check if client exists
+    const { data: existingClient, error: clientError } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('store_id', storeId)
+      .eq('phone', phoneClean)
+      .maybeSingle()
+    if (clientError) console.warn('Client lookup failed:', clientError.message)
+
+    // ➕ 4️⃣ Create client if missing
+    if (!existingClient) {
+      const { error: insertError } = await supabase.from('clients').insert([
+        {
+          store_id: storeId,
+          full_name: buyerName.trim(),
+          phone: phoneClean,
+          created_at: new Date().toISOString(),
+        },
+      ])
+      if (insertError)
+        console.warn('⚠️ Failed to add client:', insertError.message)
+      else console.log('✅ New client added:', buyerName)
+    }
+
+    // 💳 5️⃣ Activate the voucher
+    const { error: voucherError } = await supabase
       .from('vouchers')
       .update({
         buyer_name: buyerName.trim(),
-        buyer_phone: buyerPhone.trim() || null,
+        recipient_name: recipientName.trim(),
+        buyer_phone: phoneClean,
         initial_amount: Number(amount),
         balance: Number(amount),
         status: 'active',
         activated_at: new Date().toISOString(),
       })
       .eq('id', voucher.id)
-    setSaving(false)
-    if (error) return alert('❌ ' + error.message)
-    alert('✅ Voucher activated successfully')
+    if (voucherError) throw voucherError
+
+    alert('✅ Voucher activated successfully!')
     onRefresh()
     onClose()
+  } catch (err: any) {
+    console.error(err)
+    alert('❌ ' + (err.message || 'Activation failed'))
+  } finally {
+    setSaving(false)
   }
+}
+
 
   /* 🔵 Consume voucher */
   async function handleConsume(partial = true) {
@@ -188,21 +247,39 @@ export default function VoucherModal({
           <>
             <div className="space-y-3 mb-4">
               <Input label="Buyer Name" value={buyerName} onChange={setBuyerName} />
+              <Input label="To Whom?" value={recipientName} onChange={setRecipientName} />
 
               <div className="relative">
-                <label className="text-sm text-gray-600">Buyer Phone</label>
-                <input
-                  value={buyerPhone}
-                  onChange={(e) => setBuyerPhone(e.target.value)}
-                  placeholder="e.g. 0555 22 33 44"
-                  className="w-full border rounded-md p-2 text-sm focus:border-[var(--c-accent)] outline-none"
-                />
-                {autoFilled && (
-                  <p className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[var(--c-accent)] font-medium">
-                    Existing client ✓
-                  </p>
-                )}
-              </div>
+  <label className="text-sm text-gray-600">Buyer Phone</label>
+  <input
+    value={buyerPhone}
+    onChange={(e) => {
+      const formatted = formatPhone(e.target.value)
+      setBuyerPhone(formatted)
+      setPhoneValid(isValidPhone(formatted))
+    }}
+    placeholder="0x xx xx xx xx"
+    maxLength={14}
+    inputMode="numeric"
+    pattern="[0-9 ]*"
+    className={`w-full border rounded-md p-2 text-sm focus:outline-none transition
+      ${phoneValid
+        ? 'border-[var(--c-bank)]/30 focus:border-[var(--c-accent)]'
+        : 'border-rose-400 focus:border-rose-500 bg-rose-50/20'
+      } tracking-widest font-medium`}
+  />
+
+  {autoFilled && phoneValid && (
+    <p className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[var(--c-accent)] font-medium">
+      Existing client ✓
+    </p>
+  )}
+  {!phoneValid && (
+    <p className="text-[11px] text-rose-600 mt-1">Invalid number</p>
+  )}
+</div>
+
+
 
               <Input
                 label="Amount (DZD)"
@@ -210,6 +287,7 @@ export default function VoucherModal({
                 value={amount}
                 onChange={setAmount}
               />
+
             </div>
             <button
               onClick={handleActivate}
@@ -233,7 +311,7 @@ export default function VoucherModal({
                   <div className="space-y-1 text-xs sm:text-sm">
                     <Info label="Buyer" value={voucher.buyer_name ?? '—'} />
                     <Info label="Phone" value={voucher.buyer_phone ?? '—'} />
-                    <Info label="To whom" value={voucher.to_whom ?? '—'} />
+                    <Info label="To whom" value={voucher.recipient_name ?? '—'} />
                     <Info label="Initial" value={fmtDZD(voucher.initial_amount)} />
                     <Info label="Balance" value={fmtDZD(voucher.balance)} />
                   </div>
@@ -304,6 +382,26 @@ export default function VoucherModal({
     </div>
   )
 }
+
+
+// ✅ Format Algerian phone number: "0561827855" → "05 61 82 78 55"
+function formatPhone(input: string): string {
+  const digits = input.replace(/\D/g, '') // remove non-numbers
+  const groups = digits.match(/.{1,2}/g) || []
+  return groups.join(' ').trim().slice(0, 14) // ensure max 14 chars
+}
+
+// ✅ Normalize for database lookup (remove spaces)
+function cleanPhone(input: string): string {
+  return input.replace(/\D/g, '')
+}
+
+// ✅ Check validity (Algerian mobile pattern)
+function isValidPhone(input: string): boolean {
+  const clean = cleanPhone(input)
+  return /^0[5-7]\d{8}$/.test(clean)
+}
+
 
 /* --- Small Components --- */
 function Info({ label, value }: { label: string; value: any }) {

@@ -90,6 +90,22 @@
     --card-foreground: var(--c-text);
   }
 }
+@media print {
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  @page {
+    margin: 0.3cm;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+}
+
 
 /* === Base resets === */
 body {
