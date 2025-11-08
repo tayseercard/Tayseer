@@ -1,0 +1,13 @@
+{
+  "settings": "Settings",
+  "managePref": "Manage your profile and preferences",
+  "profile": "Profile details",
+  "password": "Password",
+  "language": "Language",
+  "darkMode": "Dark mode",
+  "roles": "Assign roles",
+  "aboutApp": "About application",
+  "help": "Help / FAQ",
+  "deactivate": "Deactivate my account",
+  "chooseLang": "Choose your preferred language"
+}
