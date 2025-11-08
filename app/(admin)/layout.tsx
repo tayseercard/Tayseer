@@ -41,7 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div
       className="
-        flex flex-col 
+      flex flex-col 
         bg-[var(--bg)] text-[var(--c-text)] 
         md:overflow-hidden 
       "

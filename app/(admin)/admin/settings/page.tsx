@@ -1,101 +1,121 @@
 'use client'
 
 import { useState } from 'react'
+import {
+  User,
+  Lock,
+  Bell,
+  Moon,
+  Info,
+  HelpCircle,
+  Trash2,
+  ChevronRight,
+  Globe2,
+  Shield
+} from 'lucide-react'
+import SettingsHeader from '@/components/admin/settings/SettingsHeader'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import StoresPasswordList from './StoresPasswordList'
 
-export default function SettingsPage({ stores }: { stores: any[] }) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'roles' | 'stores'>('stores')
+export default function SettingsPage() {
+  const [darkMode, setDarkMode] = useState(false)
   const supabase = createClientComponentClient()
   const router = useRouter()
 
   async function handleLogout() {
-    const { error } = await supabase.auth.signOut()
-    if (error) alert('❌ Logout failed: ' + error.message)
-    else router.push('/auth/login')
+    await supabase.auth.signOut()
+    router.push('/auth/login')
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 py-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center px-4 py-6">
+      <div className="w-full max-w-md space-y-6">
+        {/* === Tayseer Header === */}
+        <SettingsHeader
+          title="Settings"
+          subtitle="Manage your profile and preferences"
+          user={{
+            name: 'Omar Medjadj',
+            email: 'omar@tayseer.dz',
+            role: 'Admin',
+            avatarUrl: '/icon-192-2.png',
+          }}
+          onLogout={handleLogout}
+        />
 
-        {/* === Page Title === */}
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-[var(--c-primary)]">Settings</h1>
-            <p className="text-sm text-[var(--c-text)]/70">
-              Manage admin preferences and system access
-            </p>
-          </div>
+        {/* === Profile Card === */}
+       
 
-          {/* 🔒 Logout Button */}
-          <button
-            onClick={handleLogout}
-            className="
-              flex items-center gap-2 rounded-lg border border-[var(--c-bank)]/30
-              px-3 py-2 text-sm text-[var(--c-bank)] font-medium
-              hover:bg-[var(--c-bank)] hover:text-white transition-all
-            "
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
-        </header>
+        {/* === Section: Other Settings === */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <SettingRow icon={<User />} label="Profile details" />
+          <SettingRow icon={<Lock />} label="Password" />
+          <SettingRow icon={<Globe2 />} label="Language" right="Français" />
+          <SettingRow icon={<Shield />} label="Assign roles" />
+          <SettingRow
+            icon={<Moon />}
+            label="Dark mode"
+            toggle
+            toggleValue={darkMode}
+            onToggle={() => setDarkMode(!darkMode)}
+          />
+        </div>
 
-        {/* === Horizontal Tabs === */}
-        <nav className="flex gap-3 overflow-x-auto border-b border-[var(--c-bank)]/20 pb-2">
-          {[
-            { key: 'profile', label: 'Profile' },
-            { key: 'roles', label: 'Roles' },
-            { key: 'stores', label: 'Stores Access' },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              className={`
-                px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition
-                ${
-                  activeTab === tab.key
-                    ? 'bg-[var(--c-accent)] text-white shadow-sm'
-                    : 'text-[var(--c-text)]/70 hover:bg-[var(--c-primary)]/10'
-                }
-              `}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* === Active Content === */}
-        <div className="bg-white rounded-xl shadow-sm border border-[var(--c-bank)]/10 p-4 sm:p-6">
-          {activeTab === 'profile' && <ProfileSettings onLogout={handleLogout} />}
-          {activeTab === 'roles' && <RolesSettings />}
-          {activeTab === 'stores' && <StoresPasswordList stores={stores} />}
+        {/* === Section: App Info === */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <SettingRow icon={<Info />} label="About application" />
+          <SettingRow icon={<HelpCircle />} label="Help / FAQ" />
+          <SettingRow
+            icon={<Trash2 className="text-rose-500" />}
+            label="Deactivate my account"
+            labelClass="text-rose-600 font-medium"
+          />
         </div>
       </div>
     </div>
   )
 }
 
-/* Placeholder subcomponents */
-function ProfileSettings({ onLogout }: { onLogout: () => void }) {
+/* ---------------- Setting Row ---------------- */
+function SettingRow({
+  icon,
+  label,
+  right,
+  toggle,
+  toggleValue,
+  onToggle,
+  labelClass,
+}: {
+  icon: React.ReactNode
+  label: string
+  right?: string
+  toggle?: boolean
+  toggleValue?: boolean
+  onToggle?: () => void
+  labelClass?: string
+}) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-      <p className="text-sm text-[var(--c-text)]/70">Profile settings coming soon…</p>
-      <button
-        onClick={onLogout}
-        className="mt-3 sm:mt-0 flex items-center gap-2 rounded-lg border border-[var(--c-bank)]/30
-          px-3 py-2 text-sm text-[var(--c-bank)] hover:bg-[var(--c-bank)] hover:text-white transition-all"
-      >
-        <LogOut className="w-4 h-4" />
-        Logout
-      </button>
+    <div className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition cursor-pointer">
+      <div className="flex items-center gap-3">
+        <div className="text-gray-600">{icon}</div>
+        <span className={`text-sm ${labelClass ?? 'text-gray-800'}`}>{label}</span>
+      </div>
+
+      {toggle ? (
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            className="sr-only peer"
+            checked={toggleValue}
+            onChange={onToggle}
+          />
+          <div className="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[var(--c-accent)] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:h-4 after:w-4 after:rounded-full after:transition-all peer-checked:after:translate-x-4"></div>
+        </label>
+      ) : right ? (
+        <span className="text-sm text-gray-500">{right}</span>
+      ) : (
+        <ChevronRight className="w-4 h-4 text-gray-400" />
+      )}
     </div>
   )
-}
-
-function RolesSettings() {
-  return <p className="text-sm text-[var(--c-text)]/70">Role management section…</p>
 }
