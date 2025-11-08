@@ -3,17 +3,15 @@
 import DashboardHeader from '@/components/DashboardHeader'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import {
-  Store as StoreIcon,
-  Gift,
-  TrendingUp,
-} from 'lucide-react'
+import { Store as StoreIcon, Gift, TrendingUp } from 'lucide-react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useLanguage } from '@/lib/useLanguage'
 
 export const dynamic = 'force-dynamic'
 
 export default function AdminDashboardPage() {
   const supabase = createClientComponentClient()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(true)
 
   const [stores, setStores] = useState<any[]>([])
@@ -71,49 +69,44 @@ export default function AdminDashboardPage() {
     })()
   }, [supabase])
 
-  /* ---------- Refresh ---------- */
-  function handleRefresh() {
-    if (typeof window !== 'undefined') window.location.reload()
-  }
-
   /* ---------- UI ---------- */
   return (
-   <div
-  className="
-    relative flex flex-col 
-    bg-[var(--bg)] text-[var(--c-text)]
-    px-4 py-6 sm:px-6 lg:px-10
-    min-h-[calc(100vh-70px)] md:min-h-screen 
-    overflow-y-auto
-  "
->
-    
-
+    <div
+      className="relative flex flex-col bg-[var(--bg)] text-[var(--c-text)]
+                 px-4 py-6 sm:px-6 lg:px-10 min-h-[calc(100vh-70px)] md:min-h-screen overflow-y-auto"
+    >
       {/* === HEADER === */}
-    <DashboardHeader
-  user={{
-    name: 'Djamil',
-    email: 'admin@tayseer.app',
-    role: 'Admin',
-    avatarUrl: '/icon-192-2.png',
-  }}
-/>
-
+      <DashboardHeader
+        user={{
+          name: 'Djamil',
+          email: 'admin@tayseer.app',
+          role: 'Admin',
+          avatarUrl: '/icon-192-2.png',
+        }}
+      />
 
       {/* === SUMMARY STATS === */}
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <DashboardStatCard title="Stores" value={storeStats.total} subtitle="Total registered" />
-        <DashboardStatCard title="Vouchers" value={voucherStats.total} subtitle="All vouchers" />
         <DashboardStatCard
-          title="active"
+          title={t.stores}
+          value={storeStats.total}
+          subtitle={t.totalRegistered}
+        />
+        <DashboardStatCard
+          title={t.vouchers}
+          value={voucherStats.total}
+          subtitle={t.allVouchers}
+        />
+        <DashboardStatCard
+          title={t.active}
           value={voucherStats.active}
-          subtitle="Currently active"
+          subtitle={t.currentlyActive}
           highlight
         />
         <DashboardStatCard
-          title="Redeemed"
+          title={t.redeemed}
           value={voucherStats.redeemed}
-          subtitle="Used vouchers"
+          subtitle={t.usedVouchers}
         />
       </div>
 
@@ -122,12 +115,12 @@ export default function AdminDashboardPage() {
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow">
           {/* Latest Stores */}
           <DashboardCard
-            title="Latest Stores"
+            title={t.latestStores}
             icon={<StoreIcon className="h-5 w-5 text-[var(--c-bank)]" />}
             link="/admin/stores"
           >
             {stores.length === 0 ? (
-              <p className="text-sm text-[var(--c-text)]/50">No stores yet.</p>
+              <p className="text-sm text-[var(--c-text)]/50">{t.noStores}</p>
             ) : (
               <ul className="space-y-3">
                 {stores.slice(0, 5).map((s) => (
@@ -149,12 +142,12 @@ export default function AdminDashboardPage() {
 
           {/* Recent Vouchers */}
           <DashboardCard
-            title="Recent Vouchers"
+            title={t.recentVouchers}
             icon={<Gift className="h-5 w-5 text-[var(--c-accent)]" />}
             link="/admin/vouchers"
           >
             {vouchers.length === 0 ? (
-              <p className="text-sm text-[var(--c-text)]/50">No vouchers yet.</p>
+              <p className="text-sm text-[var(--c-text)]/50">{t.noVouchers}</p>
             ) : (
               <ul className="space-y-3">
                 {vouchers.slice(0, 5).map((v) => (
@@ -179,11 +172,11 @@ export default function AdminDashboardPage() {
 
           {/* Top Stores */}
           <DashboardCard
-            title="Top Performing Stores"
+            title={t.topStores}
             icon={<TrendingUp className="h-5 w-5 text-[var(--c-secondary)]" />}
           >
             {topStores.length === 0 ? (
-              <p className="text-sm text-[var(--c-text)]/50">No active vouchers found.</p>
+              <p className="text-sm text-[var(--c-text)]/50">{t.noActiveVouchers}</p>
             ) : (
               <ul className="space-y-3">
                 {topStores.map((s) => (
@@ -195,7 +188,7 @@ export default function AdminDashboardPage() {
                       {s.name}
                     </span>
                     <span className="text-xs text-[var(--c-accent)] font-semibold">
-                      {s.activeCount} active
+                      {s.activeCount} {t.active}
                     </span>
                   </li>
                 ))}
@@ -222,10 +215,7 @@ function DashboardStatCard({
   highlight?: boolean
 }) {
   return (
-    <div
-      className="rounded-2xl border border-[var(--c-secondary)]/10 bg-white shadow-sm p-4 
-                 flex flex-col justify-between hover:shadow-md transition-all"
-    >
+    <div className="rounded-2xl border border-[var(--c-secondary)]/10 bg-white shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-all">
       <p className="text-sm text-[var(--c-text)]/70">{title}</p>
       <p
         className={`text-2xl font-semibold ${
@@ -250,28 +240,22 @@ function DashboardCard({
   link?: string
   children: React.ReactNode
 }) {
+    const { t } = useLanguage() // ✅ Add this
+
   return (
-    <div
-      className="rounded-xl border border-[var(--c-secondary)]/10 bg-white shadow-sm 
-                 hover:shadow-md transition-all p-4 flex flex-col overflow-hidden min-h-[220px]"
-    >
+    <div className="rounded-xl border border-[var(--c-secondary)]/10 bg-white shadow-sm hover:shadow-md transition-all p-4 flex flex-col overflow-hidden min-h-[220px]">
       <div className="flex items-center justify-between mb-2">
         <h3 className="flex items-center gap-2 font-semibold text-[var(--c-primary)] text-sm">
           {icon}
           {title}
         </h3>
         {link && (
-          <Link
-            href={link}
-            className="text-xs text-[var(--c-accent)] hover:underline"
-          >
-            View all →
+          <Link href={link} className="text-xs text-[var(--c-accent)] hover:underline">
+             {t.viewAll} 
           </Link>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto md:overflow-visible pr-1">
-        {children}
-      </div>
+      <div className="flex-1 overflow-y-auto md:overflow-visible pr-1">{children}</div>
     </div>
   )
 }
