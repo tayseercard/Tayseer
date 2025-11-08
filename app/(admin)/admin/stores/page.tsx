@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Stat } from '@/components/ui/stat'
+import { useLanguage } from '@/lib/useLanguage'
 
 export default function AdminStoresPage() {
   const supabase = createClientComponentClient()
@@ -41,7 +42,8 @@ export default function AdminStoresPage() {
 
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
   const [selectedWilaya, setSelectedWilaya] = useState<'all' | string>('all')
-
+  const { t } = useLanguage()
+ 
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -150,7 +152,7 @@ return (
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by name or address..."
+            placeholder={t.searchPlaceholder}
             className="flex-1 bg-transparent text-sm focus:outline-none"
           />
         </div>
@@ -161,7 +163,7 @@ return (
           <Menu as="div" className="relative flex-1">
             <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
               <Calendar className="h-4 w-4 text-gray-500" />
-              Sort
+              {t.sort}
               <ChevronDown className="h-3 w-3" />
             </Menu.Button>
             <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
@@ -173,7 +175,7 @@ return (
                     }
                     className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
                   >
-                    Newest first
+                    {t.newestFirst}
                   </button>
                 )}
               </Menu.Item>
@@ -185,42 +187,19 @@ return (
                     }
                     className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
                   >
-                    Oldest first
+                    {t.oldestFirst}
                   </button>
                 )}
               </Menu.Item>
             </Menu.Items>
           </Menu>
 
-          {/* 🎯 Status Filter */}
-          <Menu as="div" className="relative flex-1">
-            <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-              <ListChecks className="h-4 w-4 text-gray-500" />
-              Status
-              <ChevronDown className="h-3 w-3" />
-            </Menu.Button>
-            <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
-              {['all', 'open', 'closed'].map((status) => (
-                <Menu.Item key={status}>
-                  {({ active }) => (
-                    <button
-                      onClick={() => setSelectedStatus(status)}
-                      className={`w-full text-left px-4 py-2 capitalize flex justify-between ${active ? 'bg-gray-50' : ''}`}
-                    >
-                      {status}
-                      {selectedStatus === status && <Check className="h-4 w-4 text-emerald-600" />}
-                    </button>
-                  )}
-                </Menu.Item>
-              ))}
-            </Menu.Items>
-          </Menu>
 
           {/* 🧩 Wilaya Filter */}
           <Menu as="div" className="relative flex-1">
             <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
               <Filter className="h-4 w-4 text-gray-500" />
-              Wilaya
+              {t.wilaya}
               <ChevronDown className="h-3 w-3" />
             </Menu.Button>
             <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg max-h-48 overflow-y-auto">
@@ -268,12 +247,12 @@ return (
           <table className="w-full text-sm min-w-[700px]">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <Th>Name</Th>
-                <Th>Status</Th>
-                <Th>Wilaya</Th>
-                <Th>Phone</Th>
-                <Th>Address</Th>
-                <Th>Actions</Th>
+                <Th>{t.name}</Th>
+                <Th>{t.status}</Th>
+                <Th>{t.wilaya}</Th>
+                <Th>{t.phone}</Th>
+                <Th>{t.address}</Th>
+                <Th>{t.actions}</Th>
               </tr>
             </thead>
             <tbody>
@@ -313,17 +292,17 @@ return (
     {/* === Header === */}
     <DialogHeader className="space-y-1">
       <DialogTitle className="text-lg font-semibold text-[var(--c-primary)]">
-        Add New Store
+        {t.addStoreTitle}
       </DialogTitle>
       <p className="text-sm text-[var(--c-text)]/70">
-        Fill in the store details below.
+        {t.addStoreDesc}
       </p>
     </DialogHeader>
 
     {/* === Form Fields === */}
     <div className="flex flex-col gap-3 pt-2">
       <Input
-        placeholder="Store name *"
+        placeholder={t.storeName}
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
         className="
@@ -333,7 +312,7 @@ return (
         "
       />
       <Input
-        placeholder="Email *"
+        placeholder={t.email}
         type="email"
         value={form.email}
         onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -344,7 +323,7 @@ return (
         "
       />
       <Input
-        placeholder="Phone"
+        placeholder={t.phone}
         value={form.phone}
         onChange={(e) => setForm({ ...form, phone: e.target.value })}
         className="
@@ -354,7 +333,7 @@ return (
         "
       />
       <Input
-        placeholder="Address"
+        placeholder={t.address}
         value={form.address}
         onChange={(e) => setForm({ ...form, address: e.target.value })}
         className="
@@ -365,7 +344,7 @@ return (
       />
       <Input
         type="number"
-        placeholder="Wilaya (1–58)"
+        placeholder={t.wilayaRange}
         min={1}
         max={58}
         value={form.wilaya}
@@ -389,7 +368,7 @@ return (
           rounded-lg transition
         "
       >
-        Cancel
+        {t.cancel}
       </Button>
 
       <Button
@@ -402,7 +381,7 @@ return (
           disabled:opacity-50
         "
       >
-        {saving ? 'Saving…' : 'Add Store'}
+{saving ? t.saving : t.addStore}
       </Button>
     </DialogFooter>
   </DialogContent>

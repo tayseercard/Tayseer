@@ -1,12 +1,11 @@
 'use client'
 
-import { Plus, Store } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { useLanguage } from '@/lib/useLanguage'
 
-export default function StoresHeader({
-  onAdd,
-}: {
-  onAdd: () => void
-}) {
+export default function StoresHeader({ onAdd }: { onAdd: () => void }) {
+  const { t } = useLanguage()
+
   return (
     <header
       className="
@@ -27,7 +26,7 @@ export default function StoresHeader({
           text-lg sm:text-xl font-semibold tracking-tight
         "
       >
-        <span className="text-white">Add Store</span>
+        <span className="text-white">{t.addStore}</span>
       </h1>
 
       {/* === Right: Add Button === */}
@@ -41,7 +40,7 @@ export default function StoresHeader({
           shadow-md hover:bg-[var(--c-accent)]/90
           active:scale-95 transition
         "
-        aria-label="Add Store"
+        aria-label={t.addStore}
       >
         <Plus className="h-5 w-5" />
       </button>
