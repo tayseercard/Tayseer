@@ -9,6 +9,7 @@ import { Scanner } from '@yudiel/react-qr-scanner'
 import VoucherModal from '@/components/VoucherModal'
 
 
+
 import {
   Search,
   X,
@@ -126,9 +127,6 @@ export default function AdminVouchersPage() {
     if (insertError) throw insertError
 
     alert(`✅ Created ${count} blank voucher(s).`)
-
-    // 🖨️ Open print page for this store
-    window.open(`/admin/vouchers/print/${storeId}`, '_blank')
 
     // Reset state
     setAdding(false)

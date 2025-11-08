@@ -1,53 +1,99 @@
-// app/(admin)/admin/vouchers/print/[storeId]/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { voucherToDataUrl } from '@/lib/qrcode'
 
-export default function PrintVouchersPage({ params }: { params: Promise<{ storeId: string }> }) {
-  const [storeId, setStoreId] = useState<string | null>(null)
-  const [vouchers, setVouchers] = useState<any[]>([])
+export default function PrintVouchersPage() {
   const supabase = createClientComponentClient()
+  const params = useParams()
+  const searchParams = useSearchParams()
+  const storeId = params.storeId as string
 
-  // ✅ Unwrap params
-  useEffect(() => {
-    (async () => {
-      const resolved = await params
-      setStoreId(resolved.storeId)
-    })()
-  }, [params])
+  const [vouchers, setVouchers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // ✅ Load vouchers when storeId available
+  const from = searchParams.get('from')
+  const to = searchParams.get('to')
+
+  /* 🟢 Load vouchers filtered by date range */
   useEffect(() => {
     if (!storeId) return
-
     ;(async () => {
-      const { data: voucherData } = await supabase
+      setLoading(true)
+      let query = supabase
         .from('vouchers')
-        .select('id, code, status')
+        .select('id, code, status, created_at')
         .eq('store_id', storeId)
+        .eq('status', 'blank')
         .order('created_at', { ascending: true })
 
-      setVouchers(voucherData || [])
+      if (from) query = query.gte('created_at', from)
+      if (to) query = query.lte('created_at', to + 'T23:59:59')
+
+      const { data, error } = await query
+      if (error) console.error('Supabase error:', error)
+      setVouchers(data || [])
+      setLoading(false)
     })()
-  }, [storeId, supabase])
+  }, [storeId, from, to, supabase])
+
+  // 🖨 Auto print after load
+  useEffect(() => {
+    if (!loading && vouchers.length > 0) {
+      const timer = setTimeout(() => window.print(), 800)
+      return () => clearTimeout(timer)
+    }
+  }, [loading, vouchers])
 
   return (
-    <div className="p-6 bg-white text-black print:p-0">
-      <h1 className="text-xl font-bold mb-4 text-center">
-        Voucher Batch – Store {storeId}
-      </h1>
-
-      <div className="grid grid-cols-3 gap-4 print:grid-cols-4 print:gap-2">
-        {vouchers.map((v) => (
-          <VoucherCard key={v.id} code={v.code} />
-        ))}
+    <div
+      className="
+        bg-white text-black min-h-screen
+        flex flex-col items-center justify-start
+        p-4 print:p-0
+      "
+    >
+      {/* ===== Header for Screen Only ===== */}
+      <div className="print:hidden flex justify-between items-center w-full max-w-5xl mb-4">
+        <h1 className="text-lg font-semibold">🧾 Voucher Batch</h1>
+        <button
+          onClick={() => window.print()}
+          className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-sm hover:bg-emerald-700"
+        >
+          Print Now
+        </button>
       </div>
+
+      {loading ? (
+        <div className="text-gray-500 py-10 text-sm">Loading vouchers...</div>
+      ) : vouchers.length === 0 ? (
+        <div className="text-gray-500 py-10 text-sm">
+          No vouchers found in this date range.
+        </div>
+      ) : (
+        <div className="print-area w-full flex justify-center">
+          <div
+            className="
+              grid 
+              grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5
+              gap-x-3 gap-y-4 sm:gap-x-4 sm:gap-y-6
+              print:grid-cols-5 print:gap-x-2 print:gap-y-2
+              w-full max-w-[210mm] max-h-[270mm] mx-auto
+            "
+          >
+            {vouchers.map((v) => (
+              <VoucherCard key={v.id} code={v.code} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
+/* ---------------- Voucher Card ---------------- */
 function VoucherCard({ code }: { code: string }) {
   const [qr, setQr] = useState<string | null>(null)
 
@@ -56,14 +102,32 @@ function VoucherCard({ code }: { code: string }) {
   }, [code])
 
   return (
-    <div className="border rounded-lg p-3 text-center text-sm">
-      <p className="font-medium mb-2">Voucher Code</p>
-      {qr ? (
-        <img src={qr} alt={code} className="mx-auto w-24 h-24" />
-      ) : (
-        <div className="w-24 h-24 bg-gray-100 mx-auto" />
-      )}
-      <p className="mt-2 font-semibold">{code}</p>
+    <div
+      className="
+        voucher-card
+        border border-gray-300 rounded-md text-center 
+        flex flex-col items-center justify-center
+        w-[42vw] h-[42vw] sm:w-[30vw] sm:h-[30vw] md:w-[35mm] md:h-[35mm] lg:w-[40mm] lg:h-[40mm]
+        bg-white shadow-sm print:shadow-none print:border-gray-200
+      "
+    >
+      {/* QR centered */}
+      <div className="flex-1 flex items-center justify-center">
+        {qr ? (
+          <img
+            src={qr}
+            alt={code}
+            className="w-[60%] h-[60%] object-contain"
+          />
+        ) : (
+          <div className="w-[60%] h-[60%] bg-gray-100" />
+        )}
+      </div>
+
+      {/* Code below QR */}
+      <p className="text-[10px] font-medium tracking-widest mt-1 mb-2 select-none">
+        {code}
+      </p>
     </div>
   )
 }

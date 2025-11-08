@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Store } from 'lucide-react'
+import { Plus, Printer, Store } from 'lucide-react'
 
 export default function StoresHeader({
   onAdd,
@@ -31,6 +31,7 @@ export default function StoresHeader({
       </h1>
 
       {/* === Right: Add Button === */}
+     
       <button
         onClick={onAdd}
         className="

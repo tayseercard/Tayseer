@@ -41,13 +41,13 @@
 /* === Light Mode (Tayseer Palette) === */
 :root {
   /* --- Tayseer Brand Palette --- */
-  --bg: #F2F3F4;
-  --section-bg: #EBEAED;
-  --c-primary: #020035;   /* Deep navy */
-  --c-secondary: #02066F; /* Blue accent */
-  --c-bank: #2000B1;      /* Main blue */
-  --c-accent: #ED4B00;    /* Orange */
-  --c-text: #1A1A1A;      /* Neutral text */
+  --bg: #f2f3f4;
+  --section-bg: #ebeaed;
+  --c-primary: #020035; /* Deep navy */
+  --c-secondary: #02066f; /* Blue accent */
+  --c-bank: #2000b1; /* Main blue */
+  --c-accent: #ed4b00; /* Orange */
+  --c-text: #1a1a1a; /* Neutral text */
 
   /* --- Map to Tailwind tokens --- */
   --background: var(--bg);
@@ -71,7 +71,7 @@
   :root {
     --bg: #0b0b15;
     --section-bg: #141425;
-    --c-primary: #EBEAED;
+    --c-primary: #ebeaed;
     --c-secondary: #9da2ff;
     --c-bank: #5a60ff;
     --c-accent: #ff7a33;
@@ -90,19 +90,69 @@
     --card-foreground: var(--c-text);
   }
 }
+
+/* === 🖨 Print only voucher area === */
 @media print {
-  button,
-  .no-print {
-    display: none !important;
-  }
-
+  /* ✅ Force A4 with uniform 5 mm physical margins */
   @page {
-    margin: 0.3cm;
+    size: A4;
+    margin: 5mm;
   }
 
+  html,
   body {
-    background: white;
-    color: black;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    box-sizing: border-box;
+  }
+
+  /* Hide everything except the print zone */
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
+  /* ✅ Printable area container */
+  .print-area {
+    display: block !important;
+    position: relative !important;
+    background: white !important;
+    width: 100%;
+    margin: 0 auto;
+    padding: 5mm;              /* inner padding for margin consistency */
+    box-sizing: border-box;
+    page-break-after: always;  /* ensure new page when needed */
+  }
+
+  /* ✅ Voucher card: perfectly centered QR code */
+  .voucher-card {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: column !important;
+    text-align: center !important;
+    width: 35mm !important;
+    height: 35mm !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ✅ Optional: prevent breaking rows */
+  .voucher-row {
+    page-break-after: auto;
+    break-after: auto;
   }
 }
 
