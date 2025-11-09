@@ -1,5 +1,7 @@
 'use client'
+
 import { useEffect, useState } from 'react'
+import { Eye, EyeOff, Trash2, Plus, Store } from 'lucide-react'
 
 export default function RolesSettings({ t }: { t: Record<string, string> }) {
   const [stores, setStores] = useState<any[]>([])
@@ -65,85 +67,108 @@ export default function RolesSettings({ t }: { t: Record<string, string> }) {
   const roleOptions = ['Manager', 'Cashier', 'Auditor']
 
   return (
-    <div className="space-y-3 text-sm">
-      <h3 className="text-base font-semibold text-gray-800">
-        Roles & Store Access
-      </h3>
-      <p className="text-gray-600 mb-2">
-        Manage which role each store account has. You can also show passwords or delete a store.
-      </p>
+    <div className="relative p-4 sm:p-6">
+      {/* === Header === */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+            <Store className="h-5 w-5 text-[var(--c-accent)]" />
+            Roles & Store Access
+          </h2>
+          <p className="text-gray-500 text-sm mt-1">
+            Manage store accounts, roles, and temporary passwords.
+          </p>
+        </div>
 
-      {/* 🧱 Table (Desktop) */}
-      <div className="hidden sm:block overflow-x-auto border rounded-md shadow-sm">
-        <table className="min-w-full text-xs sm:text-sm">
-          <thead className="bg-gray-50">
+        {/* Add Store Button */}
+        <button
+          onClick={() => alert('Add store modal')}
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--c-accent)] text-white text-sm hover:bg-[var(--c-accent)]/90"
+        >
+          <Plus className="h-4 w-4" /> Add Store
+        </button>
+      </div>
+
+      {/* === Loading State === */}
+      {loading && (
+        <div className="text-center py-10 text-gray-400">Loading stores…</div>
+      )}
+
+      {/* === Empty State === */}
+      {!loading && stores.length === 0 && (
+        <div className="text-center py-10 text-gray-400">
+          No stores found yet.
+        </div>
+      )}
+
+      {/* === Desktop Table === */}
+      <div className="hidden md:block overflow-x-auto border rounded-xl bg-white shadow-sm">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 text-gray-600">
             <tr>
-              <th className="px-3 py-2 text-left">Store</th>
-              <th className="px-3 py-2 text-left">Email</th>
-              <th className="px-3 py-2 text-left">Temp password</th>
-              <th className="px-3 py-2 text-left">Role</th>
-              <th className="px-3 py-2 text-left">Actions</th>
+              <th className="px-4 py-2 text-left">Store</th>
+              <th className="px-4 py-2 text-left">Email</th>
+              <th className="px-4 py-2 text-left">Password</th>
+              <th className="px-4 py-2 text-left">Role</th>
+              <th className="px-4 py-2 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {stores.length === 0 && !loading ? (
-              <tr>
-                <td colSpan={5} className="text-center py-4 text-gray-400">
-                  No stores found
-                </td>
-              </tr>
-            ) : (
-              stores.map((s) => {
-                const shown = visible[s.id]
-                const pw = s.temp_password || '—'
-                const masked = pw === '—' ? '—' : pw.replace(/./g, '•')
-                const currentRole = roles[s.id] || s.role || 'Manager'
-                return (
-                  <tr key={s.id} className="border-t hover:bg-gray-50">
-                    <td className="px-3 py-2">{s.name}</td>
-                    <td className="px-3 py-2">{s.email ?? '—'}</td>
-                    <td className="px-3 py-2 font-mono">
-                      {shown ? pw : masked}
-                    </td>
-                    <td className="px-3 py-2">
-                      <select
-                        className="border rounded-md text-xs px-2 py-1"
-                        value={currentRole}
-                        onChange={(e) =>
-                          handleRoleChange(s.id, e.target.value)
-                        }
-                      >
-                        {roleOptions.map((r) => (
-                          <option key={r}>{r}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-3 py-2 space-x-2">
-                      <button
-                        onClick={() =>
-                          setVisible((v) => ({ ...v, [s.id]: !v[s.id] }))
-                        }
-                        className="border rounded px-2 py-1 text-xs hover:bg-gray-50"
-                      >
-                        {shown ? 'Hide' : 'Show'}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(s.id, s.name)}
-                        className="border border-rose-400 text-rose-600 rounded px-2 py-1 text-xs hover:bg-rose-50"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })
-            )}
+            {stores.map((s) => {
+              const shown = visible[s.id]
+              const pw = s.temp_password || '—'
+              const masked = pw === '—' ? '—' : pw.replace(/./g, '•')
+              const currentRole = roles[s.id] || s.role || 'Manager'
+              return (
+                <tr
+                  key={s.id}
+                  className="border-t hover:bg-gray-50 transition-colors"
+                >
+                  <td className="px-4 py-2">{s.name}</td>
+                  <td className="px-4 py-2">{s.email ?? '—'}</td>
+                  <td className="px-4 py-2 font-mono flex items-center gap-2">
+                    {shown ? pw : masked}
+                    <button
+                      onClick={() =>
+                        setVisible((v) => ({ ...v, [s.id]: !v[s.id] }))
+                      }
+                      className="text-gray-500 hover:text-[var(--c-accent)]"
+                    >
+                      {shown ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </td>
+                  <td className="px-4 py-2">
+                    <select
+                      className="border rounded-md text-xs px-2 py-1"
+                      value={currentRole}
+                      onChange={(e) => handleRoleChange(s.id, e.target.value)}
+                    >
+                      {roleOptions.map((r) => (
+                        <option key={r}>{r}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-4 py-2">
+                    <button
+                      onClick={() => handleDelete(s.id, s.name)}
+                      className="text-rose-600 border border-rose-300 rounded-md px-2 py-1 text-xs hover:bg-rose-50"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* 📱 Mobile View */}
-      <div className="grid gap-3 sm:hidden mt-4">
+      {/* === Mobile Cards === */}
+      <div className="grid gap-4 md:hidden mt-4">
         {stores.map((s) => {
           const shown = visible[s.id]
           const pw = s.temp_password || '—'
@@ -152,36 +177,50 @@ export default function RolesSettings({ t }: { t: Record<string, string> }) {
           return (
             <div
               key={s.id}
-              className="border rounded-lg bg-white p-3 shadow-sm flex flex-col gap-2"
+              className="bg-white border rounded-2xl p-4 shadow-sm flex flex-col gap-3"
             >
-              <div className="flex justify-between items-center">
-                <h3 className="font-medium text-sm">{s.name}</h3>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-semibold text-sm text-gray-900">
+                    {s.name}
+                  </h3>
+                  <p className="text-xs text-gray-500">{s.email ?? '—'}</p>
+                </div>
                 <button
                   onClick={() => handleDelete(s.id, s.name)}
-                  className="text-rose-600 text-xs border border-rose-300 rounded px-2 py-0.5 hover:bg-rose-50"
+                  className="flex items-center gap-1 text-rose-600 text-xs border border-rose-300 rounded-lg px-2 py-1 hover:bg-rose-50"
                 >
+                  <Trash2 className="h-3.5 w-3.5" />
                   Delete
                 </button>
               </div>
 
-              <p className="text-xs text-gray-600">{s.email ?? '—'}</p>
-
-              <div className="flex items-center justify-between text-xs font-mono bg-gray-50 px-2 py-1 rounded">
+              <div className="flex items-center justify-between bg-gray-50 rounded-md px-3 py-2 font-mono text-xs">
                 <span>{shown ? pw : masked}</span>
                 <button
                   onClick={() =>
                     setVisible((v) => ({ ...v, [s.id]: !v[s.id] }))
                   }
-                  className="text-emerald-600"
+                  className="text-[var(--c-accent)] flex items-center gap-1"
                 >
-                  {shown ? 'Hide' : 'Show'}
+                  {shown ? (
+                    <>
+                      <EyeOff className="h-3.5 w-3.5" />
+                      Hide
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-3.5 w-3.5" />
+                      Show
+                    </>
+                  )}
                 </button>
               </div>
 
-              <div className="flex justify-between items-center mt-1">
-                <span className="text-xs text-gray-500">Role:</span>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500">Role</span>
                 <select
-                  className="border rounded-md text-xs px-2 py-1"
+                  className="border rounded-md text-xs px-2 py-1 bg-white"
                   value={currentRole}
                   onChange={(e) => handleRoleChange(s.id, e.target.value)}
                 >
@@ -194,6 +233,8 @@ export default function RolesSettings({ t }: { t: Record<string, string> }) {
           )
         })}
       </div>
+
+     
     </div>
   )
 }
