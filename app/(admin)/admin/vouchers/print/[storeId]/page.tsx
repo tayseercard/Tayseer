@@ -1,11 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { voucherToDataUrl } from '@/lib/qrcode'
 import QRCodeStyling from 'qr-code-styling'
-import { useRef } from 'react'
 
 export default function PrintVouchersPage() {
   const supabase = createClientComponentClient()
@@ -78,13 +76,13 @@ export default function PrintVouchersPage() {
         <div className="print-area w-full flex justify-center">
           <div
             className="
-    grid 
-    grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5
-    gap-4 sm:gap-5 md:gap-6
-    print:grid-cols-5 print:gap-3
-    w-full max-w-[210mm] mx-auto
-    print:p-4
-  "
+              grid 
+              grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5
+              gap-4 sm:gap-5 md:gap-6
+              print:grid-cols-5 print:gap-x-3 print:gap-y-4
+              w-full max-w-[210mm] mx-auto
+              print:p-6
+            "
           >
             {vouchers.map((v) => (
               <VoucherCard key={v.id} code={v.code} />
@@ -103,9 +101,8 @@ function VoucherCard({ code }: { code: string }) {
   useEffect(() => {
     if (!qrRef.current) return
 
-    // ✅ Detect device type → adjust QR size dynamically
-    const isMobile = window.innerWidth < 640 // sm breakpoint
-    const qrSize = isMobile ? 100 : 160 // smaller on phones, medium for print
+    const isMobile = window.innerWidth < 640
+    const qrSize = isMobile ? 90 : 150 // adjust size for phone vs print
 
     const qr = new QRCodeStyling({
       width: qrSize,
@@ -119,10 +116,10 @@ function VoucherCard({ code }: { code: string }) {
       backgroundOptions: {
         color: '#ffffff',
       },
-      image: '/icon-192.png', // your logo in center
+      image: '/icon-192.png',
       imageOptions: {
         crossOrigin: 'anonymous',
-        margin: 4,
+        margin: 3,
       },
     })
 
@@ -133,18 +130,19 @@ function VoucherCard({ code }: { code: string }) {
   return (
     <div
       className="
-    border border-gray-300 rounded-md text-center 
-    flex flex-col items-center justify-center
-    w-[35vw] h-[35vw] sm:w-[32vw] sm:h-[32vw] md:w-[36mm] md:h-[36mm]
-    bg-white shadow-sm print:shadow-none print:border-gray-200
-    p-2 sm:p-3 print:p-2
-  "
+        avoid-break
+        border border-gray-300 rounded-md text-center 
+        flex flex-col items-center justify-center
+        w-[25vw] h-[25vw] sm:w-[32vw] sm:h-[32vw] md:w-[36mm] md:h-[36mm]
+        bg-white shadow-sm print:shadow-none print:border-gray-200
+        p-2 sm:p-3 print:p-2
+      "
     >
       <div
         ref={qrRef}
         className="flex items-center justify-center scale-[0.85] sm:scale-100"
       />
-      <p className="text-[10px] font-medium tracking-widest mt-1 mb-2 select-none">
+      <p className="text-[5px] font-medium tracking-widest mt-1 mb-2 select-none">
         {code}
       </p>
     </div>

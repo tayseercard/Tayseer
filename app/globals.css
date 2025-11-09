@@ -92,11 +92,23 @@
 }
 
 /* === 🖨 Print only voucher area === */
+/* ✅ Force A4 paper format with uniform margins */
+@page {
+  size: A4;
+  margin: 5mm;
+}
+
+/* === Print Styles === */
 @media print {
-  /* ✅ Force A4 with uniform 5 mm physical margins */
-  @page {
-    size: A4;
-    margin: 5mm;
+  /* ✅ Prevent elements from splitting between pages */
+  .avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* ✅ Extra margin to prevent clipping on bottom edge */
+  .print-area {
+    margin-bottom: 10mm;
   }
 
   html,
@@ -109,7 +121,7 @@
     box-sizing: border-box;
   }
 
-  /* Hide everything except the print zone */
+  /* ✅ Hide everything except the printable area */
   body * {
     visibility: hidden !important;
   }
@@ -119,27 +131,27 @@
     visibility: visible !important;
   }
 
-  /* ✅ Printable area container */
+  /* ✅ Printable zone: centralized content */
   .print-area {
     display: block !important;
     position: relative !important;
     background: white !important;
     width: 100%;
     margin: 0 auto;
-    padding: 5mm;              /* inner padding for margin consistency */
+    padding: 5mm;
     box-sizing: border-box;
-    page-break-after: always;  /* ensure new page when needed */
+    page-break-after: always;
   }
 
-  /* ✅ Voucher card: perfectly centered QR code */
+  /* ✅ Voucher card: clean, consistent look per page */
   .voucher-card {
-    display: flex !important;
+    display: center !important;
     align-items: center !important;
     justify-content: center !important;
     flex-direction: column !important;
     text-align: center !important;
-    width: 35mm !important;
-    height: 35mm !important;
+    width: 25mm !important;
+    height: 25mm !important;
     border: 1px solid #ccc !important;
     box-shadow: none !important;
     background: white !important;
@@ -149,7 +161,7 @@
     page-break-inside: avoid !important;
   }
 
-  /* ✅ Optional: prevent breaking rows */
+  /* ✅ Optional: maintain consistent row grouping */
   .voucher-row {
     page-break-after: auto;
     break-after: auto;
