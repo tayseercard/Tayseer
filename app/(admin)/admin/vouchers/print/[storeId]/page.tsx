@@ -69,15 +69,15 @@ export default function PrintVouchersPage() {
       ) : (
         <div className="print-area w-full flex justify-center">
           <div
-            className="
-              grid 
-              grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5
-              gap-4 sm:gap-5 md:gap-6
-              print:grid-cols-5 print:gap-x-[5mm] print:gap-y-[6mm]
-              w-full max-w-[210mm] mx-auto
-              print:p-[5mm]
-            "
-          >
+  className="
+    grid 
+    grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-5 lg:grid-cols-5
+    gap-2 xs:gap-3 sm:gap-5 md:gap-6
+    print:grid-cols-5 print:gap-x-[5mm] print:gap-y-[6mm]
+    w-full max-w-[210mm] mx-auto
+    print:p-[5mm]
+  "
+>
             {vouchers.map((v) => (
               <VoucherCard key={v.id} code={v.code} />
             ))}
@@ -96,7 +96,7 @@ function VoucherCard({ code }: { code: string }) {
     if (!qrRef.current) return
 
     const isMobile = window.innerWidth < 640
-    const qrSize = isMobile ? 90 : 90 // smaller on phones
+    const qrSize = isMobile ? 90 : 120 // smaller on phones
 
     const qr = new QRCodeStyling({
       width: qrSize,
