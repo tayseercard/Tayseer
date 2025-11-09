@@ -48,14 +48,8 @@ export default function PrintVouchersPage() {
   }, [loading, vouchers])
 
   return (
-    <div
-      className="
-        bg-white text-black min-h-screen
-        flex flex-col items-center justify-start
-        p-4 print:p-0
-      "
-    >
-      {/* ===== Header for Screen Only ===== */}
+    <div className="bg-white text-black min-h-screen flex flex-col items-center justify-start p-4 print:p-0">
+      {/* ===== Header (hidden during print) ===== */}
       <div className="print:hidden flex justify-between items-center w-full max-w-5xl mb-4">
         <h1 className="text-lg font-semibold">🧾 Voucher Batch</h1>
         <button
@@ -79,9 +73,9 @@ export default function PrintVouchersPage() {
               grid 
               grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5
               gap-4 sm:gap-5 md:gap-6
-              print:grid-cols-5 print:gap-x-3 print:gap-y-4
+              print:grid-cols-5 print:gap-x-[5mm] print:gap-y-[6mm]
               w-full max-w-[210mm] mx-auto
-              print:p-6
+              print:p-[5mm]
             "
           >
             {vouchers.map((v) => (
@@ -102,13 +96,13 @@ function VoucherCard({ code }: { code: string }) {
     if (!qrRef.current) return
 
     const isMobile = window.innerWidth < 640
-    const qrSize = isMobile ? 90 : 150 // adjust size for phone vs print
+    const qrSize = isMobile ? 90 : 90 // smaller on phones
 
     const qr = new QRCodeStyling({
       width: qrSize,
       height: qrSize,
       data: `https://tayseer.vercel.app/v/${encodeURIComponent(code)}`,
-      margin: 4,
+      margin: 2,
       dotsOptions: {
         color: '#00B686', // Tayseer green
         type: 'rounded',
@@ -119,7 +113,7 @@ function VoucherCard({ code }: { code: string }) {
       image: '/icon-192.png',
       imageOptions: {
         crossOrigin: 'anonymous',
-        margin: 3,
+        margin: 2,
       },
     })
 
@@ -130,19 +124,21 @@ function VoucherCard({ code }: { code: string }) {
   return (
     <div
       className="
-        avoid-break
-        border border-gray-300 rounded-md text-center 
+        voucher-card avoid-break
+        border border-gray-300 rounded-md 
         flex flex-col items-center justify-center
-        w-[25vw] h-[25vw] sm:w-[32vw] sm:h-[32vw] md:w-[36mm] md:h-[36mm]
+        w-[20vw] h-[20vw] sm:w-[25vw] sm:h-[25vw] md:w-[20mm] md:h-[20mm]
         bg-white shadow-sm print:shadow-none print:border-gray-200
         p-2 sm:p-3 print:p-2
       "
     >
+      {/* ✅ QR code perfectly centered */}
       <div
         ref={qrRef}
-        className="flex items-center justify-center scale-[0.85] sm:scale-100"
+        className="flex items-center justify-center h-full w-full"
       />
-      <p className="text-[5px] font-medium tracking-widest mt-1 mb-2 select-none">
+      {/* Code below QR */}
+      <p className="text-[6px] font-medium tracking-widest mt-1 select-none">
         {code}
       </p>
     </div>

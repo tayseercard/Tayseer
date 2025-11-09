@@ -119,6 +119,8 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     box-sizing: border-box;
+     -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   /* ✅ Hide everything except the printable area */
@@ -141,25 +143,27 @@
     padding: 5mm;
     box-sizing: border-box;
     page-break-after: always;
+    
   }
 
   /* ✅ Voucher card: clean, consistent look per page */
-  .voucher-card {
-    display: center !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex-direction: column !important;
-    text-align: center !important;
-    width: 25mm !important;
-    height: 25mm !important;
-    border: 1px solid #ccc !important;
-    box-shadow: none !important;
-    background: white !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
+.voucher-card {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: column !important;
+  text-align: center !important;
+  width: 20mm !important;
+  height: 20mm !important;
+  border: 1px solid #ccc !important;
+  box-shadow: none !important;
+  background: white !important;
+  margin: 0 !important;
+  padding: 5px !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
 
   /* ✅ Optional: maintain consistent row grouping */
   .voucher-row {
