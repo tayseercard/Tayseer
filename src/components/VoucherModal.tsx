@@ -43,24 +43,7 @@ export default function VoucherModal({
   const [saving, setSaving] = useState(false)
   const qrRef = useRef<HTMLDivElement>(null)
 
-const qr = new QRCodeStyling({
-  width: 250,
-  height: 250,
-  data: 'https://tayseer.vercel.app',
-  margin: 10,
-  dotsOptions: {
-    color: '#00B686', // your brand green
-    type: 'rounded',  // or 'dots', 'square', etc.
-  },
-  backgroundOptions: {
-    color: '#ffffff',
-  },
-  image: '/icon-192.png', // optional: your logo
-  imageOptions: {
-    crossOrigin: 'anonymous',
-    margin: 6,
-  },
-})
+
   // used for debounce
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   // Phone number validation
