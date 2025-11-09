@@ -67,20 +67,24 @@ const qr = new QRCodeStyling({
   const [phoneValid, setPhoneValid] = useState(true)
 
 
-  useEffect(() => {
+useEffect(() => {
+  // detect screen width → choose QR size
+  const isMobile = window.innerWidth < 640 // sm breakpoint
+  const size = isMobile ? 120 : 180 // smaller on phone, bigger on desktop
+
   const qr = new QRCodeStyling({
-    width: 180,
-    height: 180,
+    width: size,
+    height: size,
     data: voucherDeepLink(voucher.code),
-    margin: 8,
+    margin: 6,
     dotsOptions: {
-      color: '--c-accent', // Tayseer green
-      type: 'rounded',  // can be "dots", "square", "extra-rounded"
+      color: '#00B686', // Tayseer green
+      type: 'rounded',
     },
     backgroundOptions: {
       color: '#ffffff',
     },
-    image: '/icon-192.png', // your logo in the center
+    image: '/icon-192.png',
     imageOptions: {
       crossOrigin: 'anonymous',
       margin: 5,
@@ -88,10 +92,11 @@ const qr = new QRCodeStyling({
   })
 
   if (qrRef.current) {
-    qrRef.current.innerHTML = '' // clear previous QR
+    qrRef.current.innerHTML = ''
     qr.append(qrRef.current)
   }
 }, [voucher.code])
+
 
 
   useEffect(() => {
@@ -372,8 +377,12 @@ const qr = new QRCodeStyling({
                   <div className="flex flex-col items-center justify-center">
                     <div
   ref={qrRef}
-  className="h-28 w-28 sm:h-32 sm:w-32 rounded-lg border border-[var(--c-bank)]/30 shadow-sm bg-white/80 p-1.5 flex items-center justify-center"
-/>
+ className="
+    h-24 w-24 sm:h-28 sm:w-28
+    scale-90 sm:scale-100
+    rounded-lg border border-[var(--c-bank)]/30 shadow-sm
+    bg-white/80 p-1.5 flex items-center justify-center
+  "/>
                     <a
                       href={voucherDeepLink(voucher.code)}
                       target="_blank"
