@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Menu, Combobox } from '@headlessui/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { v4 as uuidv4 } from 'uuid'
-import { Scanner } from '@yudiel/react-qr-scanner'
 import VoucherModal from '@/components/VoucherModal'
 
 
@@ -20,19 +19,6 @@ import {
   ListChecks,
 } from 'lucide-react'
 
-/* ---------- Types ---------- */
-type Store = { id: string; name: string }
-type Voucher = {
-  id: string
-  store_id: string
-  code: string
-  buyer_name?: string | null
-  recipient_name?: string | null
-  status: string
-  initial_amount: number
-  balance: number
-  created_at: string
-}
 
 /* =================== MAIN PAGE =================== */
 export default function AdminVouchersPage() {

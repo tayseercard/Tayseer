@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { voucherToDataUrl } from '@/lib/qrcode'
+import QRCodeStyling from 'qr-code-styling'
+import { useRef } from 'react'
 
 export default function PrintVouchersPage() {
   const supabase = createClientComponentClient()
@@ -95,38 +97,45 @@ export default function PrintVouchersPage() {
 
 /* ---------------- Voucher Card ---------------- */
 function VoucherCard({ code }: { code: string }) {
-  const [qr, setQr] = useState<string | null>(null)
+  const qrRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    voucherToDataUrl(code).then(setQr)
+    if (!qrRef.current) return
+
+    const qr = new QRCodeStyling({
+      width: 50,
+      height: 50,
+      data: `https://tayseer.vercel.app/v/${encodeURIComponent(code)}`,
+      margin: 5,
+      dotsOptions: {
+        color: '#00B686', // Tayseer green
+        type: 'rounded',  // nice soft look
+      },
+      backgroundOptions: {
+        color: '#ffffff',
+      },
+      image: '/icon-192.png', // your logo in center
+      imageOptions: {
+        crossOrigin: 'anonymous',
+        margin: 5,
+      },
+    })
+
+    qrRef.current.innerHTML = '' // clear before re-render
+    qr.append(qrRef.current)
   }, [code])
 
   return (
     <div
       className="
-        voucher-card
         border border-gray-300 rounded-md text-center 
         flex flex-col items-center justify-center
         w-[42vw] h-[42vw] sm:w-[30vw] sm:h-[30vw] md:w-[35mm] md:h-[35mm] lg:w-[40mm] lg:h-[40mm]
         bg-white shadow-sm print:shadow-none print:border-gray-200
       "
     >
-      {/* QR centered */}
-      <div className="flex-1 flex items-center justify-center">
-        {qr ? (
-          <img
-            src={qr}
-            alt={code}
-            className="w-[60%] h-[60%] object-contain"
-          />
-        ) : (
-          <div className="w-[60%] h-[60%] bg-gray-100" />
-        )}
-      </div>
-
-      {/* Code below QR */}
+      <div ref={qrRef} className="flex-1 flex items-center justify-center" />
       <p className="text-[10px] font-medium tracking-widest mt-1 mb-2 select-none">
-        {code}
       </p>
     </div>
   )

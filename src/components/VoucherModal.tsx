@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode'
 import { useLanguage } from '@/lib/useLanguage'
+import QRCodeStyling from 'qr-code-styling'
+
 
 type Voucher = {
   recipient_name: string | null
@@ -39,7 +41,26 @@ export default function VoucherModal({
   const [autoFilled, setAutoFilled] = useState(false)
   const [consumeAmount, setConsumeAmount] = useState('')
   const [saving, setSaving] = useState(false)
+  const qrRef = useRef<HTMLDivElement>(null)
 
+const qr = new QRCodeStyling({
+  width: 250,
+  height: 250,
+  data: 'https://tayseer.vercel.app',
+  margin: 10,
+  dotsOptions: {
+    color: '#00B686', // your brand green
+    type: 'rounded',  // or 'dots', 'square', etc.
+  },
+  backgroundOptions: {
+    color: '#ffffff',
+  },
+  image: '/icon-192.png', // optional: your logo
+  imageOptions: {
+    crossOrigin: 'anonymous',
+    margin: 6,
+  },
+})
   // used for debounce
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   // Phone number validation
@@ -47,8 +68,36 @@ export default function VoucherModal({
 
 
   useEffect(() => {
+  const qr = new QRCodeStyling({
+    width: 180,
+    height: 180,
+    data: voucherDeepLink(voucher.code),
+    margin: 8,
+    dotsOptions: {
+      color: '--c-accent', // Tayseer green
+      type: 'rounded',  // can be "dots", "square", "extra-rounded"
+    },
+    backgroundOptions: {
+      color: '#ffffff',
+    },
+    image: '/icon-192.png', // your logo in the center
+    imageOptions: {
+      crossOrigin: 'anonymous',
+      margin: 5,
+    },
+  })
+
+  if (qrRef.current) {
+    qrRef.current.innerHTML = '' // clear previous QR
+    qr.append(qrRef.current)
+  }
+}, [voucher.code])
+
+
+  useEffect(() => {
     voucherToDataUrl(voucher.code).then(setUrl)
   }, [voucher.code])
+
 
   // 🧠 Live lookup of client info as the user types phone
   useEffect(() => {
@@ -321,15 +370,10 @@ export default function VoucherModal({
                   </div>
 
                   <div className="flex flex-col items-center justify-center">
-                    {url ? (
-                      <img
-                        src={url}
-                        alt="QR"
-                        className="h-24 w-24 sm:h-28 sm:w-28 rounded-lg border border-[var(--c-bank)]/30 shadow-sm bg-white/80 p-1.5"
-                      />
-                    ) : (
-                      <div className="w-24 h-24 rounded-lg bg-[var(--section-bg)]/60" />
-                    )}
+                    <div
+  ref={qrRef}
+  className="h-28 w-28 sm:h-32 sm:w-32 rounded-lg border border-[var(--c-bank)]/30 shadow-sm bg-white/80 p-1.5 flex items-center justify-center"
+/>
                     <a
                       href={voucherDeepLink(voucher.code)}
                       target="_blank"
