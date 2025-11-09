@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode'
+import { useLanguage } from '@/lib/useLanguage'
 
 type Voucher = {
   recipient_name: string | null
@@ -29,6 +30,7 @@ export default function VoucherModal({
   onClose: () => void
   onRefresh: () => void
 }) {
+  const { t, lang } = useLanguage() // ✅ get translations + current language
   const [url, setUrl] = useState<string | null>(null)
   const [buyerName, setBuyerName] = useState(voucher.buyer_name ?? '')
   const [recipientName, setRecipientName] = useState(voucher.recipient_name ?? '')
@@ -203,7 +205,8 @@ export default function VoucherModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
+    <div  dir={lang === 'ar' ? 'rtl' : 'ltr'}
+     className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
       <div
         className="
           relative w-full max-w-md rounded-2xl
@@ -222,24 +225,25 @@ export default function VoucherModal({
         </button>
 
         {/* === Title === */}
-        <div className="flex items-center justify-between mb-3">
+        <div  dir={lang === 'ar' ? 'rtl' : 'ltr'} className="flex items-center justify-between mb-3">
           <h2 className="text-base sm:text-lg font-semibold text-[var(--c-primary)] tracking-tight">
-            Voucher Details
+            {t.voucherDetails}
           </h2>
-          <span
-            className={`
-              text-xs px-2 py-1 rounded-full font-medium capitalize
-              ${
-                voucher.status === 'active'
-                  ? 'bg-[var(--c-accent)]/10 text-[var(--c-accent)]'
-                  : voucher.status === 'blank'
-                  ? 'bg-[var(--c-bank)]/10 text-[var(--c-bank)]'
-                  : 'bg-gray-100 text-gray-600'
-              }
-            `}
-          >
-            {voucher.status}
-          </span>
+         <span
+  className={`
+    text-xs px-2 py-1 rounded-full font-medium capitalize
+    ${
+      voucher.status === 'active'
+        ? 'bg-[var(--c-accent)]/10 text-[var(--c-accent)]'
+        : voucher.status === 'blank'
+        ? 'bg-[var(--c-bank)]/10 text-[var(--c-bank)]'
+        : 'bg-gray-100 text-gray-600'
+    }
+  `}
+>
+  {voucher.status}
+</span>
+
         </div>
 
         {/* === Blank → Activation form === */}
@@ -271,11 +275,11 @@ export default function VoucherModal({
 
   {autoFilled && phoneValid && (
     <p className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[var(--c-accent)] font-medium">
-      Existing client ✓
+      {t.existingClient} ✓
     </p>
   )}
   {!phoneValid && (
-    <p className="text-[11px] text-rose-600 mt-1">Invalid number</p>
+    <p className="text-[11px] text-rose-600 mt-1">{t.invalidPhone}</p>
   )}
 </div>
 
@@ -309,11 +313,11 @@ export default function VoucherModal({
               <div className="space-y-3 mt-2">
                 <div className="grid grid-cols-2 gap-3 items-center mb-3">
                   <div className="space-y-1 text-xs sm:text-sm">
-                    <Info label="Buyer" value={voucher.buyer_name ?? '—'} />
-                    <Info label="Phone" value={voucher.buyer_phone ?? '—'} />
-                    <Info label="To whom" value={voucher.recipient_name ?? '—'} />
-                    <Info label="Initial" value={fmtDZD(voucher.initial_amount)} />
-                    <Info label="Balance" value={fmtDZD(voucher.balance)} />
+                    <Info label={t.buyer} value={voucher.buyer_name ?? '—'} />
+                    <Info label={t.phone} value={voucher.buyer_phone ?? '—'} />
+                    <Info label={t.toWhom} value={voucher.recipient_name ?? '—'} />
+                    <Info label={t.initial} value={fmtDZD(voucher.initial_amount, lang)} />
+<Info label={t.balance} value={fmtDZD(voucher.balance, lang)} />
                   </div>
 
                   <div className="flex flex-col items-center justify-center">
@@ -350,13 +354,13 @@ export default function VoucherModal({
                     onClick={() => handleConsume(true)}
                     className="rounded-md bg-[var(--c-bank)] text-white px-3 py-2 text-sm font-medium hover:bg-[var(--c-bank)]/90 active:scale-[0.97] transition"
                   >
-                    Consume Partial
+                    {t.consumePartial}
                   </button>
                   <button
                     onClick={() => handleConsume(false)}
                     className="rounded-md bg-[var(--c-accent)] text-white px-3 py-2 text-sm font-medium hover:bg-[var(--c-accent)]/90 active:scale-[0.97] transition"
                   >
-                    Consume All
+                    {t.consumeAll}
                   </button>
                 </div>
 
@@ -376,7 +380,7 @@ export default function VoucherModal({
             hover:bg-white/60 active:scale-[0.97] transition
           "
         >
-          Close
+         {t.close}
         </button>
       </div>
     </div>
@@ -444,9 +448,14 @@ function Input({
   )
 }
 
-function fmtDZD(n: number) {
+function fmtDZD(n: number, lang: 'fr' | 'en' | 'ar' = 'fr') {
+  const locale =
+    lang === 'ar' ? 'ar-DZ' :
+    lang === 'en' ? 'en-DZ' :
+    'fr-DZ'
+
   try {
-    return new Intl.NumberFormat('fr-DZ', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: 'DZD',
       maximumFractionDigits: 0,

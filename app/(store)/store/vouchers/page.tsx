@@ -93,41 +93,11 @@ export default function StoreVouchersPage() {
     return filtered.slice(start, start + ITEMS_PER_PAGE)
   }, [filtered, page])
 
-  /* -------- Stats -------- */
-  const stats = useMemo(() => {
-    const total = rows.length
-    const active = rows.filter((v) => v.status === 'active').length
-    const redeemed = rows.filter((v) => v.status === 'redeemed').length
-    const blank = rows.filter((v) => v.status === 'blank').length
-    return { total, active, redeemed, blank }
-  }, [rows])
+ 
 
   const getStoreName = (id: string) => stores.find((s) => s.id === id)?.name ?? '—'
 
-  /* -------- Create Blank Vouchers -------- */
-  async function createBlankVouchers() {
-    if (!storeId || count < 1) return alert('Select store and count.')
-    setAddingLoading(true)
-
-    const rowsToInsert = Array.from({ length: count }).map(() => ({
-      store_id: storeId,
-      code: 'TSR-' + uuidv4().split('-')[0].toUpperCase(),
-      status: 'blank',
-      initial_amount: 0,
-      balance: 0,
-    }))
-
-    const { error } = await supabase.from('vouchers').insert(rowsToInsert)
-    setAddingLoading(false)
-
-    if (error) return alert('❌ Error: ' + error.message)
-
-    alert(`✅ Created ${count} ${t.createVouchers}`)
-    setAdding(false)
-    setStoreId(null)
-    setCount(1)
-    loadData()
-  }
+ 
 
   /* -------- UI -------- */
   return (
@@ -171,7 +141,7 @@ export default function StoreVouchersPage() {
               }}
               className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
             >
-              Newest first
+              {t.newestFirst}
             </button>
           )}
         </Menu.Item>
@@ -183,7 +153,7 @@ export default function StoreVouchersPage() {
               }}
               className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
             >
-              Oldest first
+              {t.oldestFirst}
             </button>
           )}
         </Menu.Item>
@@ -191,28 +161,47 @@ export default function StoreVouchersPage() {
     </Menu>
 
     {/* 🎯 Status Filter Menu */}
-    <Menu as="div" className="relative flex-1">
-      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-        <ListChecks className="h-4 w-4 text-gray-500" />
-        Status
-        <ChevronDown className="h-3 w-3" />
-      </Menu.Button>
-      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
-        {['all', 'blank', 'active', 'redeemed', 'expired', 'void'].map((status) => (
-          <Menu.Item key={status}>
-            {({ active }) => (
-              <button
-                onClick={() => setSelectedStatus(status)}
-                className={`w-full text-left px-4 py-2 capitalize flex justify-between ${active ? 'bg-gray-50' : ''}`}
-              >
-                {status}
-                {selectedStatus === status && <Check className="h-4 w-4 text-emerald-600" />}
-              </button>
+    <Menu as="div" className="relative flex-1" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+  <Menu.Button
+    className="
+      w-full flex items-center justify-center gap-2 
+      border rounded-lg py-2 hover:bg-gray-50
+    "
+  >
+    <ListChecks className="h-4 w-4 text-gray-500" />
+    {t.status}
+    <ChevronDown className={`h-3 w-3 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+  </Menu.Button>
+
+  <Menu.Items
+    className="
+      absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg 
+      text-sm overflow-hidden
+    "
+  >
+    {['all', 'blank', 'active', 'redeemed', 'expired', 'void'].map((status) => (
+      <Menu.Item key={status}>
+        {({ active }) => (
+          <button
+            onClick={() => setSelectedStatus(status)}
+            className={`
+              w-full text-left px-4 py-2 flex justify-between items-center 
+              capitalize transition-all
+              ${active ? 'bg-gray-50' : ''}
+              ${lang === 'ar' ? 'text-right flex-row-reverse' : ''}
+            `}
+          >
+            <span>{t[status]}</span>
+            {selectedStatus === status && (
+              <Check className={`h-4 w-4 text-emerald-600 ${lang === 'ar' ? 'mr-1' : 'ml-1'}`} />
             )}
-          </Menu.Item>
-        ))}
-      </Menu.Items>
-    </Menu>
+          </button>
+        )}
+      </Menu.Item>
+    ))}
+  </Menu.Items>
+</Menu>
+
 
     
   </div>
@@ -257,6 +246,7 @@ export default function StoreVouchersPage() {
       </div>
 
       {/* Desktop Table */}
+    
       <div className="hidden md:block rounded-xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm overflow-y-auto"
         style={{ maxHeight: 'calc(100vh - 350px)' }}>
         {loading ? (
@@ -264,16 +254,17 @@ export default function StoreVouchersPage() {
         ) : paginated.length === 0 ? (
           <div className="py-20 text-center text-gray-400">No vouchers found.</div>
         ) : (
+            <div dir={lang === 'ar' ? 'rtl' : 'ltr'}>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b sticky top-0 z-10">
               <tr>
-                <Th>Buyer</Th>
-                <Th>Recipient</Th>
-                <Th>Store</Th>
-                <Th>Code</Th>
-                <Th>Status</Th>
-                <Th>Balance</Th>
-                <Th>Created</Th>
+                <Th rtl={lang === 'ar'}>{t.buyer}</Th>
+                <Th rtl={lang === 'ar'}>{t.recipient}</Th>
+                <Th rtl={lang === 'ar'}>{t.store}</Th>
+                <Th rtl={lang === 'ar'}>{t.code}</Th>
+                <Th rtl={lang === 'ar'}>{t.Status}</Th>
+                <Th rtl={lang === 'ar'}>{t.balance}</Th>
+                <Th rtl={lang === 'ar'}>{t.created}</Th>
               </tr>
             </thead>
             <tbody>
@@ -286,12 +277,14 @@ export default function StoreVouchersPage() {
                   <Td>{getStoreName(v.store_id)}</Td>
                   <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
                   <Td><StatusPill status={v.status} /></Td>
-                  <Td>{fmtDZD(v.balance)}</Td>
+                  <Td>{fmtDZD(v.balance, lang)}</Td>
                   <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
                 </tr>
               ))}
             </tbody>
           </table>
+                </div>
+
         )}
       </div>
 
@@ -301,7 +294,7 @@ export default function StoreVouchersPage() {
           <button disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
             className="px-3 py-1 border rounded disabled:opacity-50">
-            Prev
+            {t.prev}
           </button>
           <span className="text-sm text-gray-600">
             Page {page} of {totalPages}
@@ -309,7 +302,7 @@ export default function StoreVouchersPage() {
           <button disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
             className="px-3 py-1 border rounded disabled:opacity-50">
-            Next
+            {t.next}
           </button>
         </div>
       )}
@@ -324,26 +317,22 @@ export default function StoreVouchersPage() {
         />
       )}
 
-      {/* Add Voucher Modal */}
-      {adding && (
-        <AddVoucherModal
-          stores={stores}
-          storeId={storeId}
-          setStoreId={setStoreId}
-          count={count}
-          setCount={setCount}
-          addingLoading={addingLoading}
-          onClose={() => setAdding(false)}
-          onSubmit={createBlankVouchers}
-        />
-      )}
+    
     </div>
   )
 }
 
 /* ---------- Helpers ---------- */
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>
+function Th({ children, rtl = false }: { children: React.ReactNode; rtl?: boolean }) {
+  return (
+    <th
+      className={`px-3 py-2 text-xs font-medium text-gray-500 ${
+        rtl ? 'text-right' : 'text-left'
+      }`}
+    >
+      {children}
+    </th>
+  )
 }
 function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-3 py-2">{children}</td>
@@ -362,143 +351,19 @@ function StatusPill({ status }: { status: string }) {
     </span>
   )
 }
-function fmtDZD(n: number) {
-  return new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD', maximumFractionDigits: 0 }).format(n)
+function fmtDZD(n: number, lang: 'fr' | 'en' | 'ar' = 'fr') {
+  const locale =
+    lang === 'ar' ? 'ar-DZ' :
+    lang === 'en' ? 'en-DZ' :
+    'fr-DZ'
+
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'DZD',
+    maximumFractionDigits: 0,
+  }).format(n)
 }
 
-/* ---------- AddVoucherModal (with Combobox) ---------- */
-/* ---------- AddVoucherModal (Tayseer UI) ---------- */
-function AddVoucherModal({
-  stores,
-  storeId,
-  setStoreId,
-  count,
-  setCount,
-  addingLoading,
-  onClose,
-  onSubmit,
-}: any) {
-  const [query, setQuery] = useState('')
-  const filtered =
-    query === ''
-      ? stores
-      : stores.filter((s: any) => s.name.toLowerCase().includes(query.toLowerCase()))
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 overflow-auto">
-      <div
-        className="
-          relative w-full max-w-sm rounded-2xl 
-          bg-white/95 border border-[var(--c-bank)]/20 
-          shadow-[0_8px_30px_rgba(0,0,0,0.08)] 
-          backdrop-blur-md p-6 space-y-4 
-          animate-in fade-in-0 zoom-in-95 duration-200
-        "
-      >
-        {/* ✖ Close */}
-        <button
-          onClick={onClose}
-          className="
-            absolute right-3 top-3 text-[var(--c-text)]/60 
-            hover:text-[var(--c-text)] transition-colors
-          "
-        >
-          <X className="h-5 w-5" />
-        </button>
 
-        {/* 🏷 Title */}
-        <h2 className="text-lg font-semibold text-[var(--c-primary)]">
-          Create Blank Vouchers
-        </h2>
-
-        {/* 🏬 Store selector */}
-        <div className="space-y-2">
-          <Combobox value={storeId} onChange={setStoreId}>
-            <Combobox.Label className="text-sm text-[var(--c-text)]/70">
-              Store
-            </Combobox.Label>
-            <div className="relative mt-1">
-              <Combobox.Input
-                className="
-                  w-full rounded-lg border border-[var(--c-bank)]/30
-                  p-2.5 text-sm bg-white/90 backdrop-blur-sm
-                  focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
-                  transition
-                "
-                onChange={(e) => setQuery(e.target.value)}
-                displayValue={(id: string) =>
-                  stores.find((s: any) => s.id === id)?.name ?? ''
-                }
-                placeholder="Search store..."
-              />
-              <Combobox.Options
-                className="
-                  absolute mt-1 max-h-48 w-full overflow-auto 
-                  rounded-lg bg-white border border-[var(--c-bank)]/20 
-                  shadow-lg text-sm z-10
-                "
-              >
-                {filtered.length === 0 ? (
-                  <div className="px-4 py-2 text-[var(--c-text)]/60">
-                    No results
-                  </div>
-                ) : (
-                  filtered.map((s: any) => (
-                    <Combobox.Option
-                      key={s.id}
-                      value={s.id}
-                      className={({ active }) =>
-                        `cursor-pointer px-4 py-2 ${
-                          active
-                            ? 'bg-[var(--c-accent)]/10 text-[var(--c-accent)]'
-                            : 'text-[var(--c-text)]'
-                        }`
-                      }
-                    >
-                      {s.name}
-                    </Combobox.Option>
-                  ))
-                )}
-              </Combobox.Options>
-            </div>
-          </Combobox>
-        </div>
-
-        {/* 🔢 Count */}
-        <div className="space-y-2">
-          <label className="text-sm text-[var(--c-text)]/70">How many?</label>
-          <input
-            type="number"
-            min={1}
-            value={count}
-            onChange={(e) => setCount(parseInt(e.target.value))}
-            className="
-              w-full rounded-lg border border-[var(--c-bank)]/30
-              p-2.5 text-sm bg-white/90 backdrop-blur-sm
-              focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
-            "
-          />
-        </div>
-
-        {/* 🟠 Submit */}
-        <button
-          disabled={addingLoading}
-          onClick={onSubmit}
-          className="
-            w-full rounded-lg bg-[var(--c-accent)] text-white font-medium text-sm 
-            px-4 py-2.5 hover:bg-[var(--c-accent)]/90 
-            active:scale-95 transition-all disabled:opacity-50
-          "
-        >
-          {addingLoading ? 'Creating…' : 'Create Vouchers'}
-        </button>
-
-        {/* 💡 Hint */}
-        <p className="text-xs text-center text-[var(--c-text)]/60">
-          Each voucher will be assigned a unique QR code automatically.
-        </p>
-      </div>
-    </div>
-  )
-}
 

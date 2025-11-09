@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import VoucherScanner from '@/components/VoucherScanner'
+import { useLanguage } from '@/lib/useLanguage'
 
 import {
   LayoutDashboard,
@@ -24,6 +25,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const [scannerOpen, setScannerOpen] = useState(false)
   const [storeName, setStoreName] = useState<string | null>(null)
+const { t, lang } = useLanguage()
 
   async function handleLogout() {
     try {
@@ -75,10 +77,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           {/* Desktop Nav */}
           <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             {[
-              { href: '/store/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-              { href: '/store/vouchers', label: 'Vouchers', icon: QrCode },
-              { href: '/store/clients', label: 'Clients', icon: Users },
-              { href: '/store/settings', label: 'Settings', icon: Settings },
+              { href: '/store/dashboard', label: t.dashboard, icon: LayoutDashboard },
+              { href: '/store/vouchers', label: t.vouchers, icon: QrCode },
+              { href: '/store/clients', label: t.clients, icon: Users },
+              { href: '/store/settings', label: t.settings, icon: Settings },
             ].map(({ href, label, icon: Icon }) => {
               const active = pathname?.startsWith(href)
               return (
@@ -148,8 +150,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       >
         {/* Buttons container (lifted upward) */}
         <div className="flex flex-1 justify-around items-end pb-4">
-          <NavLink href="/store/dashboard" icon={LayoutDashboard} label="Home" />
-          <NavLink href="/store/clients" icon={Users} label="Clients" />
+          <NavLink href="/store/dashboard" icon={LayoutDashboard} label={t.home} />
+          <NavLink href="/store/clients" icon={Users} label={t.clients} />
 
           {/* Floating Scan Button */}
           <div className="relative flex items-center justify-center -mt-10">
@@ -166,8 +168,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </button>
           </div>
 
-          <NavLink href="/store/vouchers" icon={Gift} label="Vouchers" />
-          <NavLink href="/store/settings" icon={Settings} label="Settings" />
+          <NavLink href="/store/vouchers" icon={Gift} label={t.vouchers} />
+          <NavLink href="/store/settings" icon={Settings} label={t.settings} />
         </div>
       </nav>
 

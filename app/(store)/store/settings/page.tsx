@@ -53,8 +53,8 @@ export default function SettingsPage() {
           title={t.settings}
           subtitle={t.managePref}
           user={{
-            name: 'Omar Medjadj',
-            email: 'omar@tayseer.dz',
+            name: 'Confiserie du bonheur',
+            email: 'confiserie@tayseer.dz',
             role: 'Admin',
             avatarUrl: '/icon-192-2.png',
           }}
