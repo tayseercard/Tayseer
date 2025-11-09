@@ -103,8 +103,8 @@ function VoucherCard({ code }: { code: string }) {
     if (!qrRef.current) return
 
     const qr = new QRCodeStyling({
-      width: 50,
-      height: 50,
+      width: 180,
+      height: 180,
       data: `https://tayseer.vercel.app/v/${encodeURIComponent(code)}`,
       margin: 5,
       dotsOptions: {
@@ -136,6 +136,7 @@ function VoucherCard({ code }: { code: string }) {
     >
       <div ref={qrRef} className="flex-1 flex items-center justify-center" />
       <p className="text-[10px] font-medium tracking-widest mt-1 mb-2 select-none">
+        {code}
       </p>
     </div>
   )
