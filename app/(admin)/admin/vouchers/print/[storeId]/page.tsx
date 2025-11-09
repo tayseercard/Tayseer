@@ -78,12 +78,13 @@ export default function PrintVouchersPage() {
         <div className="print-area w-full flex justify-center">
           <div
             className="
-              grid 
-              grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5
-              gap-x-3 gap-y-4 sm:gap-x-4 sm:gap-y-6
-              print:grid-cols-5 print:gap-x-2 print:gap-y-2
-              w-full max-w-[210mm] max-h-[270mm] mx-auto
-            "
+    grid 
+    grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5
+    gap-4 sm:gap-5 md:gap-6
+    print:grid-cols-5 print:gap-3
+    w-full max-w-[210mm] mx-auto
+    print:p-4
+  "
           >
             {vouchers.map((v) => (
               <VoucherCard key={v.id} code={v.code} />
@@ -102,14 +103,18 @@ function VoucherCard({ code }: { code: string }) {
   useEffect(() => {
     if (!qrRef.current) return
 
+    // ✅ Detect device type → adjust QR size dynamically
+    const isMobile = window.innerWidth < 640 // sm breakpoint
+    const qrSize = isMobile ? 100 : 160 // smaller on phones, medium for print
+
     const qr = new QRCodeStyling({
-      width: 180,
-      height: 180,
+      width: qrSize,
+      height: qrSize,
       data: `https://tayseer.vercel.app/v/${encodeURIComponent(code)}`,
-      margin: 5,
+      margin: 4,
       dotsOptions: {
         color: '#00B686', // Tayseer green
-        type: 'rounded',  // nice soft look
+        type: 'rounded',
       },
       backgroundOptions: {
         color: '#ffffff',
@@ -117,24 +122,28 @@ function VoucherCard({ code }: { code: string }) {
       image: '/icon-192.png', // your logo in center
       imageOptions: {
         crossOrigin: 'anonymous',
-        margin: 5,
+        margin: 4,
       },
     })
 
-    qrRef.current.innerHTML = '' // clear before re-render
+    qrRef.current.innerHTML = ''
     qr.append(qrRef.current)
   }, [code])
 
   return (
     <div
       className="
-        border border-gray-300 rounded-md text-center 
-        flex flex-col items-center justify-center
-        w-[42vw] h-[42vw] sm:w-[30vw] sm:h-[30vw] md:w-[35mm] md:h-[35mm] lg:w-[40mm] lg:h-[40mm]
-        bg-white shadow-sm print:shadow-none print:border-gray-200
-      "
+    border border-gray-300 rounded-md text-center 
+    flex flex-col items-center justify-center
+    w-[35vw] h-[35vw] sm:w-[32vw] sm:h-[32vw] md:w-[36mm] md:h-[36mm]
+    bg-white shadow-sm print:shadow-none print:border-gray-200
+    p-2 sm:p-3 print:p-2
+  "
     >
-      <div ref={qrRef} className="flex-1 flex items-center justify-center" />
+      <div
+        ref={qrRef}
+        className="flex items-center justify-center scale-[0.85] sm:scale-100"
+      />
       <p className="text-[10px] font-medium tracking-widest mt-1 mb-2 select-none">
         {code}
       </p>
