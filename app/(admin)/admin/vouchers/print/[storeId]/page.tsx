@@ -99,35 +99,31 @@ export default function PrintVouchersPage() {
 function VoucherCard({ code }: { code: string }) {
   const qrRef = useRef<HTMLDivElement>(null)
 
-useEffect(() => {
-  // detect screen width → choose QR size
-  const isMobile = window.innerWidth < 640 // sm breakpoint
-  const size = isMobile ? 120 : 180 // smaller on phone, bigger on desktop
+  useEffect(() => {
+    if (!qrRef.current) return
 
-  const qr = new QRCodeStyling({
-    width: size,
-    height: size,
-    data: voucherDeepLink(voucher.code),
-    margin: 6,
-    dotsOptions: {
-      color: '#00B686', // Tayseer green
-      type: 'rounded',
-    },
-    backgroundOptions: {
-      color: '#ffffff',
-    },
-    image: '/icon-192.png',
-    imageOptions: {
-      crossOrigin: 'anonymous',
+    const qr = new QRCodeStyling({
+      width: 180,
+      height: 180,
+      data: `https://tayseer.vercel.app/v/${encodeURIComponent(code)}`,
       margin: 5,
-    },
-  })
+      dotsOptions: {
+        color: '#00B686', // Tayseer green
+        type: 'rounded',  // nice soft look
+      },
+      backgroundOptions: {
+        color: '#ffffff',
+      },
+      image: '/icon-192.png', // your logo in center
+      imageOptions: {
+        crossOrigin: 'anonymous',
+        margin: 5,
+      },
+    })
 
-  if (qrRef.current) {
-    qrRef.current.innerHTML = ''
+    qrRef.current.innerHTML = '' // clear before re-render
     qr.append(qrRef.current)
-  }
-}, [code])
+  }, [code])
 
   return (
     <div
