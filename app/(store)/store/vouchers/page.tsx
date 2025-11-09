@@ -7,6 +7,8 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { v4 as uuidv4 } from 'uuid'
 import { Scanner } from '@yudiel/react-qr-scanner'
 import VoucherModal from '@/components/VoucherModal'
+import { useLanguage } from '@/lib/useLanguage'
+
 
 import {
   Search,
@@ -33,7 +35,8 @@ type Voucher = {
 }
 
 /* =================== MAIN PAGE =================== */
-export default function AdminVouchersPage() {
+export default function StoreVouchersPage() {
+  const { t, lang } = useLanguage()
   const supabase = createClientComponentClient()
   const [rows, setRows] = useState<any[]>([])
   const [stores, setStores] = useState<any[]>([])
@@ -119,7 +122,7 @@ export default function AdminVouchersPage() {
 
     if (error) return alert('❌ Error: ' + error.message)
 
-    alert(`✅ Created ${count} blank voucher(s).`)
+    alert(`✅ Created ${count} ${t.createVouchers}`)
     setAdding(false)
     setStoreId(null)
     setCount(1)
@@ -128,8 +131,11 @@ export default function AdminVouchersPage() {
 
   /* -------- UI -------- */
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
-
+<div
+      className={`min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8 ${
+        lang === 'ar' ? 'rtl' : 'ltr'
+      }`}
+    >
       
 
 {/* ===== Filters Section ===== */}
@@ -141,7 +147,7 @@ export default function AdminVouchersPage() {
     <input
       value={q}
       onChange={(e) => setQ(e.target.value)}
-      placeholder="Search"
+      placeholder={t.search}
       className="flex-1 bg-transparent text-sm focus:outline-none"
     />
   </div>
@@ -153,7 +159,7 @@ export default function AdminVouchersPage() {
     <Menu as="div" className="relative flex-1">
       <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
         <Calendar className="h-4 w-4 text-gray-500" />
-        Date
+        {t.date}
         <ChevronDown className="h-3 w-3" />
       </Menu.Button>
       <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">

@@ -1,72 +1,93 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import createIntlMiddleware from 'next-intl/middleware';
+
+// 🌍 Initialize next-intl middleware first
+const intlMiddleware = createIntlMiddleware({
+  locales: ['en', 'fr', 'ar'],
+  defaultLocale: 'fr'
+});
 
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
+  // 🔹 Run next-intl first → this ensures locale (/fr/, /en/, /ar/)
+  const res = intlMiddleware(req);
+
+  // 🔹 Then apply Supabase authentication logic
+  const supabase = createMiddlewareClient({ req, res });
   const {
     data: { session },
-  } = await supabase.auth.getSession()
+  } = await supabase.auth.getSession();
 
-  const url = req.nextUrl.clone()
-  const pathname = url.pathname
+  const url = req.nextUrl.clone();
+  const pathname = url.pathname;
 
-  if (pathname.startsWith('/auth') || pathname.startsWith('/403')) return res
+  // ✅ Skip auth for public pages
+  if (
+    pathname.includes('/auth') ||
+    pathname.includes('/403') ||
+    pathname === '/' ||
+    pathname.startsWith('/api')
+  )
+    return res;
 
+  // ✅ Protected paths (inside locale prefix)
   const isProtected =
-    pathname.startsWith('/admin') ||
-    pathname.startsWith('/superadmin') ||
-    pathname.startsWith('/store')
+    pathname.includes('/admin') ||
+    pathname.includes('/superadmin') ||
+    pathname.includes('/store');
 
-  if (!isProtected) return res
+  if (!isProtected) return res;
 
+  // ❌ No session → redirect to login in the same language
   if (!session) {
-    url.pathname = '/auth/login'
-    url.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(url)
+    const locale = pathname.split('/')[1] || 'fr';
+    url.pathname = `/${locale}/auth/login`;
+    url.searchParams.set('redirectTo', pathname);
+    return NextResponse.redirect(url);
   }
 
-  // 🔹 Try reading role from JWT first
-  let role = session.user.user_metadata?.role
-
-  // 🔹 If missing, query your table directly
+  // ✅ Read role from JWT or DB
+  let role = session.user.user_metadata?.role;
   if (!role) {
-    const { data: roleData, error } = await supabase
+    const { data: roleData } = await supabase
       .from('me_effective_role')
       .select('role')
       .eq('user_id', session.user.id)
-      .maybeSingle()
-
-    if (error) console.error('Role fetch error:', error)
-    if (roleData?.role) role = roleData.role
+      .maybeSingle();
+    if (roleData?.role) role = roleData.role;
   }
 
-  // ❌ Still no role → forbidden
   if (!role) {
-    url.pathname = '/403'
-    return NextResponse.redirect(url)
+    url.pathname = '/403';
+    return NextResponse.redirect(url);
   }
 
-  // ✅ Role-based redirections
-  if (pathname.startsWith('/superadmin') && role !== 'superadmin') {
-    url.pathname = '/403'
-    return NextResponse.redirect(url)
+  // ✅ Role-based restriction
+  if (pathname.includes('/superadmin') && role !== 'superadmin') {
+    url.pathname = '/403';
+    return NextResponse.redirect(url);
+  }
+  if (pathname.includes('/admin') && !['admin', 'superadmin'].includes(role)) {
+    url.pathname = '/403';
+    return NextResponse.redirect(url);
+  }
+  if (
+    pathname.includes('/store') &&
+    !['store_owner', 'manager', 'cashier'].includes(role)
+  ) {
+    url.pathname = '/403';
+    return NextResponse.redirect(url);
   }
 
-  if (pathname.startsWith('/admin') && !['admin', 'superadmin'].includes(role)) {
-    url.pathname = '/403'
-    return NextResponse.redirect(url)
-  }
-
-  if (pathname.startsWith('/store') && !['store_owner', 'manager', 'cashier'].includes(role)) {
-    url.pathname = '/403'
-    return NextResponse.redirect(url)
-  }
-
-  return res
+  return res;
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/superadmin/:path*', '/store/:path*'],
-}
+  // ✅ Match locale-prefixed protected routes
+  matcher: [
+    '/(en|fr|ar)/admin/:path*',
+    '/(en|fr|ar)/superadmin/:path*',
+    '/(en|fr|ar)/store/:path*'
+  ]
+};

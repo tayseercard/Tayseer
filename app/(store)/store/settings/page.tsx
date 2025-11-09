@@ -1,99 +1,213 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import {
+  User,
+  Lock,
+  Moon,
+  Info,
+  HelpCircle,
+  Trash2,
+  ChevronRight,
+  Globe2,
+  Shield,
+  X,
+} from 'lucide-react'
+import SettingsHeader from '@/components/store/settings/SettingsHeader'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/lib/useLanguage'
+import ProfileSettings from '@/components/store/settings/ProfileSettings'
+import PasswordSettings from '@/components/store/settings/PasswordSettings'
+import LanguageSettings from '@/components/store/settings/LanguageSettings'
 
-export default function SettingsPage({ stores }: { stores: any[] }) {
-  const [activeTab, setActiveTab] = useState<'profile' | 'roles' | 'stores'>('stores')
+export default function SettingsPage() {
+  const [darkMode, setDarkMode] = useState(false)
+  const [activeModal, setActiveModal] = useState<
+    'profile' | 'password' | 'language' | null
+  >(null)
+
   const supabase = createClientComponentClient()
   const router = useRouter()
+  const { t, lang } = useLanguage()
+
+  // ✅ Refresh page when language changes
+  useEffect(() => {
+    router.refresh()
+  }, [lang, router])
 
   async function handleLogout() {
-    const { error } = await supabase.auth.signOut()
-    if (error) alert('❌ Logout failed: ' + error.message)
-    else router.push('/auth/login')
+    await supabase.auth.signOut()
+    router.push('/auth/login')
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 py-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div
+      className={`min-h-screen bg-[var(--bg)] flex flex-col items-center px-4 py-6 transition-all duration-300 ${
+        lang === 'ar' ? 'rtl' : 'ltr'
+      }`}
+    >
+      <div className="w-full max-w-md space-y-6">
+        {/* === Header === */}
+        <SettingsHeader
+          title={t.settings}
+          subtitle={t.managePref}
+          user={{
+            name: 'Omar Medjadj',
+            email: 'omar@tayseer.dz',
+            role: 'Admin',
+            avatarUrl: '/icon-192-2.png',
+          }}
+          onLogout={handleLogout}
+        />
 
-        {/* === Page Title === */}
-        <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-[var(--c-primary)]">Settings</h1>
-            <p className="text-sm text-[var(--c-text)]/70">
-              Manage admin preferences and system access
-            </p>
-          </div>
-
-          {/* 🔒 Logout Button */}
-          <button
-            onClick={handleLogout}
-            className="
-              flex items-center gap-2 rounded-lg border border-[var(--c-bank)]/30
-              px-3 py-2 text-sm text-[var(--c-bank)] font-medium
-              hover:bg-[var(--c-bank)] hover:text-white transition-all
-            "
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
-        </header>
-
-        {/* === Horizontal Tabs === */}
-        <nav className="flex gap-3 overflow-x-auto border-b border-[var(--c-bank)]/20 pb-2">
-          {[
-            { key: 'profile', label: 'Profile' },
-            { key: 'roles', label: 'Roles' },
-         
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              className={`
-                px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition
-                ${
-                  activeTab === tab.key
-                    ? 'bg-[var(--c-accent)] text-white shadow-sm'
-                    : 'text-[var(--c-text)]/70 hover:bg-[var(--c-primary)]/10'
-                }
-              `}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* === Active Content === */}
-        <div className="bg-white rounded-xl shadow-sm border border-[var(--c-bank)]/10 p-4 sm:p-6">
-          {activeTab === 'profile' && <ProfileSettings onLogout={handleLogout} />}
-          {activeTab === 'roles' && <RolesSettings />}
+        {/* === Account Section === */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <SettingRow icon={<User />} label={t.profile} onClick={() => setActiveModal('profile')} />
+          <SettingRow
+            icon={<Lock />}
+            label={t.password}
+            onClick={() => setActiveModal('password')}
+          />
+          <SettingRow
+            icon={<Globe2 />}
+            label={t.language}
+            right={
+              lang === 'fr'
+                ? 'Français'
+                : lang === 'ar'
+                ? 'العربية 🇩🇿'
+                : 'English 🇬🇧'
+            }
+            onClick={() => setActiveModal('language')}
+          />
+          <SettingRow
+            icon={<Moon />}
+            label={t.darkMode}
+            toggle
+            toggleValue={darkMode}
+            onToggle={() => setDarkMode(!darkMode)}
+          />
         </div>
+
+        {/* === App Info Section === */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+          <SettingRow icon={<Info />} label={t.aboutApp || 'About application'} />
+          <SettingRow icon={<HelpCircle />} label={t.help || 'Help / FAQ'} />
+          <SettingRow
+            icon={<Trash2 className="text-rose-500" />}
+            label={t.deactivate || 'Deactivate my account'}
+            labelClass="text-rose-600 font-medium"
+          />
+        </div>
+      </div>
+
+      {/* === Modals === */}
+      {activeModal && (
+        <SettingsModal onClose={() => setActiveModal(null)}>
+          {activeModal === 'profile' && <ProfileSettings t={t} />}
+          {activeModal === 'password' && <PasswordSettings t={t} />}
+          {activeModal === 'language' && (
+            <LanguageSettings
+              onLanguageChanged={() => {
+                setActiveModal(null)
+                router.refresh() // ✅ Re-render instantly
+              }}
+            />
+          )}
+        </SettingsModal>
+      )}
+    </div>
+  )
+}
+
+/* ---------------- Setting Row ---------------- */
+function SettingRow({
+  icon,
+  label,
+  right,
+  toggle,
+  toggleValue,
+  onToggle,
+  onClick,
+  labelClass,
+}: {
+  icon: React.ReactNode
+  label: string
+  right?: string
+  toggle?: boolean
+  toggleValue?: boolean
+  onToggle?: () => void
+  onClick?: () => void
+  labelClass?: string
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition cursor-pointer"
+    >
+      <div className="flex items-center gap-3">
+        <div className="text-gray-600">{icon}</div>
+        <span className={`text-sm ${labelClass ?? 'text-gray-800'}`}>{label}</span>
+      </div>
+
+      {toggle ? (
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            className="sr-only peer"
+            checked={toggleValue}
+            onChange={onToggle}
+          />
+          <div className="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-[var(--c-accent)] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:h-4 after:w-4 after:rounded-full after:transition-all peer-checked:after:translate-x-4"></div>
+        </label>
+      ) : right ? (
+        <span className="text-sm text-gray-500">{right}</span>
+      ) : (
+        <ChevronRight className="w-4 h-4 text-gray-400" />
+      )}
+    </div>
+  )
+}
+
+/* ---------------- Modal Wrapper ---------------- */
+function SettingsModal({
+  children,
+  onClose,
+}: {
+  children: React.ReactNode
+  onClose: () => void
+}) {
+  return (
+    <div
+      className="
+        fixed inset-0 z-50
+        bg-black/40 backdrop-blur-sm
+        flex items-center justify-center
+        animate-fade-in
+      "
+    >
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div
+        className="
+          relative w-full max-w-md bg-white rounded-2xl
+          p-5 shadow-lg border border-gray-100
+          animate-slide-up
+        "
+      >
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-base font-semibold text-gray-800">Settings</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-800 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {children}
       </div>
     </div>
   )
-}
-
-/* Placeholder subcomponents */
-function ProfileSettings({ onLogout }: { onLogout: () => void }) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-      <p className="text-sm text-[var(--c-text)]/70">Profile settings coming soon…</p>
-      <button
-        onClick={onLogout}
-        className="mt-3 sm:mt-0 flex items-center gap-2 rounded-lg border border-[var(--c-bank)]/30
-          px-3 py-2 text-sm text-[var(--c-bank)] hover:bg-[var(--c-bank)] hover:text-white transition-all"
-      >
-        <LogOut className="w-4 h-4" />
-        Logout
-      </button>
-    </div>
-  )
-}
-
-function RolesSettings() {
-  return <p className="text-sm text-[var(--c-text)]/70">Role management section…</p>
 }
