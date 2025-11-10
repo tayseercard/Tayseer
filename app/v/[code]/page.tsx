@@ -18,22 +18,14 @@ export default function PublicVoucherPage({
     ;(async () => {
       try {
         // 🔹 Query vouchers safely without assuming relation name
-        const { data, error } = await supabase
-          .from('vouchers')
-          .select(`
-            code,
-            initial_amount,
-            balance,
-            currency,
-            status,
-            expires_at,
-            activated_at,
-            created_at,
-            store_id
-          `)
-          .eq('code', params.code)
-          .in('status', ['active', 'redeemed', 'expired'])
-          .maybeSingle()
+       const { data, error } = await supabase
+  .from('vouchers')
+  .select('code, status, initial_amount, balance, currency')
+  .eq('code', params.code)
+  .maybeSingle()
+
+console.log('Voucher:', data, 'Error:', error)
+
 
         if (error || !data) {
           console.error('Voucher fetch error:', error)
@@ -43,7 +35,6 @@ export default function PublicVoucherPage({
           const { data: storeData } = await supabase
             .from('stores')
             .select('name')
-            .eq('id', data.store_id)
             .single()
           setVoucher({ ...data, store_name: storeData?.name || 'Inconnu' })
         }
