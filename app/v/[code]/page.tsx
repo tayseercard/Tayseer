@@ -17,25 +17,26 @@ export default function PublicVoucherPage({
   useEffect(() => {
     ;(async () => {
       try {
-        // 🔹 Query vouchers safely without assuming relation name
-       const { data, error } = await supabase
-  .from('vouchers')
-  .select('code, status, initial_amount, balance, currency')
-  .eq('code', params.code)
-  .maybeSingle()
+        const { data, error } = await supabase
+          .from('vouchers')
+          .select(
+            'code, status, initial_amount, balance, currency, store_id, created_at, activated_at, expires_at'
+          )
+          .eq('code', params.code)
+          .maybeSingle()
 
-console.log('Voucher:', data, 'Error:', error)
-
+        console.log('Voucher:', data, 'Error:', error)
 
         if (error || !data) {
           console.error('Voucher fetch error:', error)
           setError('Voucher introuvable ou non valide ❌')
         } else {
-          // ✅ Fetch store name separately to avoid relation errors
           const { data: storeData } = await supabase
             .from('stores')
             .select('name')
+            .eq('id', data.store_id)
             .single()
+
           setVoucher({ ...data, store_name: storeData?.name || 'Inconnu' })
         }
       } catch (err) {
@@ -47,7 +48,6 @@ console.log('Voucher:', data, 'Error:', error)
     })()
   }, [params.code])
 
-  // 🕓 Loading
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen text-gray-500">
@@ -55,7 +55,6 @@ console.log('Voucher:', data, 'Error:', error)
       </div>
     )
 
-  // ❌ Error
   if (error)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-red-600 text-center px-6">
@@ -64,7 +63,6 @@ console.log('Voucher:', data, 'Error:', error)
       </div>
     )
 
-  // === STATUS COLORS ===
   const statusColors: Record<string, string> = {
     active: 'text-green-600',
     redeemed: 'text-orange-500',
@@ -73,7 +71,6 @@ console.log('Voucher:', data, 'Error:', error)
     blank: 'text-gray-300',
   }
 
-  // === STATUS LABELS ===
   const statusLabels: Record<string, string> = {
     active: 'Actif — prêt à être utilisé',
     redeemed: 'Déjà utilisé',
@@ -92,7 +89,7 @@ console.log('Voucher:', data, 'Error:', error)
         </h1>
 
         <p className="text-gray-700 mb-4">
-          <span className="font-medium">Store:</span>{' '}
+          <span className="font-medium">Magasin :</span>{' '}
           {voucher.store_name || 'Inconnu'}
         </p>
 
@@ -102,7 +99,7 @@ console.log('Voucher:', data, 'Error:', error)
           </p>
           {voucher.balance !== voucher.initial_amount && (
             <p className="text-sm text-gray-600">
-              Reste&nbsp;: {voucher.balance.toLocaleString()} {voucher.currency}
+              Reste : {voucher.balance.toLocaleString()} {voucher.currency}
             </p>
           )}
         </div>
@@ -117,24 +114,22 @@ console.log('Voucher:', data, 'Error:', error)
 
         <div className="mt-4 text-xs text-gray-500 space-y-1">
           <p>
-            Émis le&nbsp;
-            {new Date(voucher.created_at).toLocaleDateString('fr-FR')}
+            Émis le {new Date(voucher.created_at).toLocaleDateString('fr-FR')}
           </p>
           {voucher.activated_at && (
             <p>
-              Activé le&nbsp;
+              Activé le{' '}
               {new Date(voucher.activated_at).toLocaleDateString('fr-FR')}
             </p>
           )}
           {voucher.expires_at && (
             <p>
-              Expire le&nbsp;
+              Expire le{' '}
               {new Date(voucher.expires_at).toLocaleDateString('fr-FR')}
             </p>
           )}
         </div>
 
-        {/* === QR CODE PREVIEW === */}
         <div className="mt-6 flex flex-col items-center gap-3">
           <QRCode value={verifyUrl} size={140} />
           <p className="text-xs text-gray-500">
@@ -148,8 +143,7 @@ console.log('Voucher:', data, 'Error:', error)
         <hr className="my-5 border-gray-200" />
 
         <p className="text-xs text-gray-400">
-          ✅ Vérifié par <span className="font-semibold">Tayseer</span> — ce bon
-          cadeau est authentique et émis par le magasin indiqué.
+          ✅ Vérifié par <strong>Tayseer</strong> — bon cadeau authentique.
         </p>
       </div>
     </main>
