@@ -1,10 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-center text-gray-500">Chargement…</div>}>
+      <LoginInner />
+    </Suspense>
+  )
+}
+
+/* ------------------ Actual Login Logic ------------------ */
+function LoginInner() {
   const supabase = createClientComponentClient()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -14,7 +23,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Read the redirect destination from query string
+  // ✅ Get redirect destination (from middleware)
   const redirectTo = searchParams.get('redirectTo') || '/admin'
 
   async function handleLogin(e: React.FormEvent) {
@@ -30,15 +39,15 @@ export default function LoginPage() {
     setLoading(false)
 
     if (error) {
-      setError('Invalid credentials. Please try again.')
+      setError('Identifiants invalides. Réessayez.')
       return
     }
 
-    // ✅ Redirect user to the intended page (or /admin by default)
+    // ✅ Redirect to intended page
     router.push(redirectTo)
   }
 
-  // If already logged in → redirect automatically
+  // Auto-redirect if already logged in
   useEffect(() => {
     ;(async () => {
       const { data: sessionData } = await supabase.auth.getSession()
@@ -89,11 +98,8 @@ export default function LoginPage() {
         </button>
 
         <p className="mt-4 text-xs text-gray-500 text-center">
-          🔐 Vous serez redirigé automatiquement vers{' '}
-          <span className="font-semibold text-gray-700">
-            {redirectTo}
-          </span>
-          .
+          🔐 Vous serez redirigé vers{' '}
+          <span className="font-semibold text-gray-700">{redirectTo}</span>
         </p>
       </form>
     </main>
