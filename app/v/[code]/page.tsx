@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import QRCode from 'react-qr-code'
 
-export default function VerifyVoucherPage({
+export default function PublicVoucherPage({
   params,
 }: {
   params: { code: string }
@@ -17,6 +17,7 @@ export default function VerifyVoucherPage({
   useEffect(() => {
     ;(async () => {
       try {
+        // 🔹 Query vouchers safely without assuming relation name
         const { data, error } = await supabase
           .from('vouchers')
           .select(`
@@ -28,18 +29,26 @@ export default function VerifyVoucherPage({
             expires_at,
             activated_at,
             created_at,
-            stores ( name )
+            store_id
           `)
           .eq('code', params.code)
           .in('status', ['active', 'redeemed', 'expired'])
-          .single()
+          .maybeSingle()
 
         if (error || !data) {
+          console.error('Voucher fetch error:', error)
           setError('Voucher introuvable ou non valide ❌')
         } else {
-          setVoucher(data)
+          // ✅ Fetch store name separately to avoid relation errors
+          const { data: storeData } = await supabase
+            .from('stores')
+            .select('name')
+            .eq('id', data.store_id)
+            .single()
+          setVoucher({ ...data, store_name: storeData?.name || 'Inconnu' })
         }
       } catch (err) {
+        console.error(err)
         setError('Erreur de connexion au serveur ❌')
       } finally {
         setLoading(false)
@@ -47,6 +56,7 @@ export default function VerifyVoucherPage({
     })()
   }, [params.code])
 
+  // 🕓 Loading
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen text-gray-500">
@@ -54,6 +64,7 @@ export default function VerifyVoucherPage({
       </div>
     )
 
+  // ❌ Error
   if (error)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-red-600 text-center px-6">
@@ -80,7 +91,7 @@ export default function VerifyVoucherPage({
     blank: 'Non encore émis',
   }
 
-  const verifyUrl = `https://tayseer.app/verify/${voucher.code}`
+  const verifyUrl = `https://tayseercard.vercel.app/v/${voucher.code}`
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
@@ -91,7 +102,7 @@ export default function VerifyVoucherPage({
 
         <p className="text-gray-700 mb-4">
           <span className="font-medium">Store:</span>{' '}
-          {voucher.stores?.name || 'Inconnu'}
+          {voucher.store_name || 'Inconnu'}
         </p>
 
         <div className="my-3">
@@ -137,7 +148,9 @@ export default function VerifyVoucherPage({
           <QRCode value={verifyUrl} size={140} />
           <p className="text-xs text-gray-500">
             📱 Scannez pour vérifier ce bon sur{' '}
-            <span className="font-medium text-gray-700">tayseer.app</span>
+            <span className="font-medium text-gray-700">
+              tayseercard.vercel.app
+            </span>
           </p>
         </div>
 
