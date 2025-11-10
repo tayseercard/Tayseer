@@ -15,8 +15,11 @@ export default function PublicVoucherPage({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!params.code) return
+
     ;(async () => {
       try {
+        // 🔹 Fetch voucher from public view
         const { data, error } = await supabase
           .from('vouchers_public')
           .select(
@@ -25,29 +28,34 @@ export default function PublicVoucherPage({
           .eq('code', params.code)
           .maybeSingle()
 
-        console.log('Voucher:', data, 'Error:', error)
+        console.log('Voucher fetch →', data, error)
 
         if (error || !data) {
-          console.error('Voucher fetch error:', error)
           setError('Voucher introuvable ou non valide ❌')
-        } else {
-          const { data: storeData } = await supabase
-            .from('stores')
-            .select('name')
-            .eq('id', data.store_id)
-            .single()
-
-          setVoucher({ ...data, store_name: storeData?.name || 'Inconnu' })
+          return
         }
+
+        // 🔹 Fetch store name (public-safe)
+        let storeName = 'Inconnu'
+        const { data: storeData, error: storeErr } = await supabase
+          .from('stores')
+          .select('name')
+          .eq('id', data.store_id)
+          .maybeSingle()
+
+        if (!storeErr && storeData?.name) storeName = storeData.name
+
+        setVoucher({ ...data, store_name: storeName })
       } catch (err) {
-        console.error(err)
+        console.error('Public voucher error:', err)
         setError('Erreur de connexion au serveur ❌')
       } finally {
         setLoading(false)
       }
     })()
-  }, [params.code])
+  }, [params.code, supabase])
 
+  // 🕓 Loading
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen text-gray-500">
@@ -55,6 +63,7 @@ export default function PublicVoucherPage({
       </div>
     )
 
+  // ❌ Error
   if (error)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-red-600 text-center px-6">
@@ -63,6 +72,7 @@ export default function PublicVoucherPage({
       </div>
     )
 
+  // === STATUS COLORS ===
   const statusColors: Record<string, string> = {
     active: 'text-green-600',
     redeemed: 'text-orange-500',
@@ -118,13 +128,13 @@ export default function PublicVoucherPage({
           </p>
           {voucher.activated_at && (
             <p>
-              Activé le{' '}
+              Activé le 
               {new Date(voucher.activated_at).toLocaleDateString('fr-FR')}
             </p>
           )}
           {voucher.expires_at && (
             <p>
-              Expire le{' '}
+              Expire le 
               {new Date(voucher.expires_at).toLocaleDateString('fr-FR')}
             </p>
           )}
