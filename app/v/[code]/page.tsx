@@ -18,7 +18,7 @@ export default function PublicVoucherPage({
     ;(async () => {
       try {
         const { data, error } = await supabase
-          .from('vouchers')
+          .from('vouchers_public')
           .select(
             'code, status, initial_amount, balance, currency, store_id, created_at, activated_at, expires_at'
           )
