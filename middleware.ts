@@ -22,6 +22,12 @@ export async function middleware(req: NextRequest) {
   const isAdmin = pathname.startsWith('/admin')
   const isSuperadmin = pathname.startsWith('/superadmin')
   const isStore = pathname.startsWith('/store')
+  const role = session?.user?.user_metadata?.role
+if (pathname.startsWith('/admin') && !['admin','superadmin'].includes(role)) {
+  url.pathname = '/403'
+  return NextResponse.redirect(url)
+}
+
 
   // ❌ If user not logged in → redirect to login
   if (!session && (isAdmin || isSuperadmin || isStore)) {

@@ -37,10 +37,10 @@ export default function StoreDashboardPage() {
     totalClients: 0,
     repeatClients: 0,
   })
+
  useEffect(() => {
     ;(async () => {
       setLoading(true)
-
       const {
         data: { session },
       } = await supabase.auth.getSession()
