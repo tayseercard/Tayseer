@@ -98,6 +98,15 @@
   margin: 5mm;
 }
 
+@media print {
+  .page-block {
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
+}
 /* === Print Styles === */
 @media print {
   /* ✅ Prevent elements from splitting between pages */

@@ -25,18 +25,16 @@ export default function VoucherScanner({
   const [loading, setLoading] = useState(false)
 
   /* ---------- Handle Scan ---------- */
-  async function handleScan(result: string | null) {
-    if (!result || loading) return
-    setLoading(true)
-    const { data, error } = await scanVoucher(supabase, result)
-    setLoading(false)
+ async function handleScan(result: string | null) {
+  if (!result || loading) return
+  setLoading(true)
 
-    if (error) {
-      setScanError(error)
-    } else {
-      setSelectedVoucher(data)
-      setScanError(null)
-    }
+  // 🧠 Extract voucher code from full URL (works for /verify/ or /v/)
+  const match = result.match(/(?:\/v\/|\/verify\/)([A-Za-z0-9\-]+)/)
+  const code = match ? match[1] : result.trim()
+
+  const { data, error } = await scanVoucher(supabase, code)
+
   }
 
   return (
