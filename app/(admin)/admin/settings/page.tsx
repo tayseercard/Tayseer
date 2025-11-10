@@ -48,9 +48,20 @@ export default function SettingsPage() {
   }, [lang, router])
 
   async function handleLogout() {
+  try {
+    // 🧹 Sign out from Supabase (this clears auth cookies for all pages)
     await supabase.auth.signOut()
-    router.push('/auth/login')
+
+    // 🧼 Clear any localStorage/sessionStorage if used
+    localStorage.clear()
+    sessionStorage.clear()
+
+    // ✅ Hard redirect to avoid stale cached layout
+    window.location.replace('/auth/login')
+  } catch (err) {
+    console.error('Logout error:', err)
   }
+}
 
   return (
     <div
