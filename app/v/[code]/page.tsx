@@ -81,7 +81,8 @@ export default function PublicVoucherPage() {
     void: 'Annulé',
   }
 
-  const clientName = voucher.recipient_name || voucher.buyer_name || 'Client inconnu'
+  const clientName = voucher.buyer_name || 'Buyer inconnu'
+  const recipientName = voucher.recipient_name || 'Revipient inconnu'
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-white px-4 py-8">
@@ -133,6 +134,10 @@ export default function PublicVoucherPage() {
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-emerald-600" />
             <span>{clientName}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-emerald-600" />
+            <span>{recipientName}</span>
           </div>
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-emerald-600" />
