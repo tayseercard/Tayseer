@@ -33,7 +33,7 @@ function MagicInner() {
     try {
       const origin =
   process.env.NEXT_PUBLIC_SITE_URL ||
-  (typeof window !== 'undefined' ? window.location.origin : 'ttps://https://tayseer.vercel.app');
+  (typeof window !== 'undefined' ? window.location.origin : 'ttps://https://tayseercard.vercel.app');
 
 
       const callbackUrl = `${origin}/auth/callback${
