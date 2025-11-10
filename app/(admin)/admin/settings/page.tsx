@@ -32,35 +32,12 @@ export default function SettingsPage() {
   const supabase = createClientComponentClient()
   const router = useRouter()
   const { t, lang } = useLanguage()
-  
-const [checkingAuth, setCheckingAuth] = useState(true)
 
-useEffect(() => {
+  useEffect(() => {
   (async () => {
     const { data } = await supabase.auth.getSession()
-    if (!data?.session) {
-      window.location.replace('/auth/login?redirectTo=/admin/settings')
-    } else {
-      setCheckingAuth(false)
-    }
-  })()
-}, [])
-
-if (checkingAuth) {
-  return (
-    <div className="min-h-screen flex items-center justify-center text-gray-500">
-      Vérification de session…
-    </div>
-  )
-}
-
-
- useEffect(() => {
-  (async () => {
-    const { data, error } = await supabase.auth.getSession()
-    if (!data?.session || error) {
-      // Replace instead of redirectTo history (to prevent back-button issue)
-      window.location.replace(`/auth/login?redirectTo=${encodeURIComponent('/admin/settings')}`)
+    if (!data.session) {
+      window.location.href = '/auth/login?redirectTo=/admin'
     }
   })()
 }, [])
