@@ -14,46 +14,53 @@ export default function PublicVoucherPage({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!params.code) return
+useEffect(() => {
+  if (!params.code) return
+  let cancelled = false
 
-    ;(async () => {
-      try {
-        // 🔹 Fetch voucher from the public view
-        const { data, error } = await supabase
-          .from('vouchers_public')
-          .select(
-            'code, status, initial_amount, balance, currency, store_id, created_at, activated_at, expires_at'
-          )
-          .eq('code', params.code)
-          .maybeSingle()
+  const fetchVoucher = async () => {
+    console.log('🔍 Fetching voucher for', params.code)
 
-        console.log('Voucher fetch →', data, error)
+    try {
+      const { data, error } = await supabase
+        .from('vouchers_public')
+        .select(
+          'code, status, initial_amount, balance, currency, store_id, created_at, activated_at, expires_at'
+        )
+        .eq('code', params.code)
+        .maybeSingle()
 
-        if (error || !data) {
-          setError('Voucher introuvable ou non valide ❌')
-          return
-        }
+      console.log('✅ Supabase response:', { data, error })
 
-        // 🔹 Fetch public store name
-        let storeName = 'Inconnu'
-        const { data: storeData, error: storeErr } = await supabase
+      if (cancelled) return
+
+      if (error) {
+        setError('Erreur Supabase: ' + error.message)
+      } else if (!data) {
+        setError('Voucher introuvable ou non valide ❌')
+      } else {
+        const { data: storeData } = await supabase
           .from('stores')
           .select('name')
           .eq('id', data.store_id)
           .maybeSingle()
 
-        if (!storeErr && storeData?.name) storeName = storeData.name
-
-        setVoucher({ ...data, store_name: storeName })
-      } catch (err) {
-        console.error('Public voucher error:', err)
-        setError('Erreur de connexion au serveur ❌')
-      } finally {
-        setLoading(false)
+        setVoucher({ ...data, store_name: storeData?.name || 'Inconnu' })
       }
-    })()
-  }, [params.code, supabase])
+    } catch (err: any) {
+      console.error('❌ Fetch error:', err)
+      if (!cancelled) setError('Erreur de connexion: ' + err.message)
+    } finally {
+      if (!cancelled) setLoading(false)
+    }
+  }
+
+  fetchVoucher()
+
+  return () => {
+    cancelled = true
+  }
+}, [params.code])
 
   // 🕓 Loading screen
   if (loading)
