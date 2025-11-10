@@ -19,7 +19,7 @@ export default function PublicVoucherPage({
 
     ;(async () => {
       try {
-        // 🔹 Fetch voucher from public view
+        // 🔹 Fetch voucher from the public view
         const { data, error } = await supabase
           .from('vouchers_public')
           .select(
@@ -35,7 +35,7 @@ export default function PublicVoucherPage({
           return
         }
 
-        // 🔹 Fetch store name (public-safe)
+        // 🔹 Fetch public store name
         let storeName = 'Inconnu'
         const { data: storeData, error: storeErr } = await supabase
           .from('stores')
@@ -55,7 +55,7 @@ export default function PublicVoucherPage({
     })()
   }, [params.code, supabase])
 
-  // 🕓 Loading
+  // 🕓 Loading screen
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen text-gray-500">
@@ -63,7 +63,7 @@ export default function PublicVoucherPage({
       </div>
     )
 
-  // ❌ Error
+  // ❌ Error screen
   if (error)
     return (
       <div className="flex flex-col items-center justify-center min-h-screen text-red-600 text-center px-6">
@@ -81,6 +81,7 @@ export default function PublicVoucherPage({
     blank: 'text-gray-300',
   }
 
+  // === STATUS LABELS ===
   const statusLabels: Record<string, string> = {
     active: 'Actif — prêt à être utilisé',
     redeemed: 'Déjà utilisé',
@@ -89,7 +90,9 @@ export default function PublicVoucherPage({
     blank: 'Non encore émis',
   }
 
-  const verifyUrl = `https://tayseercard.vercel.app/v/${voucher.code}`
+  const verifyUrl = `https://tayseercard.vercel.app/v/${encodeURIComponent(
+    voucher.code
+  )}`
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
@@ -128,18 +131,19 @@ export default function PublicVoucherPage({
           </p>
           {voucher.activated_at && (
             <p>
-              Activé le 
+              Activé le{' '}
               {new Date(voucher.activated_at).toLocaleDateString('fr-FR')}
             </p>
           )}
           {voucher.expires_at && (
             <p>
-              Expire le 
+              Expire le{' '}
               {new Date(voucher.expires_at).toLocaleDateString('fr-FR')}
             </p>
           )}
         </div>
 
+        {/* === QR CODE PREVIEW === */}
         <div className="mt-6 flex flex-col items-center gap-3">
           <QRCode value={verifyUrl} size={140} />
           <p className="text-xs text-gray-500">
