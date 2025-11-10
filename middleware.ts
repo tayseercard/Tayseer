@@ -1,39 +1,93 @@
-// middleware.ts
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import createIntlMiddleware from 'next-intl/middleware';
 
-// 🧱 Protected route prefixes
-const PROTECTED_PREFIXES = ['/admin', '/superadmin', '/store']
+// 🌍 Initialize next-intl middleware first
+const intlMiddleware = createIntlMiddleware({
+  locales: ['en', 'fr', 'ar'],
+  defaultLocale: 'fr'
+});
 
-export function middleware(req: NextRequest) {
-  const url = req.nextUrl.clone()
-  const pathname = url.pathname
+export async function middleware(req: NextRequest) {
+  // 🔹 Run next-intl first → this ensures locale (/fr/, /en/, /ar/)
+  const res = intlMiddleware(req);
 
-  // ✅ Only protect paths that start with these
-  const isProtected = PROTECTED_PREFIXES.some((p) =>
-    pathname.startsWith(p)
+  // 🔹 Then apply Supabase authentication logic
+  const supabase = createMiddlewareClient({ req, res });
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  const url = req.nextUrl.clone();
+  const pathname = url.pathname;
+
+  // ✅ Skip auth for public pages
+  if (
+    pathname.includes('/auth') ||
+    pathname.includes('/403') ||
+    pathname === '/' ||
+    pathname.startsWith('/api')
   )
-  if (!isProtected) return NextResponse.next()
+    return res;
 
-  // ✅ Supabase cookies check
-  const hasAccess = req.cookies.has('sb-access-token')
-  const hasRefresh = req.cookies.has('sb-refresh-token')
+  // ✅ Protected paths (inside locale prefix)
+  const isProtected =
+    pathname.includes('/admin') ||
+    pathname.includes('/superadmin') ||
+    pathname.includes('/store');
 
-  // ✅ Avoid infinite redirect loops after login
-  const isReturningFromLogin =
-    req.headers.get('referer')?.includes('/auth/login')
+  if (!isProtected) return res;
 
-  // ❌ Not logged in → redirect to login
-  if (!hasAccess && !hasRefresh && !isReturningFromLogin) {
-    url.pathname = '/auth/login'
-    url.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(url)
+  // ❌ No session → redirect to login in the same language
+  if (!session) {
+    const locale = pathname.split('/')[1] || 'fr';
+    url.pathname = `/${locale}/auth/login`;
+    url.searchParams.set('redirectTo', pathname);
+    return NextResponse.redirect(url);
   }
 
-  return NextResponse.next()
+  // ✅ Read role from JWT or DB
+  let role = session.user.user_metadata?.role;
+  if (!role) {
+    const { data: roleData } = await supabase
+      .from('me_effective_role')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+    if (roleData?.role) role = roleData.role;
+  }
+
+  if (!role) {
+    url.pathname = '/403';
+    return NextResponse.redirect(url);
+  }
+
+  // ✅ Role-based restriction
+  if (pathname.includes('/superadmin') && role !== 'superadmin') {
+    url.pathname = '/403';
+    return NextResponse.redirect(url);
+  }
+  if (pathname.includes('/admin') && !['admin', 'superadmin'].includes(role)) {
+    url.pathname = '/403';
+    return NextResponse.redirect(url);
+  }
+  if (
+    pathname.includes('/store') &&
+    !['store_owner', 'manager', 'cashier'].includes(role)
+  ) {
+    url.pathname = '/403';
+    return NextResponse.redirect(url);
+  }
+
+  return res;
 }
 
-// ✅ Let middleware run on all routes (needed for Next.js app router)
 export const config = {
-  matcher: ['/((?!_next|v|api|favicon.ico|robots.txt|.*\\..*).*)'],
-}
+  // ✅ Match locale-prefixed protected routes
+  matcher: [
+    '/admin/:path*',
+    '/superadmin/:path*',
+    '/store/:path*'
+  ]
+};
