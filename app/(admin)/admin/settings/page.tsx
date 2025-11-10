@@ -33,6 +33,15 @@ export default function SettingsPage() {
   const router = useRouter()
   const { t, lang } = useLanguage()
 
+  useEffect(() => {
+  (async () => {
+    const { data } = await supabase.auth.getSession()
+    if (!data.session) {
+      window.location.href = '/auth/login?redirectTo=/admin'
+    }
+  })()
+}, [])
+
   // ✅ Refresh on language change
   useEffect(() => {
     router.refresh()

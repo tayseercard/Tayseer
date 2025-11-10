@@ -65,10 +65,11 @@ export async function middleware(req: NextRequest) {
 // ✅ Middleware will run only where needed
 export const config = {
   matcher: [
+    '/admin',
     '/admin/:path*',
+    '/superadmin',
     '/superadmin/:path*',
+    '/store',
     '/store/:path*',
-    '/auth/:path*',
-    '/', // optional for landing
   ],
 }
