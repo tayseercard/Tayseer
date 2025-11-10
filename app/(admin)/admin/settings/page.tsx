@@ -142,50 +142,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* === MOBILE (Compact Card View) === */}
-      <div className="sm:hidden w-full max-w-md px-4 mb-10 space-y-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
-          <SettingRow
-            icon={<User />}
-            label={t.profile}
-            onClick={() => setActiveModal('profile')}
-          />
-          <SettingRow
-            icon={<Lock />}
-            label={t.password}
-            onClick={() => setActiveModal('password')}
-          />
-          <SettingRow
-            icon={<Globe2 />}
-            label={t.language}
-            right={
-              lang === 'fr'
-                ? 'Français'
-                : lang === 'ar'
-                ? 'العربية 🇩🇿'
-                : 'English 🇬🇧'
-            }
-            onClick={() => setActiveModal('language')}
-          />
-          <SettingRow
-            icon={<Shield />}
-            label={t.roles}
-            onClick={() => setActiveModal('roles')}
-          />
-          <SettingRow
-            icon={<Moon />}
-            label={t.darkMode}
-            toggle
-            toggleValue={darkMode}
-            onToggle={() => setDarkMode(!darkMode)}
-          />
-          <SettingRow
-            icon={<Trash2 className="text-rose-500" />}
-            label={t.deactivate || 'Deactivate my account'}
-            labelClass="text-rose-600 font-medium"
-          />
-        </div>
-      </div>
+    
 
       {/* === MODALS === */}
       {activeModal && (
@@ -258,18 +215,16 @@ function SettingRow({
   )
 }
 
-/* ------------------- Modal Wrapper ------------------- */
-/* ------------------- Modal Wrapper ------------------- */
-function SettingsModal({
+export function SettingsModal({
   children,
   onClose,
 }: {
   children: React.ReactNode
   onClose: () => void
 }) {
-  // detect screen width
   const [isMobile, setIsMobile] = useState(false)
 
+  // Detect mobile once and on resize
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 640)
     handleResize()
@@ -277,43 +232,43 @@ function SettingsModal({
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = 'auto'
+    }
+  }, [])
+
   return (
     <div
       className="
         fixed inset-0 z-50
-        bg-black/40 backdrop-blur-sm
         flex items-center justify-center
+        bg-black/30 backdrop-blur-md
         animate-fade-in
       "
     >
-      <div className="absolute inset-0" onClick={onClose} />
+      {/* === Backdrop click to close === */}
+      <div
+        onClick={onClose}
+        className="absolute inset-0 cursor-pointer"
+        aria-hidden="true"
+      />
 
+      {/* === Small centered modal === */}
       <div
         className={`
           relative bg-white shadow-xl border border-gray-100
-          ${isMobile
-            ? 'w-full h-full rounded-none animate-slide-up flex flex-col'
-            : 'w-full max-w-3xl rounded-2xl p-6 animate-slide-up max-h-[90vh] overflow-y-auto'
-          }
+          rounded-2xl p-5 sm:p-6
+          w-[90%] max-w-sm
+          animate-slide-up
+          ${isMobile ? 'mx-auto' : ''}
         `}
       >
-        {/* === Header Bar === */}
-        <div
-          className={`
-            flex items-center justify-between
-            ${isMobile
-              ? 'px-4 py-3 border-b sticky top-0 bg-white z-10'
-              : 'mb-4'
-            }
-          `}
-        >
-          <h2
-            className={`${
-              isMobile
-                ? 'text-base font-semibold text-gray-800'
-                : 'text-lg font-semibold text-gray-800'
-            }`}
-          >
+        {/* === Header === */}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-gray-800 text-base sm:text-lg">
             Settings
           </h2>
           <button
@@ -324,16 +279,12 @@ function SettingsModal({
           </button>
         </div>
 
-        {/* === Modal Content === */}
-        <div
-          className={`flex-1 ${
-            isMobile ? 'overflow-y-auto px-4 pb-6' : ''
-          }`}
-        >
-          {children}
-        </div>
+        {/* === Content === */}
+        <div className="overflow-y-auto max-h-[70vh]">{children}</div>
       </div>
     </div>
   )
 }
+
+
 
