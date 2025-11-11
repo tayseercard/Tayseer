@@ -416,7 +416,7 @@ useEffect(() => {
       <div className="flex flex-col items-center justify-center">
         <div
           ref={qrRef}
-          className="h-24 w-24 sm:h-28 sm:w-28
+          className="h-30 w-30 sm:h-34 sm:w-34
                      scale-90 sm:scale-100
                      rounded-lg border border-[var(--c-bank)]/30 shadow-sm
                      bg-white/80 p-1.5 flex items-center justify-center"
