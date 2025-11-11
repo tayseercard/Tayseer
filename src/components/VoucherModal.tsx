@@ -80,24 +80,24 @@ useEffect(() => {
 useEffect(() => {
   // detect screen width → choose QR size
   const isMobile = window.innerWidth < 640 // sm breakpoint
-  const size = isMobile ? 120 : 180 // smaller on phone, bigger on desktop
+  const size = isMobile ? 90 : 180 // smaller on phone, bigger on desktop
 
   const qr = new QRCodeStyling({
     width: size,
     height: size,
     data: voucherDeepLink(voucher.code),
-    margin: 6,
+    margin: 4,
     dotsOptions: {
-      color: '#00B686', // Tayseer green
+      color: '--c-text', // Tayseer green
       type: 'rounded',
     },
     backgroundOptions: {
       color: '#ffffff',
     },
-    image: '/icon-192.png',
+    image: '/logo7mm.png',
     imageOptions: {
       crossOrigin: 'anonymous',
-      margin: 5,
+      margin: 2,
     },
   })
 
