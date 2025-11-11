@@ -421,14 +421,7 @@ useEffect(() => {
                      rounded-lg border border-[var(--c-bank)]/30 shadow-sm
                      bg-white/80 p-1.5 flex items-center justify-center"
         />
-        <a
-          href={voucherDeepLink(voucher.code)}
-          target="_blank"
-          rel="noreferrer"
-          className="text-[10px] text-[var(--c-bank)] hover:underline mt-1 break-all text-center"
-        >
-          {voucher.activated_at ?? '—'}
-        </a>
+       
       </div>
     </div>
 
