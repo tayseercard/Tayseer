@@ -399,8 +399,8 @@ useEffect(() => {
           </>
         ) : (
           <>
-            {/* === Active voucher details === */}
-            
+
+          {/* === Active voucher details === */}
            {voucher.status === 'active' && (
   <div className="space-y-3 mt-2">
     {/* === Voucher Info === */}
@@ -488,12 +488,48 @@ useEffect(() => {
       💡 Enter an amount or consume the full voucher.
     </p>
   </div>
-)}
-
-            
+          )}
           </>
+          
         )}
         
+{/* === Redeemed voucher details === */}
+{voucher.status === 'redeemed' && (
+  <div className="space-y-3 mt-2">
+    <div className="grid grid-cols-2 gap-3 items-center mb-3">
+      <div className="space-y-1 text-xs sm:text-sm">
+        <Info label={t.buyer} value={voucher.buyer_name ?? '—'} />
+        <Info label={t.phone} value={voucher.buyer_phone ?? '—'} />
+        <Info label={t.toWhom} value={voucher.recipient_name ?? '—'} />
+        <Info label={t.initial} value={fmtDZD(voucher.initial_amount, lang)} />
+        <Info label={t.balance} value="0 DZD" />
+      </div>
+
+      <div className="flex flex-col items-center justify-center">
+        <div
+          ref={qrRef}
+          className="h-30 w-30 sm:h-34 sm:w-34
+                     scale-90 sm:scale-100
+                     rounded-lg border border-[var(--c-bank)]/30 shadow-sm
+                     bg-white/80 p-1.5 flex items-center justify-center"
+        />
+      </div>
+    </div>
+
+    <div className="rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 p-3 text-sm font-medium text-center">
+      ✅ {t.voucherRedeemed || 'This voucher has been fully redeemed.'}
+    </div>
+
+    <p className="text-[11px] text-[var(--c-text)]/60 text-center mt-1">
+      {t.redeemedAt || 'Redeemed on'}{' '}
+      <b>
+        {voucher.activated_at
+          ? new Date(voucher.activated_at).toLocaleString()
+          : '—'}
+      </b>
+    </p>
+  </div>
+)}
 
         <button
           onClick={onClose}

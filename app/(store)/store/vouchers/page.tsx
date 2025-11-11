@@ -50,6 +50,8 @@ export default function StoreVouchersPage() {
   const [selectedStore, setSelectedStore] = useState<'all' | string>('all')
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
   
+
+  
   /* ---------- Pagination ---------- */
   const ITEMS_PER_PAGE = 10
   const [page, setPage] = useState(1)
@@ -76,14 +78,10 @@ export default function StoreVouchersPage() {
     let data = rows
     if (selectedStore !== 'all') data = data.filter((v) => v.store_id === selectedStore)
     if (selectedStatus !== 'all') data = data.filter((v) => v.status === selectedStatus)
-    if (q.trim()) {
-      const t = q.trim().toLowerCase()
-      data = data.filter(
-        (v) =>
-          v.code?.toLowerCase().includes(t) ||
-          v.buyer_name?.toLowerCase().includes(t)
-      )
-    }
+   if (q.trim()) {
+  const t = q.trim().toLowerCase()
+  data = data.filter((v) => v.buyer_name?.toLowerCase().includes(t))
+}
     return data
   }, [rows, q, selectedStore, selectedStatus])
 
@@ -109,23 +107,44 @@ export default function StoreVouchersPage() {
       
 
 {/* ===== Filters Section ===== */}
-<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
-
+{/* ===== Filters Section ===== */}
+<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-4">
   {/* 🔍 Search bar */}
   <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
     <Search className="h-4 w-4 text-gray-400" />
     <input
       value={q}
       onChange={(e) => setQ(e.target.value)}
-      placeholder={t.search}
+      placeholder={t.searchByClient || 'Search by client name'}
       className="flex-1 bg-transparent text-sm focus:outline-none"
     />
   </div>
 
-  {/* ⚙️ Filters Row */}
-  <div className="flex justify-between gap-2 text-sm">
+  {/* ⚡ Quick Filter Bar (NEW) */}
+  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+    {[
+      { label: t.all, value: 'all' },
+      { label: t.active, value: 'active' },
+      { label: t.redeemed, value: 'redeemed' },
+    
+    ].map((f) => (
+      <button
+        key={f.value}
+        onClick={() => setSelectedStatus(f.value)}
+        className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+          selectedStatus === f.value
+            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
+        }`}
+      >
+        {f.label}
+      </button>
+    ))}
+  </div>
 
-    {/* 🗓 Date Sort Menu */}
+  {/* ⚙️ Dropdown Filters Row */}
+  <div className="flex justify-between gap-2 text-sm">
+    {/* 🗓 Date Sort */}
     <Menu as="div" className="relative flex-1">
       <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
         <Calendar className="h-4 w-4 text-gray-500" />
@@ -136,9 +155,9 @@ export default function StoreVouchersPage() {
         <Menu.Item>
           {({ active }) => (
             <button
-              onClick={() => {
+              onClick={() =>
                 setRows([...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
-              }}
+              }
               className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
             >
               {t.newestFirst}
@@ -148,9 +167,9 @@ export default function StoreVouchersPage() {
         <Menu.Item>
           {({ active }) => (
             <button
-              onClick={() => {
+              onClick={() =>
                 setRows([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
-              }}
+              }
               className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
             >
               {t.oldestFirst}
@@ -160,52 +179,37 @@ export default function StoreVouchersPage() {
       </Menu.Items>
     </Menu>
 
-    {/* 🎯 Status Filter Menu */}
+    {/* 🎯 Status Dropdown (still works) */}
     <Menu as="div" className="relative flex-1" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-  <Menu.Button
-    className="
-      w-full flex items-center justify-center gap-2 
-      border rounded-lg py-2 hover:bg-gray-50
-    "
-  >
-    <ListChecks className="h-4 w-4 text-gray-500" />
-    {t.status}
-    <ChevronDown className={`h-3 w-3 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-  </Menu.Button>
+      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
+        <ListChecks className="h-4 w-4 text-gray-500" />
+        {t.status}
+        <ChevronDown className={`h-3 w-3 ${lang === 'ar' ? 'rotate-180' : ''}`} />
+      </Menu.Button>
 
-  <Menu.Items
-    className="
-      absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg 
-      text-sm overflow-hidden
-    "
-  >
-    {['all', 'blank', 'active', 'redeemed', 'expired', 'void'].map((status) => (
-      <Menu.Item key={status}>
-        {({ active }) => (
-          <button
-            onClick={() => setSelectedStatus(status)}
-            className={`
-              w-full text-left px-4 py-2 flex justify-between items-center 
-              capitalize transition-all
-              ${active ? 'bg-gray-50' : ''}
-              ${lang === 'ar' ? 'text-right flex-row-reverse' : ''}
-            `}
-          >
-            <span>{t[status]}</span>
-            {selectedStatus === status && (
-              <Check className={`h-4 w-4 text-emerald-600 ${lang === 'ar' ? 'mr-1' : 'ml-1'}`} />
+      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg text-sm overflow-hidden">
+        {['all', 'blank', 'active', 'redeemed'].map((status) => (
+          <Menu.Item key={status}>
+            {({ active }) => (
+              <button
+                onClick={() => setSelectedStatus(status)}
+                className={`w-full text-left px-4 py-2 flex justify-between items-center capitalize ${
+                  active ? 'bg-gray-50' : ''
+                } ${lang === 'ar' ? 'text-right flex-row-reverse' : ''}`}
+              >
+                <span>{t[status]}</span>
+                {selectedStatus === status && (
+                  <Check className={`h-4 w-4 text-emerald-600 ${lang === 'ar' ? 'mr-1' : 'ml-1'}`} />
+                )}
+              </button>
             )}
-          </button>
-        )}
-      </Menu.Item>
-    ))}
-  </Menu.Items>
-</Menu>
-
-
-    
+          </Menu.Item>
+        ))}
+      </Menu.Items>
+    </Menu>
   </div>
 </div>
+
 
 
       {/* Mobile Cards */}

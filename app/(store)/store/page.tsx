@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import StoreHeader from '@/components/store/StoreHeader'
+import { useLanguage } from '@/lib/useLanguage'
+
 import {
   Gift,
   Users,
@@ -17,6 +19,8 @@ import CountUp from 'react-countup'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function StoreDashboardPage() {
+    const { t } = useLanguage()
+
   const supabase = createClientComponentClient()
   const [loading, setLoading] = useState(true)
   const [store, setStore] = useState<{
@@ -139,23 +143,39 @@ export default function StoreDashboardPage() {
             className="space-y-10"
           >
             {/* === Voucher Overview === */}
-           <SectionTitle icon={<Gift />} title="Voucher Overview" href="/store/vouchers" />
+           <div>
+              <SectionTitle
+                icon={<Gift />}
+                title={t.voucherOverview}
+                href="/store/vouchers"
+              />
 
- <div className="mt-8 grid grid-cols-3 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-  
-        <DashboardStatCard title="Total" value={voucherStats.total} subtitle="All vouchers" />
-        <DashboardStatCard
-          title="active"
-          value={voucherStats.active}
-          subtitle="Currently active"
-          highlight
-        />
-        <DashboardStatCard
-          title="Redeemed"
-          value={voucherStats.redeemed}
-          subtitle="Used vouchers"
-        />
-      </div>
+              <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {/* Total → all vouchers */}
+                <Link
+                  href="/store/vouchers"
+                  className="block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+                >
+                  <DashboardStatCard title={t.total} value={voucherStats.total} />
+                </Link>
+
+                {/* Active vouchers */}
+                <Link
+                  href="/store/vouchers?status=active"
+                  className="block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+                >
+                  <DashboardStatCard title={t.active} value={voucherStats.active} highlight />
+                </Link>
+
+                {/* Redeemed vouchers */}
+                <Link
+                  href="/store/vouchers?status=redeemed"
+                  className="block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+                >
+                  <DashboardStatCard title={t.redeemed} value={voucherStats.redeemed} />
+                </Link>
+              </div>
+          </div>
 
 
             {/* === Financial Summary === */}

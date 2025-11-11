@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import StoreHeader from '@/components/store/StoreHeader'
 import { useLanguage } from '@/lib/useLanguage'
+
 import {
   Gift,
   Users,
@@ -112,12 +113,40 @@ export default function StoreDashboardPage() {
             className="space-y-10"
           >
             {/* === Voucher Overview === */}
-            <SectionTitle icon={<Gift />} title={t.voucherOverview} href="/store/vouchers" />
-            <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              <DashboardStatCard title={t.total} value={voucherStats.total} />
-              <DashboardStatCard title={t.active} value={voucherStats.active} highlight />
-              <DashboardStatCard title={t.redeemed} value={voucherStats.redeemed} />
-            </div>
+           <div>
+              <SectionTitle
+                icon={<Gift />}
+                title={t.voucherOverview}
+                href="/store/vouchers"
+              />
+
+              <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                {/* Total → all vouchers */}
+                <Link
+                  href="/store/vouchers"
+                  className="block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+                >
+                  <DashboardStatCard title={t.total} value={voucherStats.total} />
+                </Link>
+
+                {/* Active vouchers */}
+                <Link
+                  href="/store/vouchers?status=active"
+                  className="block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+                >
+                  <DashboardStatCard title={t.active} value={voucherStats.active} highlight />
+                </Link>
+
+                {/* Redeemed vouchers */}
+                <Link
+                  href="/store/vouchers?status=redeemed"
+                  className="block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+                >
+                  <DashboardStatCard title={t.redeemed} value={voucherStats.redeemed} />
+                </Link>
+              </div>
+          </div>
+
 
             {/* === Financial Summary === */}
             <SectionTitle icon={<CreditCard />} title={t.financialSummary} />
