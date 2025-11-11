@@ -41,40 +41,13 @@ export default function VoucherModal({
   const [autoFilled, setAutoFilled] = useState(false)
   const [consumeAmount, setConsumeAmount] = useState('')
   const [saving, setSaving] = useState(false)
-  const [editMode, setEditMode] = useState(false)
-  const [userRole, setUserRole] = useState<string | null>(null)
   const qrRef = useRef<HTMLDivElement>(null)
+
+
   // used for debounce
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   // Phone number validation
   const [phoneValid, setPhoneValid] = useState(true)
-
-  // ✅ Detect role
-useEffect(() => {
-  async function fetchRole() {
-    const { data: sessionData } = await supabase.auth.getSession()
-    const session = sessionData.session
-    let role = session?.user?.user_metadata?.role ?? null
-
-    // 🧠 fallback: query DB if no metadata
-    if (!role && session?.user?.id) {
-      const { data: roleData, error } = await supabase
-        .from('me_effective_role')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .maybeSingle()
-
-      if (error) console.warn('Role lookup failed:', error.message)
-      role = roleData?.role ?? null
-    }
-
-    console.log('🧩 Effective role:', role)
-    setUserRole(role)
-  }
-
-  fetchRole()
-}, [supabase])
-
 
 
 useEffect(() => {
@@ -268,32 +241,6 @@ useEffect(() => {
     onClose()
   }
 
-  /* ✏️ Edit Active Voucher (admin only) */
-  async function handleEditSave() {
-    if (!['admin', 'superadmin'].includes(userRole || ''))
-      return alert('Only admin can edit active vouchers.')
-    const a = Number(amount)
-    if (!a || a <= 0) return alert('Invalid amount.')
-
-    setSaving(true)
-    const { error } = await supabase
-      .from('vouchers')
-      .update({
-        buyer_name: buyerName.trim(),
-        buyer_phone: cleanPhone(buyerPhone),
-        initial_amount: a,
-        balance: a,
-      })
-      .eq('id', voucher.id)
-      .eq('status', 'active')
-
-    setSaving(false)
-    if (error) return alert('❌ ' + error.message)
-    alert('✅ Voucher updated successfully.')
-    setEditMode(false)
-    onRefresh()
-  }
-
   return (
     <div  dir={lang === 'ar' ? 'rtl' : 'ltr'}
      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
@@ -333,8 +280,8 @@ useEffect(() => {
 >
   {voucher.status}
 </span>
-</div>
 
+        </div>
 
         {/* === Blank → Activation form === */}
         {voucher.status === 'blank' ? (
@@ -371,7 +318,6 @@ useEffect(() => {
   {!phoneValid && (
     <p className="text-[11px] text-rose-600 mt-1">{t.invalidPhone}</p>
   )}
-  
 </div>
 
 
@@ -400,107 +346,67 @@ useEffect(() => {
         ) : (
           <>
             {/* === Active voucher details === */}
-            
-           {voucher.status === 'active' && (
-  <div className="space-y-3 mt-2">
-    {/* === Voucher Info === */}
-    <div className="grid grid-cols-2 gap-3 items-center mb-3">
-      <div className="space-y-1 text-xs sm:text-sm">
-        <Info label={t.buyer} value={voucher.buyer_name ?? '—'} />
-        <Info label={t.phone} value={voucher.buyer_phone ?? '—'} />
-        <Info label={t.toWhom} value={voucher.recipient_name ?? '—'} />
-        <Info label={t.initial} value={fmtDZD(voucher.initial_amount, lang)} />
-        <Info label={t.balance} value={fmtDZD(voucher.balance, lang)} />
-      </div>
+            {voucher.status === 'active' && (
+              <div className="space-y-3 mt-2">
+                <div className="grid grid-cols-2 gap-3 items-center mb-3">
+                  <div className="space-y-1 text-xs sm:text-sm">
+                    <Info label={t.buyer} value={voucher.buyer_name ?? '—'} />
+                    <Info label={t.phone} value={voucher.buyer_phone ?? '—'} />
+                    <Info label={t.toWhom} value={voucher.recipient_name ?? '—'} />
+                    <Info label={t.initial} value={fmtDZD(voucher.initial_amount, lang)} />
+<Info label={t.balance} value={fmtDZD(voucher.balance, lang)} />
+                  </div>
 
-      <div className="flex flex-col items-center justify-center">
-        <div
-          ref={qrRef}
-          className="h-24 w-24 sm:h-28 sm:w-28
-                     scale-90 sm:scale-100
-                     rounded-lg border border-[var(--c-bank)]/30 shadow-sm
-                     bg-white/80 p-1.5 flex items-center justify-center"
-        />
-        <a
-          href={voucherDeepLink(voucher.code)}
-          target="_blank"
-          rel="noreferrer"
-          className="text-[10px] text-[var(--c-bank)] hover:underline mt-1 break-all text-center"
-        >
-          {voucher.activated_at ?? '—'}
-        </a>
-      </div>
-    </div>
+                  <div className="flex flex-col items-center justify-center">
+                    <div
+  ref={qrRef}
+ className="
+    h-24 w-24 sm:h-28 sm:w-28
+    scale-90 sm:scale-100
+    rounded-lg border border-[var(--c-bank)]/30 shadow-sm
+    bg-white/80 p-1.5 flex items-center justify-center
+  "/>
+                    <a
+                      href={voucherDeepLink(voucher.code)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] text-[var(--c-bank)] hover:underline mt-1 break-all text-center"
+                    >
+                      {voucher.activated_at ?? '—'}
+                    </a>
+                  </div>
+                </div>
 
-    {/* === Edit Active Voucher (admin/superadmin only) === */}
-    {['admin', 'superadmin'].includes(userRole || '') && (
-      <div className="mb-2   ">
-        <div className="flex justify-between items-center ">
-        
-          <button
-            onClick={() => setEditMode(!editMode)}
-            className="text-xs bg-[var(--c-accent)] text-white px-3 py-1 rounded-md hover:bg-[var(--c-accent)]/90"
-          >
-            {editMode ? 'Cancel' : '✏️ Edit'}
-          </button>
-        </div>
+                <Input
+                  label="Consume Amount (DZD)"
+                  type="number"
+                  value={consumeAmount}
+                  onChange={setConsumeAmount}
+                  placeholder="e.g. 1000"
+                />
 
-        {editMode && (
-          <div className="space-y-2">
-            <Input label="Buyer Name" value={buyerName} onChange={setBuyerName} />
-            <Input label="Buyer Phone" value={buyerPhone} onChange={setBuyerPhone} />
-            <Input
-              label="Amount (DZD)"
-              type="number"
-              value={amount}
-              onChange={setAmount}
-            />
-            <button
-              onClick={handleEditSave}
-              disabled={saving}
-              className="w-full bg-[var(--c-accent)] text-white rounded-md py-2 text-sm hover:bg-[var(--c-accent)]/90"
-            >
-              {saving ? 'Saving…' : 'Save Changes'}
-            </button>
-          </div>
-        )}
-      </div>
-    )}
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <button
+                    onClick={() => handleConsume(true)}
+                    className="rounded-md bg-[var(--c-bank)] text-white px-3 py-2 text-sm font-medium hover:bg-[var(--c-bank)]/90 active:scale-[0.97] transition"
+                  >
+                    {t.consumePartial}
+                  </button>
+                  <button
+                    onClick={() => handleConsume(false)}
+                    className="rounded-md bg-[var(--c-accent)] text-white px-3 py-2 text-sm font-medium hover:bg-[var(--c-accent)]/90 active:scale-[0.97] transition"
+                  >
+                    {t.consumeAll}
+                  </button>
+                </div>
 
-    {/* === Consume voucher === */}
-    <Input
-      label="Consume Amount (DZD)"
-      type="number"
-      value={consumeAmount}
-      onChange={setConsumeAmount}
-      placeholder="e.g. 1000"
-    />
-
-    <div className="grid grid-cols-2 gap-2 mt-1">
-      <button
-        onClick={() => handleConsume(true)}
-        className="rounded-md bg-[var(--c-bank)] text-white px-3 py-2 text-sm font-medium hover:bg-[var(--c-bank)]/90 active:scale-[0.97] transition"
-      >
-        {t.consumePartial}
-      </button>
-      <button
-        onClick={() => handleConsume(false)}
-        className="rounded-md bg-[var(--c-accent)] text-white px-3 py-2 text-sm font-medium hover:bg-[var(--c-accent)]/90 active:scale-[0.97] transition"
-      >
-        {t.consumeAll}
-      </button>
-    </div>
-
-    <p className="text-[11px] text-[var(--c-text)]/60 text-center">
-      💡 Enter an amount or consume the full voucher.
-    </p>
-  </div>
-)}
-
-            
+                <p className="text-[11px] text-[var(--c-text)]/60 text-center">
+                  💡 Enter an amount or consume the full voucher.
+                </p>
+              </div>
+            )}
           </>
         )}
-        
 
         <button
           onClick={onClose}
@@ -518,7 +424,23 @@ useEffect(() => {
 }
 
 
+// ✅ Format Algerian phone number: "0561827855" → "05 61 82 78 55"
+function formatPhone(input: string): string {
+  const digits = input.replace(/\D/g, '') // remove non-numbers
+  const groups = digits.match(/.{1,2}/g) || []
+  return groups.join(' ').trim().slice(0, 14) // ensure max 14 chars
+}
 
+// ✅ Normalize for database lookup (remove spaces)
+function cleanPhone(input: string): string {
+  return input.replace(/\D/g, '')
+}
+
+// ✅ Check validity (Algerian mobile pattern)
+function isValidPhone(input: string): boolean {
+  const clean = cleanPhone(input)
+  return /^0[5-7]\d{8}$/.test(clean)
+}
 
 
 /* --- Small Components --- */
@@ -552,14 +474,22 @@ function Input({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full border border-[var(--c-bank)]/30 rounded-md p-2 text-sm bg-white/90 backdrop-blur-sm focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none"
+        className="
+          w-full border border-[var(--c-bank)]/30 rounded-md
+          p-2 text-sm bg-white/90 backdrop-blur-sm
+          focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
+        "
       />
     </div>
   )
 }
 
 function fmtDZD(n: number, lang: 'fr' | 'en' | 'ar' = 'fr') {
-  const locale = lang === 'ar' ? 'ar-DZ' : lang === 'en' ? 'en-DZ' : 'fr-DZ'
+  const locale =
+    lang === 'ar' ? 'ar-DZ' :
+    lang === 'en' ? 'en-DZ' :
+    'fr-DZ'
+
   try {
     return new Intl.NumberFormat(locale, {
       style: 'currency',
@@ -570,17 +500,3 @@ function fmtDZD(n: number, lang: 'fr' | 'en' | 'ar' = 'fr') {
     return `${n} DZD`
   }
 }
-
-function cleanPhone(input: string) {
-  return input.replace(/\D/g, '')
-}
-function isValidPhone(input: string) {
-  const clean = cleanPhone(input)
-  return /^0[5-7]\d{8}$/.test(clean)
-}
-function formatPhone(input: string): string {
-  const digits = input.replace(/\D/g, '')
-  const groups = digits.match(/.{1,2}/g) || []
-  return groups.join(' ').trim().slice(0, 14)
-}
-

@@ -32,7 +32,11 @@ export default function VoucherModalPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
+  const [editMode, setEditMode] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
+
+  
   // form state for activation
   const [buyerName, setBuyerName] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
@@ -42,7 +46,66 @@ export default function VoucherModalPage() {
 
   const [redeemAmt, setRedeemAmt] = useState<number | ''>('');
 
+
+// 🔹 fetch session role once
+  useEffect(() => {
+    ;(async () => {
+      const { data } = await supabase.auth.getSession()
+      setUserRole(data.session?.user?.user_metadata?.role ?? null)
+    })()
+  }, [supabase])
+
   async function load() {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('vouchers')
+      .select('*')
+      .eq('id', params.id)
+      .maybeSingle()
+    setLoading(false)
+    if (error || !data) return setErr('Voucher not found')
+    setV(data)
+    setBuyerName(data.buyer_name ?? '')
+    setBuyerPhone(data.buyer_phone ?? '')
+    setAmount(data.initial_amount ?? '')
+    setQr(await voucherToDataUrl(data.code))
+  }
+
+  useEffect(() => {
+    load()
+  }, [params.id])
+
+    async function onEditSave() {
+    if (!v) return
+    if (!['admin', 'superadmin'].includes(userRole || '')) {
+      return setErr('Only admin can edit active vouchers.')
+    }
+    const a = Number(amount)
+    if (!a || a <= 0) return setErr('Amount must be > 0')
+
+    setWorking(true)
+    const { error } = await supabase
+      .from('vouchers')
+      .update({
+        buyer_name: buyerName || null,
+        buyer_phone: buyerPhone || null,
+        initial_amount: a,
+        balance: a, // reset balance to new amount
+      })
+      .eq('id', v.id)
+      .eq('status', 'active')
+    setWorking(false)
+    if (error) return setErr(error.message)
+    setEditMode(false)
+    await load()
+  }
+
+  if (loading) return <p className="p-6">Loading…</p>
+  if (err) return <p className="p-6 text-rose-600">{err}</p>
+  if (!v) return null
+
+
+  /*async function load() {
     setLoading(true);
     setErr(null);
     const { data, error } = await supabase
@@ -59,7 +122,7 @@ export default function VoucherModalPage() {
     setBuyerPhone(vv.buyer_phone ?? '');
     setAmount(vv.status === 'blank' ? '' : vv.initial_amount || ''); // only propose amount for blank
     setQr(await voucherToDataUrl(vv.code));
-  }
+  }*/
 
   useEffect(() => {
     // lock scroll while modal open
@@ -178,182 +241,186 @@ export default function VoucherModalPage() {
     if (e.target === e.currentTarget) router.back();
   }
 
-  return (
+ return (
     <div
       className="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4 backdrop-blur-sm"
       onMouseDown={onBackdrop}
     >
       <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white text-black shadow-2xl ring-1 ring-black/5">
+        {/* HEADER */}
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="text-base font-semibold">Voucher details</div>
           <button
             onClick={() => router.back()}
             className="rounded-md p-1 text-gray-500 hover:bg-gray-100"
-            aria-label="Close"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
+        {/* BODY */}
         <div className="p-4 space-y-5">
-          {loading ? (
-            <div className="text-sm text-gray-500">Loading…</div>
-          ) : err ? (
-            <div className="text-sm text-rose-600">{err}</div>
-          ) : v ? (
-            <>
-              {/* Top: code + QR */}
-             <div className="flex items-start gap-4">
-  <div className="rounded-lg border p-2">
-    {qr ? (
-      <a href={voucherDeepLink(v.code)} target="_blank" rel="noreferrer" title="Open voucher public page">
-        <img src={qr} alt="QR" className="h-36 w-36 rounded" />
-      </a>
-    ) : (
-      <div className="grid h-36 w-36 place-items-center text-gray-400">QR…</div>
-    )}
-  </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm text-gray-600">Code</div>
-                  <div className="mb-2 break-all font-mono text-lg">{v.code}</div>
-
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <Info label="Status" value={v.status} />
-                    <Info label="Balance" value={`${Math.round(v.balance)} DZD`} />
-                    <Info label="Initial" value={`${Math.round(v.initial_amount)} DZD`} />
-                    <Info label="Buyer" value={v.buyer_name ?? '—'} />
-                    <Info label="Phone" value={v.buyer_phone ?? '—'} />
-                    <Info label="Expires" value={v.expires_at ?? '—'} />
-                    <Info label="Activated" value={v.activated_at ? new Date(v.activated_at).toLocaleString() : '—'} />
-                  </div>
+          {/* QR + INFO */}
+          <div className="flex items-start gap-4">
+            <div className="rounded-lg border p-2">
+              {qr ? (
+                <a
+                  href={voucherDeepLink(v.code)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <img src={qr} alt="QR" className="h-36 w-36 rounded" />
+                </a>
+              ) : (
+                <div className="grid h-36 w-36 place-items-center text-gray-400">
+                  QR…
                 </div>
-              </div>
+              )}
+            </div>
 
-              {/* Activation form (only when blank) */}
-              {v.status === 'blank' && (
-                <div className="rounded-lg border p-4">
-                  <div className="text-sm font-medium mb-3">Activate voucher</div>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="min-w-0 flex-1">
+              <div className="text-sm text-gray-600">Code</div>
+              <div className="mb-2 break-all font-mono text-lg">{v.code}</div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <Info label="Status" value={v.status} />
+                <Info label="Balance" value={`${Math.round(v.balance)} DZD`} />
+                <Info
+                  label="Initial"
+                  value={`${Math.round(v.initial_amount)} DZD`}
+                />
+                <Info label="Buyer" value={v.buyer_name ?? '—'} />
+                <Info label="Phone" value={v.buyer_phone ?? '—'} />
+                <Info label="Expires" value={v.expires_at ?? '—'} />
+              </div>
+            </div>
+          </div>
+
+          {/* 🔹 Admin edit section */}
+          {['admin', 'superadmin'].includes(userRole || '') &&
+            v.status === 'active' && (
+              <div className="rounded-lg border p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <div className="text-sm font-medium">Edit Active Voucher</div>
+                  <button
+                    onClick={() => setEditMode(!editMode)}
+                    className="text-sm bg-emerald-600 text-white px-3 py-1.5 rounded-md hover:bg-emerald-700"
+                  >
+                    {editMode ? 'Cancel' : '✏️ Edit'}
+                  </button>
+                </div>
+
+                {editMode && (
+                  <div className="space-y-3">
                     <div>
-                      <label className="block text-sm text-gray-600">Buyer name (optional)</label>
+                      <label className="text-sm text-gray-600">Buyer name</label>
                       <input
-                        className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                        className="w-full border rounded-md px-3 py-2 text-sm"
                         value={buyerName}
                         onChange={(e) => setBuyerName(e.target.value)}
-                        placeholder="Client name"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600">Buyer phone (optional)</label>
+                      <label className="text-sm text-gray-600">Buyer phone</label>
                       <input
-                        className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                        className="w-full border rounded-md px-3 py-2 text-sm"
                         value={buyerPhone}
                         onChange={(e) => setBuyerPhone(e.target.value)}
-                        placeholder="+213 5x xx xx xx"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600">Amount (DZD) *</label>
+                      <label className="text-sm text-gray-600">
+                        Initial amount (DZD)
+                      </label>
                       <input
                         type="number"
                         min={1}
-                        step={1}
-                        className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                        className="w-full border rounded-md px-3 py-2 text-sm"
                         value={amount}
-                        onChange={(e) => setAmount(e.target.value === '' ? '' : Number(e.target.value))}
-                        placeholder="3000"
+                        onChange={(e) =>
+                          setAmount(
+                            e.target.value === '' ? '' : Number(e.target.value)
+                          )
+                        }
                       />
-                      <p className="mt-1 text-xs text-gray-500">
-                        Activation will set <b>initial_amount</b> and <b>balance</b> to this value.
-                      </p>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-3">
+                      <button
+                        onClick={onEditSave}
+                        disabled={working}
+                        className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 text-sm"
+                      >
+                        {working ? 'Saving…' : 'Save changes'}
+                      </button>
                     </div>
                   </div>
-
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
-                      onClick={onActivate}
-                      disabled={working}
-                    >
-                      {working ? 'Activating…' : 'Activate'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Consume (only when active) */}
-{v.status === 'active' && (
-  <div className="rounded-lg border p-4">
-    <div className="mb-3 text-sm font-medium">Consume voucher</div>
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-3 items-end">
-      <div className="md:col-span-2">
-        <label className="block text-sm text-gray-600">Amount to consume (DZD) *</label>
-        <input
-          type="number"
-          min={1}
-          step={1}
-          className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-          value={redeemAmt}
-          onChange={(e) => setRedeemAmt(e.target.value === '' ? '' : Number(e.target.value))}
-          placeholder="e.g. 1000"
-        />
-        <p className="mt-1 text-xs text-gray-500">
-          Remaining: <b>{Math.round(v.balance)} DZD</b>
-        </p>
-      </div>
-      <div className="flex gap-2">
-        <button
-          className="rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-60"
-          onClick={onConsume}
-          disabled={working}
-        >
-          {working ? 'Consuming…' : 'Consume'}
-        </button>
-        <button
-          type="button"
-          className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
-          onClick={() => setRedeemAmt(Math.max(1, Math.floor(v.balance)))} // quick-fill
-          disabled={working || v.balance <= 0}
-          title="Use full remaining balance"
-        >
-          Max
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-
-              {/* Actions */}
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                
-
-                <button
-                  className="rounded-md border px-3 py-2 text-sm text-rose-700 hover:bg-rose-50 disabled:opacity-60"
-                  onClick={onDelete}
-                  disabled={working}
-                >
-                  {working ? 'Deleting…' : 'Delete'}
-                </button>
+                )}
               </div>
-            </>
-          ) : null}
+            )}
+
+          {/* Consume section */}
+          {v.status === 'active' && (
+            <div className="rounded-lg border p-4">
+              <div className="mb-3 text-sm font-medium">Consume voucher</div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3 items-end">
+                <div className="md:col-span-2">
+                  <label className="block text-sm text-gray-600">
+                    Amount to consume (DZD)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                    value={redeemAmt}
+                    onChange={(e) =>
+                      setRedeemAmt(
+                        e.target.value === '' ? '' : Number(e.target.value)
+                      )
+                    }
+                    placeholder="e.g. 1000"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Remaining: <b>{Math.round(v.balance)} DZD</b>
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    className="rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-60"
+                    onClick={onConsume}
+                    disabled={working}
+                  >
+                    {working ? 'Consuming…' : 'Consume'}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
+                    onClick={() =>
+                      setRedeemAmt(Math.max(1, Math.floor(v.balance)))
+                    }
+                    disabled={working || v.balance <= 0}
+                  >
+                    Max
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="border-t px-4 py-3 text-xs text-gray-500">
-          Tip: activate here or use the public page to activate/top-up/redeem.
+          Tip: only admins can edit active vouchers to correct wrong values.
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-[11px] uppercase tracking-wide text-gray-500">{label}</div>
-      <div className="mt-0.5 break-words">{value}</div>
+      <div className="text-[11px] uppercase text-gray-500">{label}</div>
+      <div>{value}</div>
     </div>
-  );
+  )
 }
