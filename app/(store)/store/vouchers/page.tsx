@@ -1,7 +1,7 @@
 'use client'
 
 import VoucherHeader from '@/components/VoucherHeader'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Menu, Combobox } from '@headlessui/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { v4 as uuidv4 } from 'uuid'
@@ -35,8 +35,16 @@ type Voucher = {
   created_at: string
 }
 
-/* =================== MAIN PAGE =================== */
 export default function StoreVouchersPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-gray-500">Signing you in…</div>}>
+      <StoreVouchersInner/>
+    </Suspense>
+  )
+}
+
+/* =================== MAIN PAGE =================== */
+ function StoreVouchersInner() {
   const { t, lang } = useLanguage()
   const supabase = createClientComponentClient()
   const params = useSearchParams()
