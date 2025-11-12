@@ -13,26 +13,29 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useRouter } from 'next/navigation'
 
 export default function StoreTeamPage() {
   const supabase = createClientComponentClient()
+  const router = useRouter()
   const [team, setTeam] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ email: '', name: '' })
+  const [form, setForm] = useState({ email: '' })
   const [storeId, setStoreId] = useState<string | null>(null)
   const [storeName, setStoreName] = useState<string | null>(null)
   const [role, setRole] = useState<string | null>(null)
+  const [ownerEmail, setOwnerEmail] = useState<string | null>(null)
 
-  // 🧠 Load user role + store_id
+  // 🧠 Load user role + store_id + store_name
   useEffect(() => {
     ;(async () => {
       const { data: sessionData } = await supabase.auth.getSession()
       const user = sessionData.session?.user
       if (!user) return
 
-      // Fetch role + store_id
+      // Get role + store info
       const { data: me, error } = await supabase
         .from('me_effective_role')
         .select('role, store_id, store_name')
@@ -44,8 +47,14 @@ export default function StoreTeamPage() {
       setRole(me?.role || null)
       setStoreId(me?.store_id || null)
       setStoreName(me?.store_name || null)
+      setOwnerEmail(user.email || null)
     })()
   }, [supabase])
+
+  // ❌ Redirect if cashier (not allowed to manage team)
+  useEffect(() => {
+    if (role === 'cashier') router.push('/store/vouchers')
+  }, [role, router])
 
   // 🧾 Load team members
   useEffect(() => {
@@ -85,7 +94,7 @@ export default function StoreTeamPage() {
       if (!res.ok) throw new Error(result.error || 'Failed to add cashier.')
 
       alert('✅ Invitation sent! The cashier will receive an email to join.')
-      setForm({ email: '', name: '' })
+      setForm({ email: '' })
       setOpen(false)
 
       // Refresh team list
@@ -108,10 +117,17 @@ export default function StoreTeamPage() {
     <div className="p-6 min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          <User className="w-5 h-5 text-emerald-600" />
-          Store Team
-        </h1>
+        <div>
+          <h1 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <User className="w-5 h-5 text-emerald-600" />
+            Store Team
+          </h1>
+          {storeName && (
+            <p className="text-sm text-gray-500 mt-1">
+              {storeName} — {ownerEmail}
+            </p>
+          )}
+        </div>
 
         {role === 'store_owner' && (
           <Button
