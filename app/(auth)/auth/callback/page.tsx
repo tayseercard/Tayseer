@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function AuthCallbackPage() {
@@ -14,15 +14,17 @@ export default function AuthCallbackPage() {
 
 function AuthCallbackInner() {
   const supabase = createClientComponentClient()
-  const router = useRouter()
   const params = useSearchParams()
-  const code = params.get('code')
-  const type = params.get('type')
   const [status, setStatus] = useState('')
 
   useEffect(() => {
+    const hash = window.location.hash
+    const codeFromQuery = params.get('code')
+    const accessTokenFromHash = new URLSearchParams(hash.replace('#', '')).get('access_token')
+
+    const code = codeFromQuery || accessTokenFromHash
     if (!code) {
-      setStatus('❌ Missing "code" in URL')
+      setStatus('❌ Missing "code" or "access_token" in URL')
       return
     }
 
@@ -32,22 +34,17 @@ function AuthCallbackInner() {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) throw error
 
-        // ✅ If it's an invite or recovery link → redirect to set-password page
-        if (type === 'invite' || type === 'recovery') {
-          setStatus('Redirecting to set password...')
-          router.push('/auth/set-password')
-          return
-        }
+        setStatus('🔐 Session OK — syncing cookies…')
+        await fetch('/api/auth/callback', { method: 'POST' })
 
-        // Otherwise → normal login redirect
         setStatus('✅ Redirecting to dashboard…')
-        router.push('/admin')
+        window.location.href = '/store' // or '/admin' depending on role
       } catch (e: any) {
-        setStatus('💥 ' + e.message)
         console.error(e)
+        setStatus('💥 ' + e.message)
       }
     })()
-  }, [code, type, supabase, router])
+  }, [params, supabase])
 
   return (
     <div className="flex items-center justify-center min-h-screen">
