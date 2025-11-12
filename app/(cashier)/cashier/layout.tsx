@@ -19,12 +19,12 @@ import {
   Package,
 } from 'lucide-react'
 
-export default function StoreLayout({ children }: { children: React.ReactNode }) {
+export default function CachierLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClientComponentClient()
   const router = useRouter()
   const pathname = usePathname()
   const [scannerOpen, setScannerOpen] = useState(false)
-  const [storeName, setStoreName] = useState<string | null>(null)
+  const [cachierName, setCashierName] = useState<string | null>(null)
 const { t, lang } = useLanguage()
 
   async function handleLogout() {
@@ -44,13 +44,13 @@ const { t, lang } = useLanguage()
         return
       }
 
-      const { data: store } = await supabase
-        .from('stores')
-        .select('name')
+      const { data: cashier } = await supabase
+        .from('cashiers')
+        .select('full_name')
         .eq('owner_user_id', session.user.id)
         .maybeSingle()
 
-      setStoreName(store?.name ?? 'Store')
+      setCashierName(cashier?.full_name ?? 'Cashier')
     })()
   }, [supabase, router])
 
@@ -77,10 +77,10 @@ const { t, lang } = useLanguage()
           {/* Desktop Nav */}
           <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             {[
-              { href: '/store/dashboard', label: t.dashboard, icon: LayoutDashboard },
-              { href: '/store/vouchers', label: t.vouchers, icon: QrCode },
-              { href: '/store/clients', label: t.clients, icon: Users },
-              { href: '/store/settings', label: t.settings, icon: Settings },
+              { href: '/cashier/dashboard', label: t.dashboard, icon: LayoutDashboard },
+              { href: '/cashier/vouchers', label: t.vouchers, icon: QrCode },
+              { href: '/cashier/clients', label: t.clients, icon: Users },
+              { href: '/cashier/settings', label: t.settings, icon: Settings },
             ].map(({ href, label, icon: Icon }) => {
               const active = pathname?.startsWith(href)
               return (
@@ -150,8 +150,8 @@ const { t, lang } = useLanguage()
       >
         {/* Buttons container (lifted upward) */}
         <div className="flex flex-1 justify-around items-end pb-4">
-          <NavLink href="/store/dashboard" icon={LayoutDashboard} label={t.home} />
-          <NavLink href="/store/clients" icon={Users} label={t.clients} />
+          <NavLink href="/cashier/dashboard" icon={LayoutDashboard} label={t.home} />
+          <NavLink href="/cashier/clients" icon={Users} label={t.clients} />
 
           {/* Floating Scan Button */}
           <div className="relative flex items-center justify-center -mt-10">
@@ -168,8 +168,8 @@ const { t, lang } = useLanguage()
             </button>
           </div>
 
-          <NavLink href="/store/vouchers" icon={Gift} label={t.vouchers} />
-          <NavLink href="/store/settings" icon={Settings} label={t.settings} />
+          <NavLink href="/cashier/vouchers" icon={Gift} label={t.vouchers} />
+          <NavLink href="/cashier/settings" icon={Settings} label={t.settings} />
         </div>
       </nav>
 
