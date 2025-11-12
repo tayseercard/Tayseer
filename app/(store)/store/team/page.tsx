@@ -3,7 +3,13 @@
 import { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Plus, User, Loader2 } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,25 +22,28 @@ export default function StoreTeamPage() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ email: '', name: '' })
   const [storeId, setStoreId] = useState<string | null>(null)
+  const [storeName, setStoreName] = useState<string | null>(null)
   const [role, setRole] = useState<string | null>(null)
 
   // 🧠 Load user role + store_id
   useEffect(() => {
     ;(async () => {
       const { data: sessionData } = await supabase.auth.getSession()
-      const session = sessionData.session
-      const user = session?.user
+      const user = sessionData.session?.user
       if (!user) return
 
-      // Fetch role and store_id from me_effective_role
-      const { data: me } = await supabase
+      // Fetch role + store_id
+      const { data: me, error } = await supabase
         .from('me_effective_role')
-        .select('role, store_id')
+        .select('role, store_id, store_name')
         .eq('user_id', user.id)
         .maybeSingle()
 
+      if (error) console.error('Fetch role error:', error)
+
       setRole(me?.role || null)
       setStoreId(me?.store_id || null)
+      setStoreName(me?.store_name || null)
     })()
   }, [supabase])
 
@@ -45,9 +54,10 @@ export default function StoreTeamPage() {
       setLoading(true)
       const { data, error } = await supabase
         .from('me_effective_role')
-        .select('id, user_id, role, created_at, store_name, user_id')
+        .select('id, user_id, role, created_at, store_name')
         .eq('store_id', storeId)
         .order('created_at', { ascending: false })
+
       if (error) console.error('Load team error:', error)
       setTeam(data || [])
       setLoading(false)
@@ -55,44 +65,48 @@ export default function StoreTeamPage() {
   }, [storeId, supabase])
 
   // ➕ Add cashier
- async function handleAddCashier() {
-  if (!form.email.trim() || !storeId) return alert('Email is required.')
+  async function handleAddCashier() {
+    if (!form.email.trim()) return alert('❌ Please enter an email.')
+    if (!storeId) return alert('❌ Missing store ID.')
 
-  setSaving(true)
-  try {
-    const res = await fetch('/api/store/add-cashier', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: form.email.trim(),
-        store_id: storeId,
-        store_name: 'Your Store Name', // optional — can add dynamic name if you store it
-      }),
-    })
-    const result = await res.json()
-    if (!res.ok) throw new Error(result.error || 'Failed to add cashier')
+    setSaving(true)
+    try {
+      const res = await fetch('/api/store/add-cashier', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.email.trim(),
+          store_id: storeId,
+          store_name: storeName,
+        }),
+      })
 
-    alert('✅ Invitation sent! The cashier will receive an email to join.')
-    setForm({ email: '', name: '' })
-    setOpen(false)
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Failed to add cashier.')
 
-    // Refresh team list
-    const { data } = await supabase
-      .from('me_effective_role')
-      .select('id, user_id, role, created_at, store_name')
-      .eq('store_id', storeId)
-    setTeam(data || [])
-  } catch (err: any) {
-    alert('❌ ' + err.message)
-  } finally {
-    setSaving(false)
+      alert('✅ Invitation sent! The cashier will receive an email to join.')
+      setForm({ email: '', name: '' })
+      setOpen(false)
+
+      // Refresh team list
+      const { data } = await supabase
+        .from('me_effective_role')
+        .select('id, user_id, role, created_at, store_name')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false })
+
+      setTeam(data || [])
+    } catch (err: any) {
+      console.error('Add cashier error:', err)
+      alert('❌ ' + err.message)
+    } finally {
+      setSaving(false)
+    }
   }
-}
-
-
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50">
+    <div className="p-6 min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
           <User className="w-5 h-5 text-emerald-600" />
@@ -100,12 +114,16 @@ export default function StoreTeamPage() {
         </h1>
 
         {role === 'store_owner' && (
-          <Button onClick={() => setOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button
+            onClick={() => setOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center"
+          >
             <Plus className="h-4 w-4 mr-1" /> Add Cashier
           </Button>
         )}
       </div>
 
+      {/* Team List */}
       {loading ? (
         <div className="flex justify-center items-center py-10 text-gray-500">
           <Loader2 className="animate-spin mr-2" /> Loading team...
@@ -162,7 +180,11 @@ export default function StoreTeamPage() {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddCashier} disabled={saving} className="bg-emerald-600 text-white">
+            <Button
+              onClick={handleAddCashier}
+              disabled={saving}
+              className="bg-emerald-600 text-white"
+            >
               {saving ? 'Adding…' : 'Add Cashier'}
             </Button>
           </DialogFooter>
@@ -171,4 +193,3 @@ export default function StoreTeamPage() {
     </div>
   )
 }
-

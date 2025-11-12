@@ -39,6 +39,8 @@ function LoginInner() {
         if (roleList.includes('superadmin')) router.replace('/superadmin')
         else if (roleList.includes('admin')) router.replace('/admin')
         else if (roleList.includes('store_owner')) router.replace('/store')
+        else if (roleList.includes('cashier')) router.replace('/cashier')
+
       }
     })()
   }, [supabase, router])
@@ -83,6 +85,8 @@ function LoginInner() {
       if (roleList.includes('superadmin')) destination = '/superadmin'
       else if (roleList.includes('admin')) destination = '/admin'
       else if (roleList.includes('store_owner')) destination = '/store'
+      else if (roleList.includes('cashier')) destination = '/cashier'
+
 
       await new Promise((resolve) => setTimeout(resolve, 400))
       window.location.href = destination
