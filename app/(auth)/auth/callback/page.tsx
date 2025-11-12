@@ -15,16 +15,13 @@ export default function AuthCallbackPage() {
 function AuthCallbackInner() {
   const supabase = createClientComponentClient()
   const params = useSearchParams()
+  const code = params.get('code')
+  const redirectTo = params.get('redirectTo')
   const [status, setStatus] = useState('')
 
   useEffect(() => {
-    const hash = window.location.hash
-    const codeFromQuery = params.get('code')
-    const accessTokenFromHash = new URLSearchParams(hash.replace('#', '')).get('access_token')
-
-    const code = codeFromQuery || accessTokenFromHash
     if (!code) {
-      setStatus('❌ Missing "code" or "access_token" in URL')
+      setStatus('❌ Missing "code" in URL')
       return
     }
 
@@ -35,16 +32,20 @@ function AuthCallbackInner() {
         if (error) throw error
 
         setStatus('🔐 Session OK — syncing cookies…')
-        await fetch('/api/auth/callback', { method: 'POST' })
+        const res = await fetch('/api/auth/callback', { method: 'POST' })
+
+        if (!res.ok) {
+          const json = await res.json()
+          throw new Error(json.error || 'Cookie sync failed')
+        }
 
         setStatus('✅ Redirecting to dashboard…')
-        window.location.href = '/store' // or '/admin' depending on role
       } catch (e: any) {
-        console.error(e)
         setStatus('💥 ' + e.message)
+        console.error(e)
       }
     })()
-  }, [params, supabase])
+  }, [code, supabase])
 
   return (
     <div className="flex items-center justify-center min-h-screen">
