@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     // 🌍 Redirect URL (used in invite link)
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || 'https://tayseercard.vercel.app'
-    const redirectUrl = `${siteUrl}/auth/set-password?email=${encodeURIComponent(email)}`
+    const redirectUrl = `${siteUrl}/auth/set-password`
 
     // 1️⃣ Invite cashier (sends an email via Supabase)
     const { data: inviteData, error: inviteError } =
