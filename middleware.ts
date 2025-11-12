@@ -64,11 +64,15 @@ let role = session.user.app_metadata?.role;
     return NextResponse.redirect(url)
   }
 
-  if (pathname.startsWith('/store') && !['store_owner', 'cashier'].includes(role)) {
+  if (pathname.startsWith('/store') && !['store_owner'].includes(role)) {
     url.pathname = '/403'
     return NextResponse.redirect(url)
   }
 
+  if (pathname.startsWith('/cashier') && !['cashier'].includes(role)) {
+    url.pathname = '/403'
+    return NextResponse.redirect(url)
+  }
   return res
 }
 

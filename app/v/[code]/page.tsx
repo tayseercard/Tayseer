@@ -94,8 +94,7 @@ export default function PublicVoucherPage() {
         <div className="flex flex-col items-center text-center">
           <Gift className="h-10 w-10 text-emerald-600 mb-2" />
           <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            Bon Cadeau Tayseer
-          </h1>
+          Bon Cadeeau : {voucher.store_name}</h1>    
           <p className="text-sm text-gray-500">
             Code : <span className="font-mono">{voucher.code}</span>
           </p>
@@ -160,7 +159,7 @@ export default function PublicVoucherPage() {
 
         {/* Footer */}
         <p className="mt-6 text-[11px] text-gray-400 text-center">
-          ✅ Vérifié par <strong className="text-emerald-600">Tayseer</strong> — bon
+          ✅ Vérifié par <strong className="text-emerald-600">{voucher.store_name}</strong> — bon
           cadeau authentique.
         </p>
       </div>
