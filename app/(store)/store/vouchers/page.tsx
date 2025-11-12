@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Scanner } from '@yudiel/react-qr-scanner'
 import VoucherModal from '@/components/VoucherModal'
 import { useLanguage } from '@/lib/useLanguage'
+import { useSearchParams } from 'next/navigation'
 
 
 import {
@@ -38,6 +39,8 @@ type Voucher = {
 export default function StoreVouchersPage() {
   const { t, lang } = useLanguage()
   const supabase = createClientComponentClient()
+  const params = useSearchParams()
+
   const [rows, setRows] = useState<any[]>([])
   const [stores, setStores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,6 +60,48 @@ export default function StoreVouchersPage() {
   const [page, setPage] = useState(1)
   const totalPages = useMemo(() => Math.ceil(rows.length / ITEMS_PER_PAGE), [rows])
 
+ // ✅ Read status from query (?status=active)
+  useEffect(() => {
+    const s = params.get('status')
+    if (s) setSelectedStatus(s)
+  }, [params])
+
+ // ✅ Fetch current user store_id and vouchers
+  useEffect(() => {
+    ;(async () => {
+      setLoading(true)
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const userId = session?.user.id
+      if (!userId) return
+
+      // fetch role/store_id
+      const { data: roleRow } = await supabase
+        .from('me_effective_role')
+        .select('store_id')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      const currentStoreId = roleRow?.store_id || null
+      setStoreId(currentStoreId)
+
+      // fetch vouchers (filter by store)
+      let query = supabase
+        .from('vouchers')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (currentStoreId) query = query.eq('store_id', currentStoreId)
+      if (selectedStatus !== 'all') query = query.eq('status', selectedStatus)
+
+      const { data, error } = await query
+      if (error) console.error('Error loading vouchers:', error)
+      setRows(data || [])
+      setLoading(false)
+    })()
+  }, [selectedStatus, supabase]) 
   /* -------- Load data -------- */
   async function loadData() {
     setLoading(true)
@@ -85,6 +130,14 @@ export default function StoreVouchersPage() {
     return data
   }, [rows, q, selectedStore, selectedStatus])
 
+/* -------- Totals Calculation -------- */
+const totals = useMemo(() => {
+  const totalInitial = filtered.reduce((sum, v) => sum + (v.initial_amount || 0), 0)
+  const totalBalance = filtered.reduce((sum, v) => sum + (v.balance || 0), 0)
+  const consumed = totalInitial - totalBalance
+  return { totalInitial, totalBalance, consumed }
+}, [filtered])
+
   /* -------- Paginated data -------- */
   const paginated = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE
@@ -106,7 +159,43 @@ export default function StoreVouchersPage() {
     >
       
 
-{/* ===== Filters Section ===== */}
+{/* ===== Totals Section ===== */}
+{!loading && filtered.length > 0 && (
+  <div className="rounded-xl bg-white/70 border border-gray-100 shadow-sm p-4 text-sm flex flex-wrap justify-between items-center gap-4">
+    
+    {/* Initial Amount */}
+    <div className="flex flex-col">
+      <span className="text-gray-600 text-xs">
+        {selectedStatus === 'all'
+          ? t.totalAllVouchers || 'All vouchers total'
+          : `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} vouchers total`}
+      </span>
+      <span className="font-semibold text-gray-900 text-lg">
+        {fmtDZD(totals.totalInitial, lang)}
+        <span className="text-xs text-gray-500 font-normal ml-1">initial</span>
+      </span>
+    </div>
+
+    {/* Remaining Balance */}
+    <div className="flex flex-col text-right">
+      <span className="text-gray-600 text-xs">Remaining balance</span>
+      <span className="font-semibold text-emerald-700 text-lg">
+        {fmtDZD(totals.totalBalance, lang)}
+      </span>
+    </div>
+
+    {/* Consumed Amount */}
+    <div className="flex flex-col text-right">
+      <span className="text-gray-600 text-xs">Consumed</span>
+
+      <span className="font-semibold text-rose-600 text-lg">
+        {fmtDZD(totals.consumed, lang)}
+      </span>
+    </div>
+  </div>
+)}
+
+
 {/* ===== Filters Section ===== */}
 <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-4">
   {/* 🔍 Search bar */}
@@ -291,6 +380,7 @@ export default function StoreVouchersPage() {
 
         )}
       </div>
+      
 
       {/* Pagination */}
       {!loading && filtered.length > ITEMS_PER_PAGE && (
