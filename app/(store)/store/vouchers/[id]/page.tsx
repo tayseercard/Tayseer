@@ -26,6 +26,8 @@ export default function VoucherModalPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const supabase = createClientComponentClient();
+  const [editMode, setEditMode] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
 
   const [v, setV] = useState<Voucher | null>(null);
   const [qr, setQr] = useState<string | null>(null);
@@ -74,6 +76,8 @@ useEffect(() => {
     return;
   }
 
+ 
+
   const delay = setTimeout(async () => {
     const { data, error } = await supabase
       .from('store_clients')
@@ -103,7 +107,31 @@ useEffect(() => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
+   async function onEditSave() {
+    if (!v) return
+    if (!['admin', 'superadmin', 'store_owner'].includes(userRole || '')) {
+  return setErr('Only store owners or admins can edit vouchers.')
+}
 
+    const a = Number(amount)
+    if (!a || a <= 0) return setErr('Amount must be > 0')
+
+    setWorking(true)
+    const { error } = await supabase
+      .from('vouchers')
+      .update({
+        buyer_name: buyerName || null,
+        buyer_phone: buyerPhone || null,
+        initial_amount: a,
+        balance: a, // reset balance to new amount
+      })
+      .eq('id', v.id)
+      .eq('status', 'active')
+    setWorking(false)
+    if (error) return setErr(error.message)
+    setEditMode(false)
+    await load()
+  }
   
   async function onDelete() {
     if (!v) return;
@@ -344,6 +372,67 @@ useEffect(() => {
                   </div>
                 </div>
               )}
+                {/* 🔹 Admin edit section */}
+{['admin', 'superadmin', 'store_owner'].includes(userRole || '') &&
+            v.status === 'active' && (
+              <div className="rounded-lg border p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <div className="text-sm font-medium">Edit Active Voucher</div>
+                  <button
+                    onClick={() => setEditMode(!editMode)}
+                    className="text-sm bg-emerald-600 text-white px-3 py-1.5 rounded-md hover:bg-emerald-700"
+                  >
+                    {editMode ? 'Cancel' : '✏️ Edit'}
+                  </button>
+                </div>
+
+                {editMode && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm text-gray-600">Buyer name</label>
+                      <input
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                        value={buyerName}
+                        onChange={(e) => setBuyerName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600">Buyer phone</label>
+                      <input
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                        value={buyerPhone}
+                        onChange={(e) => setBuyerPhone(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-600">
+                        Initial amount (DZD)
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                        value={amount}
+                        onChange={(e) =>
+                          setAmount(
+                            e.target.value === '' ? '' : Number(e.target.value)
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2 pt-3">
+                      <button
+                        onClick={onEditSave}
+                        disabled={working}
+                        className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 text-sm"
+                      >
+                        {working ? 'Saving…' : 'Save changes'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
               {/* Consume (only when active) */}
 {v.status === 'active' && (

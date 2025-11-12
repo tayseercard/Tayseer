@@ -93,8 +93,9 @@ export default function PublicVoucherPage() {
         {/* Header */}
         <div className="flex flex-col items-center text-center">
           <Gift className="h-10 w-10 text-emerald-600 mb-2" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">
-          Bon Cadeeau : {voucher.store_name}</h1>    
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Bon Cadeeau</h1>    
+          <h1 className="text-2xl font-bold text-gray-900 mb-1"> {voucher.store_name}</h1>    
+
           <p className="text-sm text-gray-500">
             Code : <span className="font-mono">{voucher.code}</span>
           </p>

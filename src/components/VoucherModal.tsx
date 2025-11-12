@@ -270,7 +270,7 @@ useEffect(() => {
 
   /* ✏️ Edit Active Voucher (admin only) */
   async function handleEditSave() {
-    if (!['admin', 'superadmin'].includes(userRole || ''))
+    if (!['admin', 'superadmin','store_owner'].includes(userRole || ''))
       return alert('Only admin can edit active vouchers.')
     const a = Number(amount)
     if (!a || a <= 0) return alert('Invalid amount.')
@@ -426,7 +426,7 @@ useEffect(() => {
     </div>
 
     {/* === Edit Active Voucher (admin/superadmin only) === */}
-    {['admin', 'superadmin'].includes(userRole || '') && (
+    {['admin', 'superadmin','store_owner'].includes(userRole || '') && (
       <div className="mb-2   ">
         <div className="flex justify-between items-center ">
         
