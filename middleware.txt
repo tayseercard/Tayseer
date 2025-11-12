@@ -12,10 +12,8 @@ export async function middleware(req: NextRequest) {
   const url = req.nextUrl.clone()
   const pathname = url.pathname
 
-  // 🟩 Allow public routes
   if (pathname.startsWith('/auth') || pathname.startsWith('/403')) return res
 
-  // 🟩 Check protected routes
   const isProtected =
     pathname.startsWith('/admin') ||
     pathname.startsWith('/superadmin') ||
@@ -23,17 +21,16 @@ export async function middleware(req: NextRequest) {
 
   if (!isProtected) return res
 
-  // 🟥 Not logged in → redirect
   if (!session) {
     url.pathname = '/auth/login'
     url.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(url)
   }
 
-  // 🧩 Try getting role from JWT
-let role = session.user.app_metadata?.role;
+  // 🔹 Try reading role from JWT first
+  let role = session.user.user_metadata?.role
 
-  // 🧠 Fallback: query from me_effective_role
+  // 🔹 If missing, query your table directly
   if (!role) {
     const { data: roleData, error } = await supabase
       .from('me_effective_role')
@@ -41,19 +38,21 @@ let role = session.user.app_metadata?.role;
       .eq('user_id', session.user.id)
       .maybeSingle()
 
-    if (error) console.error('Role fetch error:', error.message)
-    role = roleData?.role ?? null
+      
+    if (error) console.error('Role fetch error:', error)
+    if (roleData?.role) role = roleData.role
+    console.log("🧩 session user id:", session.user.id)
+console.log("🧩 JWT role:", session.user.user_metadata?.role)
+
   }
 
-  console.log('🧠 Middleware → user:', session.user.id, '| role:', role)
-
-  // 🟥 Still no role → forbid
+  // ❌ Still no role → forbidden
   if (!role) {
     url.pathname = '/403'
     return NextResponse.redirect(url)
   }
 
-  // ✅ Role-based route access
+  // ✅ Role-based redirections
   if (pathname.startsWith('/superadmin') && role !== 'superadmin') {
     url.pathname = '/403'
     return NextResponse.redirect(url)
@@ -64,7 +63,7 @@ let role = session.user.app_metadata?.role;
     return NextResponse.redirect(url)
   }
 
-  if (pathname.startsWith('/store') && !['store_owner', 'cashier'].includes(role)) {
+  if (pathname.startsWith('/store') && !['store_owner', 'manager', 'cashier'].includes(role)) {
     url.pathname = '/403'
     return NextResponse.redirect(url)
   }
@@ -75,4 +74,3 @@ let role = session.user.app_metadata?.role;
 export const config = {
   matcher: ['/admin/:path*', '/superadmin/:path*', '/store/:path*'],
 }
-

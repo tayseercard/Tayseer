@@ -13,17 +13,51 @@ export default function AdminDashboardPage() {
   const supabase = createClientComponentClient()
   const { t } = useLanguage()
   const [loading, setLoading] = useState(true)
-
+const [userRole, setUserRole] = useState<string | null>(null)
   const [stores, setStores] = useState<any[]>([])
   const [vouchers, setVouchers] = useState<any[]>([])
   const [storeStats, setStoreStats] = useState({ total: 0, open: 0, closed: 0 })
   const [voucherStats, setVoucherStats] = useState({ total: 0, active: 0, redeemed: 0 })
   const [topStores, setTopStores] = useState<any[]>([])
 
+  useEffect(() => {
+  async function fetchRole() {
+    const { data: sessionData } = await supabase.auth.getSession()
+    const session = sessionData.session
+    let role = session?.user?.user_metadata?.role ?? null
+
+    // fallback: get from view if not in metadata
+    if (!role && session?.user?.id) {
+      const { data: roleData } = await supabase
+        .from('me_effective_role')
+        .select('role')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+      role = roleData?.role ?? null
+    }
+
+    console.log('🧩 Effective role:', role)
+    setUserRole(role)
+  }
+
+  fetchRole()
+}, [supabase])
+
   /* ---------- Load Data ---------- */
   useEffect(() => {
     ;(async () => {
       setLoading(true)
+
+    
+
+      // 🧩 Get current user role
+const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+if (sessionError) console.error('❌ Error fetching session:', sessionError)
+
+const role = sessionData?.session?.user?.user_metadata?.role || null
+setUserRole(role)
+console.log('🧠 Current user role:', role)
+
 
       const [{ data: storesData }, { data: vouchersData }] = await Promise.all([
         supabase.from('stores').select('*').order('created_at', { ascending: false }),
@@ -109,6 +143,12 @@ export default function AdminDashboardPage() {
           subtitle={t.usedVouchers}
         />
       </div>
+      {userRole && (
+  <div className="mt-2 text-xs text-gray-500">
+    🧩 Current role: <b>{userRole}</b>
+  </div>
+)}
+
 
       {/* === DASHBOARD CARDS === */}
       {!loading && (

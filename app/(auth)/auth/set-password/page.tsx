@@ -1,124 +1,54 @@
-'use client';
+'use client'
 
-import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-/* ---------- Wrapper with Suspense ---------- */
 export default function SetPasswordPage() {
-  return (
-    <Suspense fallback={<div className="p-4 text-gray-500 text-sm text-center">Loading…</div>}>
-      <SetPasswordInner />
-    </Suspense>
-  );
-}
+  const supabase = createClientComponentClient()
+  const router = useRouter()
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-/* ---------- Actual page logic ---------- */
-function SetPasswordInner() {
-  const supabase = createClientComponentClient();
-  const router = useRouter();
-  const sp = useSearchParams();
-  const redirectTo = sp.get('redirectTo') || '';
+  async function handleSetPassword() {
+    if (password.length < 6) return setError('Password must be at least 6 characters')
+    setLoading(true)
+    setError(null)
 
-  const [p1, setP1] = useState('');
-  const [p2, setP2] = useState('');
-  const [err, setErr] = useState<string | null>(null);
-  const [ok, setOk] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-
-    if (p1.length < 8) return setErr('Password must be at least 8 characters.');
-    if (p1 !== p2) return setErr('Passwords do not match.');
-
-    setLoading(true);
-
-    try {
-      // 1️⃣ Update password in Supabase Auth
-      const { error: e1 } = await supabase.auth.updateUser({
-        password: p1,
-        data: { must_change_password: false },
-      });
-      if (e1) throw e1;
-
-      // 2️⃣ Fetch current user
-      const {
-        data: { user },
-        error: userErr,
-      } = await supabase.auth.getUser();
-      if (userErr || !user) throw new Error('User not found after update.');
-
-      // 3️⃣ Mark store as having completed password setup
-      const { error: updateErr } = await supabase
-        .from('stores')
-        .update({ temp_password_set: false })
-        .eq('email', user.email);
-
-      if (updateErr) console.error('Failed to update temp_password_set:', updateErr);
-
-      // 4️⃣ Fetch user role for redirect
-      const { data: me } = await supabase
-        .from('me_effective_role')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      const dest = redirectTo || (me?.role === 'admin' ? '/admin' : '/store');
-      setOk(true);
-
-      // 5️⃣ Redirect after short delay
-      setTimeout(() => router.replace(dest), 1000);
-    } catch (err: any) {
-      console.error('Set password error:', err);
-      setErr(err.message || 'Failed to update password.');
-    } finally {
-      setLoading(false);
+    const { data, error } = await supabase.auth.updateUser({ password })
+    if (error) {
+      setError(error.message)
+    } else {
+      router.push('/auth/login')
     }
+
+    setLoading(false)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm bg-white rounded-xl p-6 shadow">
-        {!ok ? (
-          <form onSubmit={onSubmit} className="grid gap-3">
-            <h1 className="text-xl font-semibold mb-2 text-center">Set your password</h1>
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-white to-emerald-50">
+      <div className="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-100 shadow p-6">
+        <h1 className="text-xl font-semibold text-gray-800 mb-4">Set your password</h1>
 
-            <input
-              type="password"
-              placeholder="New password"
-              value={p1}
-              onChange={(e) => setP1(e.target.value)}
-              required
-              className="border rounded-md p-2"
-            />
+        <input
+          type="password"
+          placeholder="Enter new password"
+          className="w-full border rounded-lg p-2 mb-3"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-            <input
-              type="password"
-              placeholder="Confirm password"
-              value={p2}
-              onChange={(e) => setP2(e.target.value)}
-              required
-              className="border rounded-md p-2"
-            />
+        {error && <p className="text-sm text-rose-600 mb-2">{error}</p>}
 
-            {err && <p className="text-red-600 text-sm">{err}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-black text-white rounded-md p-2"
-            >
-              {loading ? 'Saving…' : 'Save password'}
-            </button>
-          </form>
-        ) : (
-          <div className="text-center text-green-700 font-medium">
-            ✅ Password updated successfully! Redirecting…
-          </div>
-        )}
+        <button
+          onClick={handleSetPassword}
+          disabled={loading}
+          className="w-full bg-emerald-600 text-white rounded-lg py-2 font-medium hover:bg-emerald-700"
+        >
+          {loading ? 'Saving…' : 'Save Password'}
+        </button>
       </div>
     </div>
-  );
+  )
 }

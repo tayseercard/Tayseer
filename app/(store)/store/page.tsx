@@ -19,8 +19,7 @@ import CountUp from 'react-countup'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function StoreDashboardPage() {
-    const { t } = useLanguage()
-
+  const { t } = useLanguage()
   const supabase = createClientComponentClient()
   const [loading, setLoading] = useState(true)
   const [store, setStore] = useState<{

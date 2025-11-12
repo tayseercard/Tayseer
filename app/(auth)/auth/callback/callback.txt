@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function AuthCallbackPage() {
@@ -14,10 +14,9 @@ export default function AuthCallbackPage() {
 
 function AuthCallbackInner() {
   const supabase = createClientComponentClient()
-  const router = useRouter()
   const params = useSearchParams()
   const code = params.get('code')
-  const type = params.get('type')
+  const redirectTo = params.get('redirectTo')
   const [status, setStatus] = useState('')
 
   useEffect(() => {
@@ -32,22 +31,21 @@ function AuthCallbackInner() {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) throw error
 
-        // ✅ If it's an invite or recovery link → redirect to set-password page
-        if (type === 'invite' || type === 'recovery') {
-          setStatus('Redirecting to set password...')
-          router.push('/auth/set-password')
-          return
+        setStatus('🔐 Session OK — syncing cookies…')
+        const res = await fetch('/api/auth/callback', { method: 'POST' })
+
+        if (!res.ok) {
+          const json = await res.json()
+          throw new Error(json.error || 'Cookie sync failed')
         }
 
-        // Otherwise → normal login redirect
         setStatus('✅ Redirecting to dashboard…')
-        router.push('/admin')
       } catch (e: any) {
         setStatus('💥 ' + e.message)
         console.error(e)
       }
     })()
-  }, [code, type, supabase, router])
+  }, [code, supabase])
 
   return (
     <div className="flex items-center justify-center min-h-screen">
