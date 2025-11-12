@@ -1,12 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
 export default function SetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-gray-500">Loading…</div>}>
+      <SetPasswordInner />
+    </Suspense>
+  )
+}
+
+function SetPasswordInner() {
   const supabase = createClientComponentClient()
   const router = useRouter()
   const params = useSearchParams()
@@ -17,47 +25,51 @@ export default function SetPasswordPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  // ✅ Step 1: Read tokens from fragment or query
+  // ✅ Step 1: Restore Supabase session from invite link
   useEffect(() => {
     const init = async () => {
       try {
-        // Wait for the client side to mount
+        console.log('🔍 Parsing tokens from URL...')
         await new Promise((r) => setTimeout(r, 300))
 
-        // Try to read from fragment
         let hash = window.location.hash
         let access_token: string | null = null
         let refresh_token: string | null = null
 
+        // Try fragment first (#access_token=...)
         if (hash && hash.includes('access_token')) {
           const parts = new URLSearchParams(hash.replace(/^#/, ''))
           access_token = parts.get('access_token')
           refresh_token = parts.get('refresh_token')
+          console.log('🔑 Tokens (fragment):', { access_token, refresh_token })
         }
 
-        // Fallback to query if fragment missing
+        // Fallback to query (?access_token=...)
         if (!access_token) {
           access_token = params.get('access_token')
           refresh_token = params.get('refresh_token')
+          console.log('🔑 Tokens (query):', { access_token, refresh_token })
         }
 
         const emailParam = params.get('email') || ''
         setEmail(emailParam)
 
         if (!access_token || !refresh_token) {
+          console.warn('⚠️ No tokens found in URL.')
           setError('Auth session missing. Please reopen the invite email.')
           setLoading(false)
           return
         }
 
-        // ✅ Restore the Supabase session
+        console.log('⚙️ Setting Supabase session...')
         const { error } = await supabase.auth.setSession({
           access_token,
           refresh_token,
         })
         if (error) throw error
+        console.log('✅ Session restored successfully.')
       } catch (e: any) {
-        console.error('Session restore failed:', e)
+        console.error('❌ Session restore failed:', e)
         setError(e.message)
       } finally {
         setLoading(false)
@@ -72,15 +84,20 @@ export default function SetPasswordPage() {
     if (!password.trim()) return setError('Please enter a password.')
     setError(null)
     try {
+      console.log('🔒 Updating user password...')
       const { error } = await supabase.auth.updateUser({ password })
       if (error) throw error
+
+      console.log('✅ Password updated successfully.')
       setSuccess(true)
       setTimeout(() => router.push('/auth/login'), 2000)
     } catch (e: any) {
+      console.error('❌ Password update failed:', e)
       setError(e.message)
     }
   }
 
+  // === UI ===
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-screen text-gray-500">
