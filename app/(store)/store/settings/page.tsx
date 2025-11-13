@@ -24,8 +24,6 @@ import StoreHeader from '@/components/store/StoreHeader'
 
 export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(false)
-    const [store, setStore] = useState<{ name: string; email: string; role: string; logoUrl?: string } | null>(null)
-
   const [activeModal, setActiveModal] = useState<
     'profile' | 'password' | 'language' | null
   >(null)
@@ -52,9 +50,18 @@ export default function SettingsPage() {
     >
       <div className="w-full max-w-md space-y-6">
         {/* === Header === */}
-              <StoreHeader store={store || { name: 'Loading…', email: '', role: '', logoUrl: '' }} />
         
-        
+        <SettingsHeader
+          title={t.settings}
+          subtitle={t.managePref}
+          user={{
+            name: 'Confiserie du bonheur',
+            email: 'confiserie@tayseer.dz',
+            role: 'Store owner',
+            avatarUrl: '/icon-192-2.png',
+          }}
+          onLogout={handleLogout}
+        />
 
         {/* === Account Section === */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
