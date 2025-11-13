@@ -54,6 +54,7 @@ export default function SettingsPage() {
     try {
       await supabase.auth.signOut()
       router.replace('/auth/login')
+      router.refresh()
     } catch (err) {
       console.error('Logout failed:', err)
     }
