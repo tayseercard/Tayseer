@@ -87,7 +87,7 @@ useEffect(() => {
   user={{
     name: profile?.name || '—',
     email: profile?.email || '—',
-    role: profile?.role || 'Admin',
+    role: profile?.role || 'Store Owner',
     avatarUrl: profile?.avatarUrl || '/icon-192-2.png',
   }}
   onLogout={handleLogout}
