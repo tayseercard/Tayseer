@@ -33,6 +33,7 @@ type Voucher = {
   initial_amount: number
   balance: number
   created_at: string
+  activated_at: string
 }
 
 export default function StoreVouchersPage() {
@@ -60,7 +61,8 @@ export default function StoreVouchersPage() {
   const [q, setQ] = useState('')
   const [selectedStore, setSelectedStore] = useState<'all' | string>('all')
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
-  
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
 
   
   /* ---------- Pagination ---------- */
@@ -99,7 +101,7 @@ export default function StoreVouchersPage() {
       let query = supabase
         .from('vouchers')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('activated_at', { ascending: false })
 
       if (currentStoreId) query = query.eq('store_id', currentStoreId)
       if (selectedStatus !== 'all') query = query.eq('status', selectedStatus)
@@ -135,6 +137,13 @@ export default function StoreVouchersPage() {
   const t = q.trim().toLowerCase()
   data = data.filter((v) => v.buyer_name?.toLowerCase().includes(t))
 }
+// 📅 DATE FILTER
+  if (selectedDate) {
+    data = data.filter((v) => {
+      const d = new Date(v.activated_at).toISOString().slice(0, 10)
+      return d === selectedDate
+    })
+  }
     return data
   }, [rows, q, selectedStore, selectedStatus])
 
@@ -145,6 +154,7 @@ const totals = useMemo(() => {
   const consumed = totalInitial - totalBalance
   return { totalInitial, totalBalance, consumed }
 }, [filtered])
+
 
   /* -------- Paginated data -------- */
   const paginated = useMemo(() => {
@@ -216,6 +226,16 @@ const totals = useMemo(() => {
       className="flex-1 bg-transparent text-sm focus:outline-none"
     />
   </div>
+{/* 📅 Date Picker */}
+<div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
+  <Calendar className="h-4 w-4 text-gray-400" />
+  <input
+    type="date"
+    className="flex-1 bg-transparent text-sm focus:outline-none"
+    value={selectedDate || ''}
+    onChange={(e) => setSelectedDate(e.target.value || null)}
+  />
+</div>
 
   {/* ⚡ Quick Filter Bar (NEW) */}
   <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
@@ -223,6 +243,7 @@ const totals = useMemo(() => {
       { label: t.all, value: 'all' },
       { label: t.active, value: 'active' },
       { label: t.redeemed, value: 'redeemed' },
+      { label: t.blank, value: 'blank' },
     
     ].map((f) => (
       <button
@@ -253,7 +274,7 @@ const totals = useMemo(() => {
           {({ active }) => (
             <button
               onClick={() =>
-                setRows([...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
+                setRows([...rows].sort((a, b) => new Date(b.activated_at).getTime() - new Date(a.activated_at).getTime()))
               }
               className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
             >
@@ -265,7 +286,7 @@ const totals = useMemo(() => {
           {({ active }) => (
             <button
               onClick={() =>
-                setRows([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
+                setRows([...rows].sort((a, b) => new Date(a.activated_at).getTime() - new Date(b.activated_at).getTime()))
               }
               className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
             >
@@ -341,6 +362,9 @@ const totals = useMemo(() => {
               <p className="mt-1 text-xs text-gray-400">
                 Created: {new Date(v.created_at).toLocaleDateString()}
               </p>
+              <p className="mt-1 text-xs text-gray-400">
+                Activated: {new Date(v.activated_at).toLocaleDateString()}
+              </p>
             </div>
           ))
         )}
@@ -366,6 +390,7 @@ const totals = useMemo(() => {
                 <Th rtl={lang === 'ar'}>{t.Status}</Th>
                 <Th rtl={lang === 'ar'}>{t.balance}</Th>
                 <Th rtl={lang === 'ar'}>{t.created}</Th>
+                <Th rtl={lang === 'ar'}>'activated'</Th>
               </tr>
             </thead>
             <tbody>
@@ -380,6 +405,8 @@ const totals = useMemo(() => {
                   <Td><StatusPill status={v.status} /></Td>
                   <Td>{fmtDZD(v.balance, lang)}</Td>
                   <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
+                  <Td>{new Date(v.activated_at).toLocaleDateString()}</Td>
+
                 </tr>
               ))}
             </tbody>
