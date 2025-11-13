@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '@/lib/useLanguage'
+import { useUserInfo } from '@/lib/useUserInfo'
+
 import {
   Gift,
   CreditCard,
@@ -15,8 +17,11 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import CountUp from 'react-countup'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import DashboardHeader from '@/components/cashier/DashboardHeader'
 
 export default function CashierDashboardPage() {
+    const { userInfo} = useUserInfo()
+
   const { t } = useLanguage()
   const supabase = createClientComponentClient()
 
@@ -85,16 +90,15 @@ export default function CashierDashboardPage() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 md:px-10 py-8 space-y-8">
       {/* ===== Header ===== */}
-      <header className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-semibold text-[var(--c-primary)]">
-            Cashier Dashboard
-          </h1>
-          <p className="text-sm text-gray-500">
-            {store.name ? `Store: ${store.name}` : 'Loading store info...'}
-          </p>
-        </div>
-      </header>
+      {/* === HEADER === */}
+          <DashboardHeader
+            user={{
+              name: 'Djamil',
+              email: 'admin@tayseer.app',
+              role: 'Admin',
+              avatarUrl: '/icon-192-2.png',
+            }}
+          />
 
       {/* ===== Content ===== */}
       {loading ? (
