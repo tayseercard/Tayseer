@@ -119,13 +119,7 @@ export default function SettingsPage() {
             {t.preferences || 'Preferences'}
           </div>
           <div className="divide-y divide-gray-100">
-            <SettingRow
-              icon={<Moon />}
-              label={t.darkMode}
-              toggle
-              toggleValue={darkMode}
-              onToggle={() => setDarkMode(!darkMode)}
-            />
+           
             <SettingRow
               icon={<Info />}
               label={t.aboutApp || 'About application'}
@@ -134,11 +128,7 @@ export default function SettingsPage() {
               icon={<HelpCircle />}
               label={t.help || 'Help & FAQ'}
             />
-            <SettingRow
-              icon={<Trash2 className="text-rose-500" />}
-              label={t.deactivate || 'Deactivate my account'}
-              labelClass="text-rose-600 font-medium"
-            />
+           
           </div>
         </div>
 

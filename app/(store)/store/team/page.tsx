@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Plus, User, Loader2 } from 'lucide-react'
+import { Plus, User, Loader2, Trash2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -18,31 +18,33 @@ import { useRouter } from 'next/navigation'
 export default function StoreTeamPage() {
   const supabase = createClientComponentClient()
   const router = useRouter()
+
+  // State
   const [team, setTeam] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ email: '' })
+
   const [storeId, setStoreId] = useState<string | null>(null)
   const [storeName, setStoreName] = useState<string | null>(null)
   const [role, setRole] = useState<string | null>(null)
   const [ownerEmail, setOwnerEmail] = useState<string | null>(null)
 
-  // 🧠 Load user role + store_id + store_name
+  /** =============================
+   *  LOAD LOGGED USER ROLE + STORE
+   * ============================= */
   useEffect(() => {
     ;(async () => {
       const { data: sessionData } = await supabase.auth.getSession()
       const user = sessionData.session?.user
       if (!user) return
 
-      // Get role + store info
-      const { data: me, error } = await supabase
+      const { data: me } = await supabase
         .from('me_effective_role')
         .select('role, store_id, store_name')
         .eq('user_id', user.id)
         .maybeSingle()
-
-      if (error) console.error('Fetch role error:', error)
 
       setRole(me?.role || null)
       setStoreId(me?.store_id || null)
@@ -51,32 +53,59 @@ export default function StoreTeamPage() {
     })()
   }, [supabase])
 
-  // ❌ Redirect if cashier (not allowed to manage team)
+  /** Block cashiers from entering */
   useEffect(() => {
     if (role === 'cashier') router.push('/store/vouchers')
   }, [role, router])
 
-  // 🧾 Load team members
-  useEffect(() => {
+  /** =============================
+   *  LOAD TEAM + MERGE CASHIERS
+   * ============================= */
+  async function loadTeam() {
     if (!storeId) return
-    ;(async () => {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('me_effective_role')
-        .select('id, user_id, role, created_at, store_name')
-        .eq('store_id', storeId)
-        .order('created_at', { ascending: false })
+    setLoading(true)
 
-      if (error) console.error('Load team error:', error)
-      setTeam(data || [])
+    // 1️⃣ Load team from me_effective_role
+    const { data: teamRows } = await supabase
+      .from('me_effective_role')
+      .select('id, user_id, role, created_at')
+      .eq('store_id', storeId)
+      .order('created_at', { ascending: false })
+
+    if (!teamRows || teamRows.length === 0) {
+      setTeam([])
       setLoading(false)
-    })()
-  }, [storeId, supabase])
+      return
+    }
 
-  // ➕ Add cashier
+    // 2️⃣ Extract user_ids
+    const userIds = teamRows.map((t) => t.user_id)
+
+    // 3️⃣ Load from cashiers table
+    const { data: cashierRows } = await supabase
+      .from('cashiers')
+      .select('*')
+      .in('user_id', userIds)
+
+    // 4️⃣ Merge results
+    const merged = teamRows.map((t) => ({
+      ...t,
+      profile: cashierRows?.find((c) => c.user_id === t.user_id) || null,
+    }))
+
+    setTeam(merged)
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadTeam()
+  }, [storeId])
+
+  /** =============================
+   *  ADD CASHIER
+   * ============================= */
   async function handleAddCashier() {
     if (!form.email.trim()) return alert('❌ Please enter an email.')
-    if (!storeId) return alert('❌ Missing store ID.')
 
     setSaving(true)
     try {
@@ -84,37 +113,58 @@ export default function StoreTeamPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: form.email.trim(),
+          email: form.email,
           store_id: storeId,
           store_name: storeName,
         }),
       })
 
       const result = await res.json()
-      if (!res.ok) throw new Error(result.error || 'Failed to add cashier.')
+      if (!res.ok) throw new Error(result.error)
 
-      alert('✅ Invitation sent! The cashier will receive an email to join.')
+      alert('✅ Invitation sent!')
       setForm({ email: '' })
       setOpen(false)
-
-      // Refresh team list
-      const { data } = await supabase
-        .from('me_effective_role')
-        .select('id, user_id, role, created_at, store_name')
-        .eq('store_id', storeId)
-        .order('created_at', { ascending: false })
-
-      setTeam(data || [])
+      loadTeam()
     } catch (err: any) {
-      console.error('Add cashier error:', err)
       alert('❌ ' + err.message)
     } finally {
       setSaving(false)
     }
   }
 
+  /** =============================
+   *  REMOVE TEAM MEMBER
+   * ============================= */
+  async function removeMember(member: any) {
+    if (!confirm('❌ Remove this team member?')) return
+
+    try {
+      const res = await fetch('/api/store/remove-member', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: member.user_id,
+          store_id: storeId,
+        }),
+      })
+
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error)
+
+      alert('🗑️ Member removed')
+      loadTeam()
+    } catch (err: any) {
+      alert('❌ ' + err.message)
+    }
+  }
+
+  /** =============================
+   *  UI
+   * ============================= */
   return (
     <div className="p-6 min-h-screen bg-gradient-to-br from-white via-gray-50 to-emerald-50">
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -122,6 +172,7 @@ export default function StoreTeamPage() {
             <User className="w-5 h-5 text-[var(--c-accent)]" />
             Store Team
           </h1>
+
           {storeName && (
             <p className="text-sm text-gray-500 mt-1">
               {storeName} — {ownerEmail}
@@ -132,17 +183,17 @@ export default function StoreTeamPage() {
         {role === 'store_owner' && (
           <Button
             onClick={() => setOpen(true)}
-            className="bg-[var(--c-accent)] hover:[var(--c-accent)] text-white flex items-center"
+            className="bg-[var(--c-accent)] text-white flex items-center"
           >
-            <Plus className="h-4 w-4 mr-1" /> Add Cashier
+            <Plus className="h-4 w-4 mr-1" /> Add
           </Button>
         )}
       </div>
 
       {/* Team List */}
       {loading ? (
-        <div className="flex justify-center items-center py-10 text-gray-500">
-          <Loader2 className="animate-spin mr-2" /> Loading team...
+        <div className="flex justify-center py-12 text-gray-500">
+          <Loader2 className="animate-spin mr-2" /> Loading...
         </div>
       ) : team.length === 0 ? (
         <p className="text-center text-gray-400 py-10">No team members yet.</p>
@@ -151,48 +202,64 @@ export default function StoreTeamPage() {
           {team.map((m) => (
             <div
               key={m.id}
-              className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition p-4"
+              className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm"
             >
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-medium text-gray-800 truncate">
-                  {m.user_id.slice(0, 6)}…{m.user_id.slice(-4)}
-                </span>
-                <Badge
-                  kind={
-                    m.role === 'store_owner'
-                      ? 'green'
-                      : m.role === 'cashier'
-                      ? 'blue'
-                      : 'gray'
-                  }
-                >
+              {/* Name */}
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-semibold text-gray-800 truncate">
+                  {m.profile?.full_name ||
+                    m.profile?.email ||
+                    `${m.user_id.slice(0, 6)}…${m.user_id.slice(-4)}`}
+                </h3>
+
+                <Badge>
                   {m.role}
                 </Badge>
               </div>
-              <p className="text-xs text-gray-500">
+
+              {/* Email */}
+              <p className="text-xs text-gray-600 mb-1">
+                {m.profile?.email || 'No email'}
+              </p>
+
+              {/* Joined date */}
+              <p className="text-xs text-gray-500 mb-3">
                 Joined: {new Date(m.created_at).toLocaleDateString()}
               </p>
+
+              {/* Remove button */}
+              {role === 'store_owner' && m.role !== 'store_owner' && (
+                <Button
+                  onClick={() => removeMember(m)}
+                  variant="destructive"
+                  size="sm"
+                  className="w-full flex items-center justify-center"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Remove
+                </Button>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Add Cashier Modal */}
+      {/* Modal: Add Cashier */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md bg-white/95 backdrop-blur rounded-2xl border border-emerald-100 shadow-lg">
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl shadow-lg">
           <DialogHeader>
             <DialogTitle>Add Cashier</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3 pt-2">
             <Input
-              placeholder="Cashier Email"
+              placeholder="Email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={(e) => setForm({ email: e.target.value })}
             />
           </div>
 
-          <DialogFooter className="flex justify-end gap-2 pt-3">
+          <DialogFooter className="pt-4">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
@@ -201,7 +268,7 @@ export default function StoreTeamPage() {
               disabled={saving}
               className="bg-[var(--c-accent)] text-white"
             >
-              {saving ? 'Adding…' : 'Add Cashier'}
+              {saving ? 'Sending…' : 'Add'}
             </Button>
           </DialogFooter>
         </DialogContent>
