@@ -24,6 +24,7 @@ export default function StoreDashboardPage() {
     total: 0,
     active: 0,
     redeemed: 0,
+    blank:0,
     totalValue: 0,
     redeemedValue: 0,
   })
@@ -80,6 +81,7 @@ export default function StoreDashboardPage() {
           total: vouchersData.length,
           active: vouchersData.filter((v) => v.status === 'active').length,
           redeemed: vouchersData.filter((v) => v.status === 'redeemed').length,
+          blank: vouchersData.filter((v) => v.status === 'blank').length,
           totalValue: vouchersData.reduce((sum, v) => sum + (v.initial_amount || 0), 0),
           redeemedValue: vouchersData
             .filter((v) => v.status === 'redeemed')
@@ -112,40 +114,54 @@ export default function StoreDashboardPage() {
             transition={{ delay: 0.1 }}
             className="space-y-10"
           >
-            {/* === Voucher Overview === */}
-           <div>
-              <SectionTitle
-                icon={<Gift />}
-                title={t.voucherOverview}
+          {/* === Voucher Overview === */}
+          <div>
+            <SectionTitle
+              icon={<Gift />}
+              title={t.voucherOverview}
+              href="/store/vouchers"
+            />
+
+            {/* ONE ROW ALWAYS — SCROLLABLE */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
+              {/* Total vouchers */}
+              <Link
                 href="/store/vouchers"
-              />
+                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+              >
+                <DashboardStatCard title={t.total} value={voucherStats.total} />
+              </Link>
 
-              <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {/* Total → all vouchers */}
-                <Link
-                  href="/store/vouchers"
-                  className="block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
-                >
-                  <DashboardStatCard title={t.total} value={voucherStats.total} />
-                </Link>
+              {/* Active vouchers */}
+              <Link
+                href="/store/vouchers?status=active"
+                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+              >
+                <DashboardStatCard
+                  title={t.active}
+                  value={voucherStats.active}
+                  highlight
+                />
+              </Link>
 
-                {/* Active vouchers */}
-                <Link
-                  href="/store/vouchers?status=active"
-                  className="block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
-                >
-                  <DashboardStatCard title={t.active} value={voucherStats.active} highlight />
-                </Link>
-
-                {/* Redeemed vouchers */}
-                <Link
-                  href="/store/vouchers?status=redeemed"
-                  className="block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
-                >
-                  <DashboardStatCard title={t.redeemed} value={voucherStats.redeemed} />
-                </Link>
-              </div>
+              {/* Redeemed vouchers */}
+              <Link
+                href="/store/vouchers?status=redeemed"
+                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+              >
+                <DashboardStatCard title={t.redeemed} value={voucherStats.redeemed} />
+              </Link>
+               {/* blank vouchers */}
+              <Link
+                href="/store/vouchers?status=blank"
+                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+              >
+                <DashboardStatCard title={t.blank} value={voucherStats.blank} />
+              </Link>
+            </div>
           </div>
+
 
 
             {/* === Financial Summary === */}
@@ -156,10 +172,16 @@ export default function StoreDashboardPage() {
             </div>
 
             {/* === Clients === */}
-            <SectionTitle icon={<Users />} title={t.clientOverview} href="/store/clients" />
-            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <SectionTitle icon={<Users />} 
+            title={t.clientOverview} href="/store/clients" />
+            {/* Total vouchers */}
+              <Link
+                href="/store/clients"
+                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+              >
               <DashboardStatCard title={t.totalClients} value={clientStats.totalClients} />
-            </div>
+              </Link>
+            
           </motion.div>
         </AnimatePresence>
       )}

@@ -94,6 +94,7 @@ export default function StoreVouchersPage() {
         .eq('user_id', userId)
         .maybeSingle()
 
+        
       const currentStoreId = roleRow?.store_id || null
       setStoreId(currentStoreId)
 
@@ -112,6 +113,8 @@ export default function StoreVouchersPage() {
       setLoading(false)
     })()
   }, [selectedStatus, supabase]) 
+
+  
   /* -------- Load data -------- */
   async function loadData() {
     setLoading(true)
@@ -128,6 +131,7 @@ export default function StoreVouchersPage() {
     loadData()
   }, [])
 
+  
   /* -------- Filters -------- */
   const filtered = useMemo(() => {
     let data = rows
@@ -177,36 +181,39 @@ const totals = useMemo(() => {
     >
       
 
-{/* ===== Totals Section ===== */}
+{/* ===== Totals Section (Always One Row) ===== */}
 {!loading && filtered.length > 0 && (
-  <div className="rounded-xl bg-white/70 border border-gray-100 shadow-sm p-4 text-sm flex flex-wrap justify-between items-center gap-4">
-    
-    {/* Initial Amount */}
-    <div className="flex flex-col">
+  <div
+    className="
+      bg-white/70 border border-gray-100 shadow-sm p-2 rounded-xl text-sm
+      flex  items-center gap-2 text-center overflow-x-auto no-scrollbar
+      whitespace-nowrap mb-0
+    "
+  >
+    {/* Initial */}
+    <div className="flex flex-col min-w-[100px]">
       <span className="text-gray-600 text-xs">
         {selectedStatus === 'all'
-          ? t.totalAllVouchers || 'All vouchers total'
-          : `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} vouchers total`}
+          ? t.totalAllVouchers || 'All vouchers'
+          : `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} total`}
       </span>
-      <span className="font-semibold text-gray-900 text-lg">
+      <span className="font-semibold text-gray-900 text-base">
         {fmtDZD(totals.totalInitial, lang)}
-        <span className="text-xs text-gray-500 font-normal ml-1">initial</span>
       </span>
     </div>
 
-    {/* Remaining Balance */}
-    <div className="flex flex-col text-right">
-      <span className="text-gray-600 text-xs">Remaining balance</span>
-      <span className="font-semibold text-emerald-700 text-lg">
+    {/* Remaining */}
+    <div className="flex flex-col min-w-[100px] text-center">
+      <span className="text-gray-600 text-xs">Remaining</span>
+      <span className="font-semibold text-emerald-700 text-base">
         {fmtDZD(totals.totalBalance, lang)}
       </span>
     </div>
 
-    {/* Consumed Amount */}
-    <div className="flex flex-col text-right">
+    {/* Consumed */}
+    <div className="flex flex-col min-w-[100px] text-center">
       <span className="text-gray-600 text-xs">Consumed</span>
-
-      <span className="font-semibold text-rose-600 text-lg">
+      <span className="font-semibold text-rose-600 text-base">
         {fmtDZD(totals.consumed, lang)}
       </span>
     </div>
@@ -214,8 +221,10 @@ const totals = useMemo(() => {
 )}
 
 
+
+
 {/* ===== Filters Section ===== */}
-<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-4">
+<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-2 shadow-sm space-y-4">
   {/* 🔍 Search bar */}
   <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
     <Search className="h-4 w-4 text-gray-400" />
@@ -226,18 +235,22 @@ const totals = useMemo(() => {
       className="flex-1 bg-transparent text-sm focus:outline-none"
     />
   </div>
-{/* 📅 Date Picker */}
-<div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
-  <Calendar className="h-4 w-4 text-gray-400" />
-  <input
-    type="date"
-    className="flex-1 bg-transparent text-sm focus:outline-none"
-    value={selectedDate || ''}
-    onChange={(e) => setSelectedDate(e.target.value || null)}
-  />
-</div>
+    {/* 📅 Date Picker */}
+    <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
+      <Calendar className="h-4 w-4 text-gray-400" />
+      <input
+        type="date"
+        className="flex-1 bg-transparent text-sm focus:outline-none"
+        value={selectedDate || ''}
+        onChange={(e) => setSelectedDate(e.target.value || null)}
+      />
+    </div>
 
-  {/* ⚡ Quick Filter Bar (NEW) */}
+ 
+
+  
+
+   {/* ⚡ Quick Filter Bar (NEW) */}
   <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
     {[
       { label: t.all, value: 'all' },
@@ -260,72 +273,8 @@ const totals = useMemo(() => {
     ))}
   </div>
 
-  {/* ⚙️ Dropdown Filters Row */}
-  <div className="flex justify-between gap-2 text-sm">
-    {/* 🗓 Date Sort */}
-    <Menu as="div" className="relative flex-1">
-      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-        <Calendar className="h-4 w-4 text-gray-500" />
-        {t.date}
-        <ChevronDown className="h-3 w-3" />
-      </Menu.Button>
-      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
-        <Menu.Item>
-          {({ active }) => (
-            <button
-              onClick={() =>
-                setRows([...rows].sort((a, b) => new Date(b.activated_at).getTime() - new Date(a.activated_at).getTime()))
-              }
-              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
-            >
-              {t.newestFirst}
-            </button>
-          )}
-        </Menu.Item>
-        <Menu.Item>
-          {({ active }) => (
-            <button
-              onClick={() =>
-                setRows([...rows].sort((a, b) => new Date(a.activated_at).getTime() - new Date(b.activated_at).getTime()))
-              }
-              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
-            >
-              {t.oldestFirst}
-            </button>
-          )}
-        </Menu.Item>
-      </Menu.Items>
-    </Menu>
 
-    {/* 🎯 Status Dropdown (still works) */}
-    <Menu as="div" className="relative flex-1" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-        <ListChecks className="h-4 w-4 text-gray-500" />
-        {t.status}
-        <ChevronDown className={`h-3 w-3 ${lang === 'ar' ? 'rotate-180' : ''}`} />
-      </Menu.Button>
 
-      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg text-sm overflow-hidden">
-        {['all', 'blank', 'active', 'redeemed'].map((status) => (
-          <Menu.Item key={status}>
-            {({ active }) => (
-              <button
-                onClick={() => setSelectedStatus(status)}
-                className={`w-full text-left px-4 py-2 flex justify-between items-center capitalize ${
-                  active ? 'bg-gray-50' : ''
-                } ${lang === 'ar' ? 'text-right flex-row-reverse' : ''}`}
-              >
-                <span>{t[status]}</span>
-                {selectedStatus === status && (
-                  <Check className={`h-4 w-4 text-emerald-600 ${lang === 'ar' ? 'mr-1' : 'ml-1'}`} />
-                )}
-              </button>
-            )}
-          </Menu.Item>
-        ))}
-      </Menu.Items>
-    </Menu>
-  </div>
 </div>
 
 
@@ -362,9 +311,13 @@ const totals = useMemo(() => {
               <p className="mt-1 text-xs text-gray-400">
                 Created: {new Date(v.created_at).toLocaleDateString()}
               </p>
-              <p className="mt-1 text-xs text-gray-400">
-                Activated: {new Date(v.activated_at).toLocaleDateString()}
-              </p>
+             <p className="mt-1 text-xs text-gray-400">
+  Activated:{' '}
+  {v.activated_at
+    ? new Date(v.activated_at).toLocaleDateString()
+    : 'Not activated yet'}
+</p>
+
             </div>
           ))
         )}

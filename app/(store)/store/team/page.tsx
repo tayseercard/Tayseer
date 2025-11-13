@@ -119,7 +119,7 @@ export default function StoreTeamPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <User className="w-5 h-5 text-emerald-600" />
+            <User className="w-5 h-5 text-[var(--c-accent)]" />
             Store Team
           </h1>
           {storeName && (
@@ -132,7 +132,7 @@ export default function StoreTeamPage() {
         {role === 'store_owner' && (
           <Button
             onClick={() => setOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center"
+            className="bg-[var(--c-accent)] hover:[var(--c-accent)] text-white flex items-center"
           >
             <Plus className="h-4 w-4 mr-1" /> Add Cashier
           </Button>
@@ -199,7 +199,7 @@ export default function StoreTeamPage() {
             <Button
               onClick={handleAddCashier}
               disabled={saving}
-              className="bg-emerald-600 text-white"
+              className="bg-[var(--c-accent)] text-white"
             >
               {saving ? 'Adding…' : 'Add Cashier'}
             </Button>

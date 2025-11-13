@@ -82,23 +82,18 @@ export default function SettingsPage() {
             onClick={() => setActiveModal('language')}
           />
           <SettingRow
-            icon={<Moon />}
-            label={t.darkMode}
-            toggle
-            toggleValue={darkMode}
-            onToggle={() => setDarkMode(!darkMode)}
-          />
+  icon={<Shield />}
+  label={t.team || 'Team Members'}
+  onClick={() => router.push('/store/team')}
+/>
+
         </div>
 
         {/* === App Info Section === */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
           <SettingRow icon={<Info />} label={t.aboutApp || 'About application'} />
           <SettingRow icon={<HelpCircle />} label={t.help || 'Help / FAQ'} />
-          <SettingRow
-            icon={<Trash2 className="text-rose-500" />}
-            label={t.deactivate || 'Deactivate my account'}
-            labelClass="text-rose-600 font-medium"
-          />
+          
         </div>
       </div>
 
