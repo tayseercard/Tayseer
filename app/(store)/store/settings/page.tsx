@@ -31,6 +31,36 @@ export default function SettingsPage() {
   const supabase = createClientComponentClient()
   const router = useRouter()
   const { t, lang } = useLanguage()
+  const [profile, setProfile] = useState<{
+  name: string | null
+  email: string | null
+  role: string | null
+  avatarUrl?: string | null
+} | null>(null)
+
+useEffect(() => {
+  (async () => {
+    const { data: sessionData } = await supabase.auth.getUser()
+    const authUser = sessionData?.user
+
+    if (!authUser) return
+
+    // Fetch row from your "admins" or "users" table
+    const { data: profileRow } = await supabase
+      .from('users')
+      .select('full_name, email, role, avatar_url')
+      .eq('id', authUser.id)
+      .maybeSingle()
+
+    setProfile({
+      name: profileRow?.full_name ?? authUser.email ?? '',
+      email: profileRow?.email ?? authUser.email,
+      role: profileRow?.role ?? 'Admin',
+      avatarUrl: profileRow?.avatar_url ?? '/icon-192-2.png',
+    })
+  })()
+}, [])
+
 
   // ✅ Refresh page when language changes
   useEffect(() => {
@@ -51,17 +81,18 @@ export default function SettingsPage() {
       <div className="w-full max-w-md space-y-6">
         {/* === Header === */}
         
-        <SettingsHeader
-          title={t.settings}
-          subtitle={t.managePref}
-          user={{
-            name: 'Confiserie du bonheur',
-            email: 'confiserie@tayseer.dz',
-            role: 'Store owner',
-            avatarUrl: '/icon-192-2.png',
-          }}
-          onLogout={handleLogout}
-        />
+       <SettingsHeader
+  title={t.settings}
+  subtitle={t.managePref}
+  user={{
+    name: profile?.name || '—',
+    email: profile?.email || '—',
+    role: profile?.role || 'Admin',
+    avatarUrl: profile?.avatarUrl || '/icon-192-2.png',
+  }}
+  onLogout={handleLogout}
+/>
+
 
         {/* === Account Section === */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
