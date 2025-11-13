@@ -50,11 +50,16 @@ export default function SettingsPage() {
  
 
   
-  async function handleLogout() {
+   async function handleLogout() {
     try {
       await supabase.auth.signOut()
+
+      // 🧹 Clear Supabase cookies manually
+      document.cookie = 'sb-access-token=; Max-Age=0; path=/;'
+      document.cookie = 'sb-refresh-token=; Max-Age=0; path=/;'
+
+      // ✅ Redirect safely to login
       router.replace('/auth/login')
-      router.refresh()
     } catch (err) {
       console.error('Logout failed:', err)
     }
