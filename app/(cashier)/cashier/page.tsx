@@ -150,22 +150,7 @@ export default function CashierDashboardPage() {
               />
             </div>
 
-            {/* === Quick Actions === */}
-            <SectionTitle icon={<QrCode />} title="Quick Actions" />
-            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              <LinkCard
-                href="/cashier/vouchers"
-                icon={<Gift className="h-4 w-4" />}
-                title="Manage Vouchers"
-                desc="Activate or redeem vouchers"
-              />
-              <LinkCard
-                href="/cashier/settings"
-                icon={<Users className="h-4 w-4" />}
-                title="Profile Settings"
-                desc="Edit your account or log out"
-              />
-            </div>
+          
           </motion.div>
         </AnimatePresence>
       )}
