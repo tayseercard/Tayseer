@@ -1,29 +1,34 @@
-// app/api/admin/delete-store/route.ts
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { NextResponse } from 'next/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
 export async function POST(req: Request) {
-  try {
-    const { id } = await req.json();
+  const supabase = createRouteHandlerClient({ cookies })
+  const body = await req.json()
+  const { store_id } = body
 
-    if (!id)
-      return NextResponse.json({ error: "Missing store ID" }, { status: 400 });
+  if (!store_id)
+    return NextResponse.json({ error: 'Missing store_id' }, { status: 400 })
 
-    const { error } = await supabaseAdmin
-      .from("stores")
-      .delete()
-      .eq("id", id);
+  // OPTIONAL: prevent deletion if vouchers exist
+  const { count } = await supabase
+    .from('vouchers')
+    .select('*', { count: 'exact', head: true })
+    .eq('store_id', store_id)
 
-    if (error) throw error;
-
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    console.error("❌ Failed to delete store:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  if (count && count > 0) {
+    return NextResponse.json(
+      { error: 'Cannot delete store with existing vouchers' },
+      { status: 400 }
+    )
   }
+
+  // Delete
+  const { error } = await supabase.from('stores').delete().eq('id', store_id)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  return NextResponse.json({ success: true })
 }

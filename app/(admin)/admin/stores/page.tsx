@@ -30,8 +30,8 @@ import { Stat } from '@/components/ui/stat'
 import { useLanguage } from '@/lib/useLanguage'
 
 export default function AdminStoresPage() {
-  const supabase = createClientComponentClient()
 
+  const supabase = createClientComponentClient()
   const [rows, setRows] = useState<any[]>([])
   const [filtered, setFiltered] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,11 +39,9 @@ export default function AdminStoresPage() {
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
-
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
   const [selectedWilaya, setSelectedWilaya] = useState<'all' | string>('all')
   const { t } = useLanguage()
- 
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -51,7 +49,6 @@ export default function AdminStoresPage() {
     address: '',
     wilaya: '',
   })
-
   const [stats, setStats] = useState({
     total: 0,
     open: 0,
@@ -134,6 +131,29 @@ export default function AdminStoresPage() {
     }
   }
 
+  async function handleDeleteStore(id: string, name: string) {
+  if (!confirm(`❌ Delete store "${name}"? This action cannot be undone.`))
+    return
+
+  try {
+    const res = await fetch('/api/admin/delete-store', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store_id: id }),
+    })
+
+    const result = await res.json()
+
+    if (!res.ok) throw new Error(result.error)
+
+    alert(`🗑️ Store "${name}" deleted.`)
+    loadStores()
+  } catch (err: any) {
+    alert('❌ ' + err.message)
+  }
+}
+
+
   /* ---------- Render ---------- */
 return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8 overflow-y-auto">
@@ -149,13 +169,13 @@ return (
         {/* 🔍 Search bar */}
         <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
           <Search className="h-4 w-4 text-gray-400" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t.searchPlaceholder}
-            className="flex-1 bg-transparent text-sm focus:outline-none"
-          />
-        </div>
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={t.searchPlaceholder}
+              className="flex-1 bg-transparent text-sm focus:outline-none"
+            />
+            </div>
 
         {/* ⚙️ Filters Row */}
         <div className="flex justify-between gap-2 text-sm">
@@ -272,6 +292,25 @@ return (
                       View
                     </Link>
                   </Td>
+                  <Td>
+  <div className="flex items-center gap-3">
+    <Link
+      href={`/admin/stores/${s.id}`}
+      className="text-blue-600 text-xs hover:underline"
+    >
+      View
+    </Link>
+
+    <button
+      onClick={() => handleDeleteStore(s.id, s.name)}
+      className="text-red-600 text-xs hover:underline"
+    >
+      Delete
+    </button>
+  </div>
+</Td>
+
+                  
                 </tr>
               ))}
             </tbody>
@@ -280,7 +319,7 @@ return (
       )}
 
       {/* ➕ Add Store Dialog */}
-     <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={setOpen}>
   <DialogContent
     className="
       sm:max-w-md rounded-2xl border border-[var(--c-bank)]/20
@@ -385,7 +424,7 @@ return (
       </Button>
     </DialogFooter>
   </DialogContent>
-</Dialog>
+      </Dialog>
 
     </div>
   )
@@ -394,6 +433,7 @@ return (
 /* ---------- Subcomponents ---------- */
 function StoreCard({ s }: { s: any }) {
   return (
+    
     <Link
       href={`/admin/stores/${s.id}`}
       className="block rounded-xl border border-gray-200 bg-white p-4 hover:shadow-md transition"
@@ -416,7 +456,9 @@ function StoreCard({ s }: { s: any }) {
           <Star className="h-3 w-3" />
           <span className="text-xs">{s.rating ?? '—'}</span>
         </div>
+        
       </div>
+      
     </Link>
   )
 }
@@ -424,6 +466,7 @@ function StoreCard({ s }: { s: any }) {
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>
 }
+
 function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-3 py-2">{children}</td>
 }

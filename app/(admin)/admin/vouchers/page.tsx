@@ -1,11 +1,14 @@
 'use client'
 
 import VoucherHeader from '@/components/VoucherHeader'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Menu, Combobox } from '@headlessui/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { v4 as uuidv4 } from 'uuid'
 import VoucherModal from '@/components/VoucherModal'
+import { Scanner } from '@yudiel/react-qr-scanner'
+import { useLanguage } from '@/lib/useLanguage'
+import { useSearchParams } from 'next/navigation'
 
 
 
@@ -20,9 +23,20 @@ import {
 } from 'lucide-react'
 
 
-/* =================== MAIN PAGE =================== */
 export default function AdminVouchersPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-gray-500">Signing you in…</div>}>
+      <AdminVouchersInner/>
+    </Suspense>
+  )
+}
+
+/* =================== MAIN PAGE =================== */
+ function AdminVouchersInner() {
+  const { t, lang } = useLanguage()
   const supabase = createClientComponentClient()
+  const params = useSearchParams()
+
   const [rows, setRows] = useState<any[]>([])
   const [stores, setStores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,12 +48,60 @@ export default function AdminVouchersPage() {
   const [q, setQ] = useState('')
   const [selectedStore, setSelectedStore] = useState<'all' | string>('all')
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
+
   
   /* ---------- Pagination ---------- */
   const ITEMS_PER_PAGE = 10
   const [page, setPage] = useState(1)
   const totalPages = useMemo(() => Math.ceil(rows.length / ITEMS_PER_PAGE), [rows])
 
+ // ✅ Read status from query (?status=active)
+  useEffect(() => {
+    const s = params.get('status')
+    if (s) setSelectedStatus(s)
+  }, [params])
+
+ // ✅ Fetch current user store_id and vouchers
+  useEffect(() => {
+    ;(async () => {
+      setLoading(true)
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const userId = session?.user.id
+      if (!userId) return
+
+      // fetch role/store_id
+      const { data: roleRow } = await supabase
+        .from('me_effective_role')
+        .select('store_id')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+        
+      const currentStoreId = roleRow?.store_id || null
+      setStoreId(currentStoreId)
+
+      // fetch vouchers (filter by store)
+      let query = supabase
+        .from('vouchers')
+        .select('*')
+        .order('activated_at', { ascending: false })
+
+      if (currentStoreId) query = query.eq('store_id', currentStoreId)
+      if (selectedStatus !== 'all') query = query.eq('status', selectedStatus)
+
+      const { data, error } = await query
+      if (error) console.error('Error loading vouchers:', error)
+      setRows(data || [])
+      setLoading(false)
+    })()
+  }, [selectedStatus, supabase]) 
+
+  
   /* -------- Load data -------- */
   async function loadData() {
     setLoading(true)
@@ -56,21 +118,34 @@ export default function AdminVouchersPage() {
     loadData()
   }, [])
 
+  
   /* -------- Filters -------- */
   const filtered = useMemo(() => {
     let data = rows
     if (selectedStore !== 'all') data = data.filter((v) => v.store_id === selectedStore)
     if (selectedStatus !== 'all') data = data.filter((v) => v.status === selectedStatus)
-    if (q.trim()) {
-      const t = q.trim().toLowerCase()
-      data = data.filter(
-        (v) =>
-          v.code?.toLowerCase().includes(t) ||
-          v.buyer_name?.toLowerCase().includes(t)
-      )
-    }
+   if (q.trim()) {
+  const t = q.trim().toLowerCase()
+  data = data.filter((v) => v.buyer_name?.toLowerCase().includes(t))
+}
+// 📅 DATE FILTER
+  if (selectedDate) {
+    data = data.filter((v) => {
+      const d = new Date(v.activated_at).toISOString().slice(0, 10)
+      return d === selectedDate
+    })
+  }
     return data
   }, [rows, q, selectedStore, selectedStatus])
+
+/* -------- Totals Calculation -------- */
+const totals = useMemo(() => {
+  const totalInitial = filtered.reduce((sum, v) => sum + (v.initial_amount || 0), 0)
+  const totalBalance = filtered.reduce((sum, v) => sum + (v.balance || 0), 0)
+  const consumed = totalInitial - totalBalance
+  return { totalInitial, totalBalance, consumed }
+}, [filtered])
+
 
   /* -------- Paginated data -------- */
   const paginated = useMemo(() => {
@@ -78,175 +153,117 @@ export default function AdminVouchersPage() {
     return filtered.slice(start, start + ITEMS_PER_PAGE)
   }, [filtered, page])
 
-  /* -------- Stats -------- */
-  const stats = useMemo(() => {
-    const total = rows.length
-    const active = rows.filter((v) => v.status === 'active').length
-    const redeemed = rows.filter((v) => v.status === 'redeemed').length
-    const blank = rows.filter((v) => v.status === 'blank').length
-    return { total, active, redeemed, blank }
-  }, [rows])
+ 
 
   const getStoreName = (id: string) => stores.find((s) => s.id === id)?.name ?? '—'
 
- async function createBlankVouchers() {
-  if (!storeId || count < 1)
-    return alert('Select store and count.')
-
-  setAddingLoading(true)
-
-  try {
-    const rowsToInsert = Array.from({ length: count }).map(() => ({
-      store_id: storeId,
-      code: 'TSR-' + uuidv4().replace(/-/g, '').slice(0, 10).toUpperCase(), // longer unique code
-      status: 'blank',
-      initial_amount: 0,
-      balance: 0,
-    }))
-
-    // ✅ Only ONE insert call
-    const { data, error: insertError } = await supabase
-      .from('vouchers')
-      .insert(rowsToInsert)
-      .select('id, code, store_id')
-
-    if (insertError) throw insertError
-
-    alert(`✅ Created ${count} blank voucher(s).`)
-
-    // Reset state
-    setAdding(false)
-    setStoreId(null)
-    setCount(1)
-    loadData()
-  } catch (err: any) {
-    console.error('Voucher creation failed:', err)
-    alert('❌ Error: ' + (err.message || err))
-  } finally {
-    setAddingLoading(false)
-  }
-}
+ 
 
   /* -------- UI -------- */
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8">
+<div
+      className={`min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8 ${
+        lang === 'ar' ? 'rtl' : 'ltr'
+      }`}
+    >
+      
 
-      {/* Header */}
-      <VoucherHeader onAdd={() => setAdding(true)} />
+{/* ===== Totals Section (Always One Row) ===== */}
+{!loading && filtered.length > 0 && (
+  <div
+    className="
+      bg-white/70 border border-gray-100 shadow-sm p-2 rounded-xl text-sm
+      flex  items-center gap-2 text-center overflow-x-auto no-scrollbar
+      whitespace-nowrap mb-0
+    "
+  >
+    {/* Initial */}
+    <div className="flex flex-col min-w-[100px]">
+      <span className="text-gray-600 text-xs">
+        {selectedStatus === 'all'
+          ? t.totalAllVouchers || 'All vouchers'
+          : `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} total`}
+      </span>
+      <span className="font-semibold text-gray-900 text-base">
+        {fmtDZD(totals.totalInitial, lang)}
+      </span>
+    </div>
+
+    {/* Remaining */}
+    <div className="flex flex-col min-w-[100px] text-center">
+      <span className="text-gray-600 text-xs">Remaining</span>
+      <span className="font-semibold text-emerald-700 text-base">
+        {fmtDZD(totals.totalBalance, lang)}
+      </span>
+    </div>
+
+    {/* Consumed */}
+    <div className="flex flex-col min-w-[100px] text-center">
+      <span className="text-gray-600 text-xs">Consumed</span>
+      <span className="font-semibold text-rose-600 text-base">
+        {fmtDZD(totals.consumed, lang)}
+      </span>
+    </div>
+  </div>
+)}
+
 
 
 
 {/* ===== Filters Section ===== */}
-<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
-
+<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-2 shadow-sm space-y-4">
   {/* 🔍 Search bar */}
   <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
     <Search className="h-4 w-4 text-gray-400" />
     <input
       value={q}
       onChange={(e) => setQ(e.target.value)}
-      placeholder="Search"
+      placeholder={t.searchByClient || 'Search by client name'}
       className="flex-1 bg-transparent text-sm focus:outline-none"
     />
   </div>
+    {/* 📅 Date Picker */}
+    <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
+      <Calendar className="h-4 w-4 text-gray-400" />
+      <input
+        type="date"
+        className="flex-1 bg-transparent text-sm focus:outline-none"
+        value={selectedDate || ''}
+        onChange={(e) => setSelectedDate(e.target.value || null)}
+      />
+    </div>
 
-  {/* ⚙️ Filters Row */}
-  <div className="flex justify-between gap-2 text-sm">
+ 
 
-    {/* 🗓 Date Sort Menu */}
-    <Menu as="div" className="relative flex-1">
-      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-        <Calendar className="h-4 w-4 text-gray-500" />
-        Date
-        <ChevronDown className="h-3 w-3" />
-      </Menu.Button>
-      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
-        <Menu.Item>
-          {({ active }) => (
-            <button
-              onClick={() => {
-                setRows([...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
-              }}
-              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
-            >
-              Newest first
-            </button>
-          )}
-        </Menu.Item>
-        <Menu.Item>
-          {({ active }) => (
-            <button
-              onClick={() => {
-                setRows([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
-              }}
-              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
-            >
-              Oldest first
-            </button>
-          )}
-        </Menu.Item>
-      </Menu.Items>
-    </Menu>
+  
 
-    {/* 🎯 Status Filter Menu */}
-    <Menu as="div" className="relative flex-1">
-      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-        <ListChecks className="h-4 w-4 text-gray-500" />
-        Status
-        <ChevronDown className="h-3 w-3" />
-      </Menu.Button>
-      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
-        {['all', 'blank', 'active', 'redeemed', 'expired', 'void'].map((status) => (
-          <Menu.Item key={status}>
-            {({ active }) => (
-              <button
-                onClick={() => setSelectedStatus(status)}
-                className={`w-full text-left px-4 py-2 capitalize flex justify-between ${active ? 'bg-gray-50' : ''}`}
-              >
-                {status}
-                {selectedStatus === status && <Check className="h-4 w-4 text-emerald-600" />}
-              </button>
-            )}
-          </Menu.Item>
-        ))}
-      </Menu.Items>
-    </Menu>
-
-    {/* 🧩 Store Filter Menu */}
-    <Menu as="div" className="relative flex-1">
-      <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-        <Filter className="h-4 w-4 text-gray-500" />
-        Filter
-        <ChevronDown className="h-3 w-3" />
-      </Menu.Button>
-      <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg max-h-48 overflow-y-auto">
-        <Menu.Item>
-          {({ active }) => (
-            <button
-              onClick={() => setSelectedStore('all')}
-              className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
-            >
-              All stores
-            </button>
-          )}
-        </Menu.Item>
-        {stores.map((s) => (
-          <Menu.Item key={s.id}>
-            {({ active }) => (
-              <button
-                onClick={() => setSelectedStore(s.id)}
-                className={`w-full text-left px-4 py-2 flex justify-between ${active ? 'bg-gray-50' : ''}`}
-              >
-                {s.name}
-                {selectedStore === s.id && <Check className="h-4 w-4 text-emerald-600" />}
-              </button>
-            )}
-          </Menu.Item>
-        ))}
-      </Menu.Items>
-    </Menu>
+   {/* ⚡ Quick Filter Bar (NEW) */}
+  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+    {[
+      { label: t.all, value: 'all' },
+      { label: t.active, value: 'active' },
+      { label: t.redeemed, value: 'redeemed' },
+      { label: t.blank, value: 'blank' },
+    
+    ].map((f) => (
+      <button
+        key={f.value}
+        onClick={() => setSelectedStatus(f.value)}
+        className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+          selectedStatus === f.value
+            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
+        }`}
+      >
+        {f.label}
+      </button>
+    ))}
   </div>
+
+
+
 </div>
+
 
 
       {/* Mobile Cards */}
@@ -281,12 +298,20 @@ export default function AdminVouchersPage() {
               <p className="mt-1 text-xs text-gray-400">
                 Created: {new Date(v.created_at).toLocaleDateString()}
               </p>
+             <p className="mt-1 text-xs text-gray-400">
+  Activated:{' '}
+  {v.activated_at
+    ? new Date(v.activated_at).toLocaleDateString()
+    : 'Not activated yet'}
+</p>
+
             </div>
           ))
         )}
       </div>
 
       {/* Desktop Table */}
+    
       <div className="hidden md:block rounded-xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm overflow-y-auto"
         style={{ maxHeight: 'calc(100vh - 350px)' }}>
         {loading ? (
@@ -294,16 +319,18 @@ export default function AdminVouchersPage() {
         ) : paginated.length === 0 ? (
           <div className="py-20 text-center text-gray-400">No vouchers found.</div>
         ) : (
+            <div dir={lang === 'ar' ? 'rtl' : 'ltr'}>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b sticky top-0 z-10">
               <tr>
-                <Th>Buyer</Th>
-                <Th>Recipient</Th>
-                <Th>Store</Th>
-                <Th>Code</Th>
-                <Th>Status</Th>
-                <Th>Balance</Th>
-                <Th>Created</Th>
+                <Th rtl={lang === 'ar'}>{t.buyer}</Th>
+                <Th rtl={lang === 'ar'}>{t.recipient}</Th>
+                <Th rtl={lang === 'ar'}>{t.store}</Th>
+                <Th rtl={lang === 'ar'}>{t.code}</Th>
+                <Th rtl={lang === 'ar'}>{t.Status}</Th>
+                <Th rtl={lang === 'ar'}>{t.balance}</Th>
+                <Th rtl={lang === 'ar'}>{t.created}</Th>
+                <Th rtl={lang === 'ar'}>'activated'</Th>
               </tr>
             </thead>
             <tbody>
@@ -316,14 +343,19 @@ export default function AdminVouchersPage() {
                   <Td>{getStoreName(v.store_id)}</Td>
                   <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
                   <Td><StatusPill status={v.status} /></Td>
-                  <Td>{fmtDZD(v.balance)}</Td>
+                  <Td>{fmtDZD(v.balance, lang)}</Td>
                   <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
+                  <Td>{new Date(v.activated_at).toLocaleDateString()}</Td>
+
                 </tr>
               ))}
             </tbody>
           </table>
+                </div>
+
         )}
       </div>
+      
 
       {/* Pagination */}
       {!loading && filtered.length > ITEMS_PER_PAGE && (
@@ -331,7 +363,7 @@ export default function AdminVouchersPage() {
           <button disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
             className="px-3 py-1 border rounded disabled:opacity-50">
-            Prev
+            {t.prev}
           </button>
           <span className="text-sm text-gray-600">
             Page {page} of {totalPages}
@@ -339,7 +371,7 @@ export default function AdminVouchersPage() {
           <button disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
             className="px-3 py-1 border rounded disabled:opacity-50">
-            Next
+            {t.next}
           </button>
         </div>
       )}
@@ -354,26 +386,22 @@ export default function AdminVouchersPage() {
         />
       )}
 
-      {/* Add Voucher Modal */}
-      {adding && (
-        <AddVoucherModal
-          stores={stores}
-          storeId={storeId}
-          setStoreId={setStoreId}
-          count={count}
-          setCount={setCount}
-          addingLoading={addingLoading}
-          onClose={() => setAdding(false)}
-          onSubmit={createBlankVouchers}
-        />
-      )}
+    
     </div>
   )
 }
 
 /* ---------- Helpers ---------- */
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>
+function Th({ children, rtl = false }: { children: React.ReactNode; rtl?: boolean }) {
+  return (
+    <th
+      className={`px-3 py-2 text-xs font-medium text-gray-500 ${
+        rtl ? 'text-right' : 'text-left'
+      }`}
+    >
+      {children}
+    </th>
+  )
 }
 function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-3 py-2">{children}</td>
@@ -392,8 +420,17 @@ function StatusPill({ status }: { status: string }) {
     </span>
   )
 }
-function fmtDZD(n: number) {
-  return new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD', maximumFractionDigits: 0 }).format(n)
+function fmtDZD(n: number, lang: 'fr' | 'en' | 'ar' = 'fr') {
+  const locale =
+    lang === 'ar' ? 'ar-DZ' :
+    lang === 'en' ? 'en-DZ' :
+    'fr-DZ'
+
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'DZD',
+    maximumFractionDigits: 0,
+  }).format(n)
 }
 
 /* ---------- AddVoucherModal (with Combobox) ---------- */

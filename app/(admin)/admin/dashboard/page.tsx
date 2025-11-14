@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Store as StoreIcon, Gift, TrendingUp } from 'lucide-react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useLanguage } from '@/lib/useLanguage'
+import { motion } from 'framer-motion'
 
 export const dynamic = 'force-dynamic'
 
@@ -119,29 +120,42 @@ console.log('🧠 Current user role:', role)
         }}
       />
 
+
       {/* === SUMMARY STATS === */}
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <DashboardStatCard
-          title={t.stores}
-          value={storeStats.total}
-          subtitle={t.totalRegistered}
-        />
-        <DashboardStatCard
-          title={t.vouchers}
-          value={voucherStats.total}
-          subtitle={t.allVouchers}
-        />
-        <DashboardStatCard
-          title={t.active}
-          value={voucherStats.active}
-          subtitle={t.currentlyActive}
-          highlight
-        />
+       
+        <Link href="/admin/stores"  className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">
+                <DashboardStatCard
+                title={t.stores}
+                value={storeStats.total}
+                subtitle={t.totalRegistered}
+                /> 
+        </Link>
+
+        <Link href="/admin/vouchers" className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">  
+              <DashboardStatCard
+                title={t.vouchers}
+                value={voucherStats.total}
+                subtitle={t.allVouchers}
+              /> 
+        </Link>
+
+        <Link href="/admin/vouchers?status=active" className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">
+              <DashboardStatCard
+                title={t.active}
+                value={voucherStats.active}
+                subtitle={'active Vouchers'}
+                />
+        </Link>
+
+        <Link href="/admin/vouchers?status=redeemed" className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">
+
         <DashboardStatCard
           title={t.redeemed}
           value={voucherStats.redeemed}
           subtitle={t.usedVouchers}
         />
+        </Link>
       </div>
       {userRole && (
   <div className="mt-2 text-xs text-gray-500">
@@ -266,6 +280,30 @@ function DashboardStatCard({
       </p>
       {subtitle && <p className="text-xs text-[var(--c-text)]/60 mt-0.5">{subtitle}</p>}
     </div>
+  )
+}
+
+function SectionTitle({ icon, title, href }: { icon: React.ReactNode; title: string; href?: string }) {
+  const { t } = useLanguage()
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex items-center justify-between mb-3"
+    >
+      <div className="flex items-center gap-2 text-[var(--c-primary)]">
+        <div className="p-1 rounded-md bg-[var(--c-accent)]/15 text-[var(--c-accent)]">{icon}</div>
+        <h2 className="text-lg font-semibold">{title}</h2>
+      </div>
+      {href && (
+        <Link
+          href={href}
+          className="flex items-center gap-1 text-sm font-medium text-[var(--c-accent)] hover:text-[var(--c-accent)]/80 transition-all group"
+        >
+          <span>{t.seeAll}</span>
+        </Link>
+      )}
+    </motion.div>
   )
 }
 
