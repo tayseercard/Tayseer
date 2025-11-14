@@ -52,7 +52,6 @@ export default function NotificationBell({ onOpen }: { onOpen: () => void }) {
 
   /* 👉 When clicking the bell, open modal AND reset count */
   function handleOpen() {
-    setCount(0)
     onOpen()
   }
 

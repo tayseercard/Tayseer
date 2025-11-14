@@ -1,18 +1,17 @@
 'use client'
 
-import { Plus, RefreshCw } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import React from 'react'
 
 export default function StoreHeader({
-  title = 'Store Dashboard',
   subtitle,
   icon,
   store,
   onAdd,
   onRefresh,
   actions = [],
+  rightContent,     // ⭐ ADDED
 }: {
-  title?: string
   subtitle?: string
   icon?: React.ReactNode
   store?: {
@@ -24,6 +23,7 @@ export default function StoreHeader({
   onAdd?: () => void
   onRefresh?: () => void
   actions?: { label: string; onClick: () => void; icon?: React.ReactNode }[]
+  rightContent?: React.ReactNode  // ⭐ ADDED
 }) {
   return (
     <header
@@ -35,42 +35,14 @@ export default function StoreHeader({
         before:bg-[var(--c-accent)] before:rounded-t-2xl
       "
     >
-      {/* === Top Row: Title + Actions === */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        
-        <div className="flex items-center gap-2 flex-wrap">
-        
-          {actions.map((a) => (
-            <button
-              key={a.label}
-              onClick={a.onClick}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-sm font-medium transition"
-            >
-              {a.icon}
-              {a.label}
-            </button>
-          ))}
 
-          {onAdd && (
-            <button
-              onClick={onAdd}
-              className="
-                flex items-center gap-1.5 px-3 py-1.5 rounded-md
-                bg-[var(--c-accent)] text-white text-sm font-medium
-                hover:bg-[var(--c-accent)]/90 active:scale-95 transition
-              "
-            >
-              <Plus className="h-4 w-4" />
-              Add
-            </button>
-          )}
-        </div>
-      </div>
+      {/* === Top Row: Title + RightContent === */}
+      <div className="flex items-center justify-between">
+        {/* Left: Title */}
 
-      {/* === Bottom Row: Store Info === */}
+        {/* === Bottom Row: Store Info === */}
       {store && (
-        <div className="flex items-center gap-4">
-          {/* Avatar / Logo */}
+        <div className="flex items-center gap-4 pt-2">
           {store.logoUrl ? (
             <img
               src={store.logoUrl}
@@ -83,9 +55,8 @@ export default function StoreHeader({
             </div>
           )}
 
-          {/* Store Details */}
           <div>
-            <p className="text-base font-medium text-white leading-tight">
+            <p className="text-base font-medium leading-tight text-white">
               {store.name}
             </p>
             {store.email && (
@@ -99,6 +70,22 @@ export default function StoreHeader({
           </div>
         </div>
       )}
+        <div className="flex items-center gap-3">
+          {icon}
+          <div>
+            {subtitle && (
+              <p className="text-sm text-white/70">{subtitle}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Right: NOTIFICATION BELL */}
+        <div className="flex items-center gap-3">
+          {rightContent}
+        </div>
+      </div>
+
+      
     </header>
   )
 }

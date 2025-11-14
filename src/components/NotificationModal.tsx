@@ -54,9 +54,10 @@ export default function NotificationModal({
       .from('notifications')
       .update({ read: true })
       .eq('user_id', session.user.id)
+      .eq('read', false)
+
 
     load()
-    setMenuOpen(false)
   }
 
   /* ---------------- DELETE ALL ---------------- */
@@ -98,9 +99,11 @@ export default function NotificationModal({
   }, [menuOpen])
 
   /* ---------------- AUTO LOAD WHEN OPEN ---------------- */
-  useEffect(() => {
-    if (open) load()
-  }, [open])
+useEffect(() => {
+  if (open) {
+    load()   // ONLY LOAD — DO NOT MARK AS READ
+  }
+}, [open])
 
   if (!open) return null
 

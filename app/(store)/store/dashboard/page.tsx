@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import StoreHeader from '@/components/store/StoreHeader'
 import { useLanguage } from '@/lib/useLanguage'
+import { useRouter } from "next/navigation"
 
 import {
   Gift,
@@ -14,11 +15,15 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import CountUp from 'react-countup'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import NotificationBell from '@/components/NotificationBell'
+import NotificationModal from '@/components/NotificationModal'
 
 export default function StoreDashboardPage() {
   const { t } = useLanguage()
   const supabase = createClientComponentClient()
   const [loading, setLoading] = useState(true)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const router = useRouter()
   const [store, setStore] = useState<{ name: string; email: string; role: string; logoUrl?: string } | null>(null)
   const [voucherStats, setVoucherStats] = useState({
     total: 0,
@@ -111,8 +116,18 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 md:px-10 py-8 space-y-8">
-      <StoreHeader store={store || { name: 'Loading…', email: '', role: '', logoUrl: '' }} />
+      <StoreHeader
+   rightContent={
+          <NotificationBell onOpen={() => setNotifOpen(true)} />
+        }
+              store={store || { name: 'Loading…', email: '', role: '', logoUrl: '' }} />
 
+
+        <NotificationModal
+          open={notifOpen}
+          onClose={() => setNotifOpen(false)}
+         
+        />
       {loading ? (
         <div className="py-20 text-center text-[var(--c-text)]/50 text-sm animate-pulse">
           {t.loadingDashboard}
@@ -187,14 +202,21 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
             <div>
 {/* Latest Requests */}
               <div>
-            <SectionTitle
+                 {/* Total vouchers */}
+                  <SectionTitle
               icon={<Gift />}
               title='Latest requests'
               href="/store/requests"
             />
+              <Link
+                href="/store/requests"
+                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
+              >
+            <DashboardRequestCard latestRequests={latestRequests}  />
+              </Link>
+           
              </div>
 
-            <DashboardRequestCard latestRequests={latestRequests}  />
             </div>
               
             {/* === Clients === */}

@@ -10,7 +10,7 @@ export default function DashboardHeader({
   user,
   onAdd,
   actions = [],
-  rightContent, // ⭐ now fully supported
+  rightContent, 
 }: {
   title?: string
   subtitle?: string
@@ -18,7 +18,7 @@ export default function DashboardHeader({
   user?: { name: string; email: string; role?: string; avatarUrl?: string }
   onAdd?: () => void
   actions?: { label: string; onClick: () => void; icon?: React.ReactNode }[]
-  rightContent?: React.ReactNode // ⭐ FIX: add this
+  rightContent?: React.ReactNode 
 }) {
   return (
     <header
