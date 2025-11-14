@@ -186,8 +186,22 @@ useEffect(() => {
       .maybeSingle()
     if (roleError) throw roleError
 
-    const storeId = roleRow?.store_id
-    if (!storeId) throw new Error('Missing store_id')
+    let storeId = null
+
+    if (['admin', 'superadmin'].includes(userRole || '')) {
+  // ⭐ Admins do not belong to a store
+  storeId = null
+} else {
+  // ⭐ Store owner or cashier
+  const { data: roleRow } = await supabase
+    .from('me_effective_role')
+    .select('store_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  storeId = roleRow?.store_id
+  if (!storeId) throw new Error('Missing store_id')
+}
 
     const phoneClean = cleanPhone(buyerPhone)
 

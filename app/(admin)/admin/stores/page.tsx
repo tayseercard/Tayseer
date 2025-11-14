@@ -432,36 +432,64 @@ return (
 
 /* ---------- Subcomponents ---------- */
 function StoreCard({ s }: { s: any }) {
+   async function handleDeleteStore(id: string, name: string) {
+  if (!confirm(`❌ Delete store "${name}"? This action cannot be undone.`))
+    return
+
+  try {
+    const res = await fetch('/api/admin/delete-store', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store_id: id }),
+    })
+
+    const result = await res.json()
+
+    if (!res.ok) throw new Error(result.error)
+
+    alert(`🗑️ Store "${name}" deleted.`)
+    loadStores()
+  } catch (err: any) {
+    alert('❌ ' + err.message)
+  }
+}
+
   return (
-    
-    <Link
-      href={`/admin/stores/${s.id}`}
-      className="block rounded-xl border border-gray-200 bg-white p-4 hover:shadow-md transition"
-    >
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between mb-2">
         <h3 className="font-medium text-gray-900 truncate">{s.name ?? 'Unnamed'}</h3>
         <ChevronRight className="h-4 w-4 text-gray-400" />
       </div>
+
       <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
         <MapPin className="h-3 w-3" />
         <span className="truncate">{s.address ?? 'No address'}</span>
       </div>
+
       <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
         <Phone className="h-3 w-3" />
         <span>{s.phone ?? '—'}</span>
       </div>
-      <div className="flex items-center justify-between">
+
+      <div className="flex items-center justify-between mb-3">
         <Badge kind={s.status === 'open' ? 'green' : 'rose'}>{s.status ?? '—'}</Badge>
         <div className="flex items-center gap-1 text-amber-500">
           <Star className="h-3 w-3" />
           <span className="text-xs">{s.rating ?? '—'}</span>
         </div>
-        
       </div>
-      
-    </Link>
+
+      {/* Delete Button */}
+      <button
+        onClick={() => handleDeleteStore(s.id, s.name)}
+        className="text-red-600 text-xs underline hover:text-red-800"
+      >
+        Delete Store
+      </button>
+    </div>
   )
 }
+
 
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>
@@ -470,3 +498,7 @@ function Th({ children }: { children: React.ReactNode }) {
 function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-3 py-2">{children}</td>
 }
+function loadStores() {
+  throw new Error('Function not implemented.')
+}
+

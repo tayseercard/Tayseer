@@ -89,7 +89,7 @@ export default function AdminVouchersPage() {
       let query = supabase
         .from('vouchers')
         .select('*')
-        .order('activated_at', { ascending: false })
+        .order('activated_at', { ascending: true })
 
       if (currentStoreId) query = query.eq('store_id', currentStoreId)
       if (selectedStatus !== 'all') query = query.eq('status', selectedStatus)
