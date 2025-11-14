@@ -304,7 +304,12 @@ rightContent={
               </ul>
             )}
           </DashboardCard>
+
+
+
+          
         </div>
+
       )}
     </div>
   )
@@ -337,6 +342,8 @@ function DashboardStatCard({
     </div>
   )
 }
+
+
 
 function SectionTitle({ icon, title, href }: { icon: React.ReactNode; title: string; href?: string }) {
   const { t } = useLanguage()

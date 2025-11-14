@@ -32,6 +32,8 @@ export default function StoreDashboardPage() {
     totalClients: 0,
   })
 
+const [latestRequests, setLatestRequests] = useState<any[]>([])
+
   useEffect(() => {
     ;(async () => {
       setLoading(true)
@@ -65,6 +67,16 @@ export default function StoreDashboardPage() {
         setLoading(false)
         return
       }
+      // Fetch latest 5 requests
+    const { data } = await supabase
+      .from("voucher_requests")
+      .select("*")
+      .eq("store_id", storeId)
+      .order("created_at", { ascending: false })
+      .limit(5)
+
+    setLatestRequests(data || [])
+  
 
       const { data: vouchersData } = await supabase
         .from('vouchers')
@@ -171,6 +183,20 @@ export default function StoreDashboardPage() {
               <DashboardStatCard title={t.redeemedValue} value={voucherStats.redeemedValue} suffix=" DA" />
             </div>
 
+
+            <div>
+{/* Latest Requests */}
+              <div>
+            <SectionTitle
+              icon={<Gift />}
+              title='Latest requests'
+              href="/store/requests"
+            />
+             </div>
+
+            <DashboardRequestCard latestRequests={latestRequests}  />
+            </div>
+              
             {/* === Clients === */}
             <SectionTitle icon={<Users />} 
             title={t.clientOverview} href="/store/clients" />
@@ -181,6 +207,10 @@ export default function StoreDashboardPage() {
               >
               <DashboardStatCard title={t.totalClients} value={clientStats.totalClients} />
               </Link>
+
+              
+
+
             
           </motion.div>
         </AnimatePresence>
@@ -238,3 +268,41 @@ function DashboardStatCard({
     </div>
   )
 }
+
+function DashboardRequestCard({
+  latestRequests,
+}: {
+  latestRequests: any[]
+}) {
+  return (
+    <div className="rounded-2xl border border-[var(--c-secondary)]/10 bg-white shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-all">
+      {/* Body */}
+      {latestRequests.length === 0 ? (
+        <p className="text-sm text-[var(--c-text)]/50">
+          Aucune demande trouvée.
+        </p>
+      ) : (
+        <ul className="space-y-3">
+          {latestRequests.map((r) => (
+            <li
+              key={r.id}
+              className="flex items-center justify-between border-b border-[var(--c-secondary)]/10 pb-2 text-sm"
+            >
+              <div>
+                <p className="font-medium text-[var(--c-primary)]">
+                  {r.count} voucher(s)
+                </p>
+                <p className="text-xs text-[var(--c-text)]/60">{r.status}</p>
+              </div>
+
+              <span className="text-xs text-[var(--c-text)]/60">
+                {new Date(r.created_at).toLocaleDateString()}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
