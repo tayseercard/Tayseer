@@ -8,6 +8,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useLanguage } from '@/lib/useLanguage'
 import { motion } from 'framer-motion'
 import NotificationBell from '@/components/NotificationBell'
+import NotificationModal from '@/components/NotificationModal'
 
 
 export const dynamic = 'force-dynamic'
@@ -24,6 +25,7 @@ const [userRole, setUserRole] = useState<string | null>(null)
   const [topStores, setTopStores] = useState<any[]>([])
 /* -------- Load Latest Voucher Requests -------- */
 const [latestRequests, setLatestRequests] = useState<any[]>([])
+const [notifOpen, setNotifOpen] = useState(false)
 
 useEffect(() => {
   ;(async () => {
@@ -132,15 +134,18 @@ console.log('🧠 Current user role:', role)
      
       {/* === HEADER === */}
       <DashboardHeader
-        rightContent={<NotificationBell />}   
-        user={{
+rightContent={
+    <NotificationBell onOpen={() => setNotifOpen(true)} />
+  }        user={{
           name: "Tayseer Admin",
           email: "admin@tayseer.app",
           role: "Admin",
           avatarUrl: "/icon-192-2.png"
         }}
       />
-
+{notifOpen && (
+  <NotificationModal onClose={() => setNotifOpen(false)} open={false} />
+)}
 
       {/* === SUMMARY STATS === */}
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">

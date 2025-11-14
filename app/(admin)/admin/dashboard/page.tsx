@@ -24,7 +24,7 @@ const [userRole, setUserRole] = useState<string | null>(null)
   const [topStores, setTopStores] = useState<any[]>([])
 /* -------- Load Latest Voucher Requests -------- */
 const [latestRequests, setLatestRequests] = useState<any[]>([])
-  const [openNotif, setOpenNotif] = useState(false)
+const [notifOpen, setNotifOpen] = useState(false)
 
 useEffect(() => {
   ;(async () => {
@@ -139,8 +139,8 @@ console.log('🧠 Current user role:', role)
       <DashboardHeader
 
 rightContent={
-          <NotificationBell onClick={() => setOpenNotif(true)} />
-        }
+    <NotificationBell onOpen={() => setNotifOpen(true)} />
+  }
         
                user={{
           name: "Tayseer Admin",
@@ -150,8 +150,8 @@ rightContent={
         }}
       />
  <NotificationModal
-        open={openNotif}
-        onClose={() => setOpenNotif(false)}
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
       />
 
       {/* === SUMMARY STATS === */}

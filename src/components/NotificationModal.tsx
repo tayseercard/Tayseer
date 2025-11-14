@@ -32,6 +32,20 @@ export default function NotificationModal({ open, onClose }: {
     setNotifications(data || [])
     setLoading(false)
   }
+async function markAllAsRead() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  const userId = session?.user?.id
+  if (!userId) return
+
+  await supabase
+    .from('notifications')
+    .update({ read: true })
+    .eq('user_id', userId)
+    .eq('read', false)
+}
 
   // Mark all as read
   async function markAllRead() {

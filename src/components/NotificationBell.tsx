@@ -2,40 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Bell } from 'lucide-react'
 
-export default function NotificationBell({
-  onClick,
-}: {
-  onClick?: () => void
-}) {
+export default function NotificationBell({ onOpen }: { onOpen: () => void }) {
   const supabase = createClientComponentClient()
   const [count, setCount] = useState(0)
 
-  // Load unread notifications
-  async function loadUnread() {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-
-    const userId = session?.user?.id
-    if (!userId) return
-
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_read', false)
-
-    setCount(data?.length || 0)
-  }
-
   useEffect(() => {
-    let channel: any
-
-    const init = async () => {
-      await loadUnread()
-
+    const load = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -43,51 +16,67 @@ export default function NotificationBell({
       const userId = session?.user?.id
       if (!userId) return
 
-      // 🔥 Real-time notifications
-      channel = supabase
-        .channel('notifications-realtime')
+      // 🔹 Load unread notifications
+      const { data } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact' })
+        .eq('user_id', userId)
+        .eq('read', false)
+
+      setCount(data?.length || 0)
+
+      // 🔹 Live updates
+      const channel = supabase
+        .channel(`notifications-${userId}`)
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'INSERT',
             schema: 'public',
             table: 'notifications',
             filter: `user_id=eq.${userId}`,
           },
-          () => loadUnread()
+          () => {
+            setCount((c) => c + 1)
+          }
         )
         .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
     }
 
-    init()
+    load()
+  }, [supabase])
 
-    // Cleanup on unmount
-    return () => {
-      if (channel) supabase.removeChannel(channel)
-    }
-  }, [])
+  /* 👉 When clicking the bell, open modal AND reset count */
+  function handleOpen() {
+    setCount(0)
+    onOpen()
+  }
 
   return (
-    <button
-      onClick={onClick}
-      className="relative p-2 rounded-full hover:bg-white/20 transition"
-    >
-      <Bell className="w-6 h-6 text-white" />
+    <div className="relative cursor-pointer" onClick={handleOpen}>
+      <svg
+        className="w-6 h-6 text-white"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+        />
+      </svg>
 
-      {/* 🔴 Badge */}
       {count > 0 && (
-        <span
-          className="
-            absolute -top-1 -right-1
-            bg-red-500 text-white text-[10px]
-            rounded-full h-5 w-5
-            flex items-center justify-center
-            font-semibold animate-pulse
-          "
-        >
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 rounded-full">
           {count}
         </span>
       )}
-    </button>
+    </div>
   )
 }
