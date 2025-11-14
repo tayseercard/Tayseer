@@ -1,0 +1,236 @@
+'use client'
+
+import VoucherHeader from '@/components/VoucherHeader'
+import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Menu, Combobox } from '@headlessui/react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { v4 as uuidv4 } from 'uuid'
+import { Scanner } from '@yudiel/react-qr-scanner'
+import VoucherModal from '@/components/VoucherModal'
+import { useLanguage } from '@/lib/useLanguage'
+import { useSearchParams } from 'next/navigation'
+
+import {
+  Search,
+  X,
+  Calendar,
+  Check,
+  ChevronDown,
+  Filter,
+  ListChecks,
+} from 'lucide-react'
+
+export default function StoreVouchersPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-gray-500">Signing you in…</div>}>
+      <StoreVouchersInner/>
+    </Suspense>
+  )
+}
+
+
+/* =================== MAIN PAGE =================== */
+function StoreVouchersInner() {
+  const { t, lang } = useLanguage()
+  const supabase = createClientComponentClient()
+  const params = useSearchParams()
+
+  const [rows, setRows] = useState<any[]>([])
+  const [stores, setStores] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null)
+
+  // ⭐ Added missing states
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [storeName, setStoreName] = useState<string | null>(null)
+  const [openRequestModal, setOpenRequestModal] = useState(false)
+
+  const [storeId, setStoreId] = useState<string | null>(null)
+  const [count, setCount] = useState(1)
+  const [q, setQ] = useState('')
+  const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
+  const ITEMS_PER_PAGE = 10
+  const [page, setPage] = useState(1)
+
+  const totalPages = useMemo(() => Math.ceil(rows.length / ITEMS_PER_PAGE), [rows])
+
+  /* ---------- Read status from query ---------- */
+  useEffect(() => {
+    const s = params.get('status')
+    if (s) setSelectedStatus(s)
+  }, [params])
+
+
+  /* ---------- Fetch user role + store_id ---------- */
+  useEffect(() => {
+    ;(async () => {
+      const { data: { session }} = await supabase.auth.getSession()
+      const userId = session?.user.id
+      if (!userId) return
+
+      const { data: roleRow } = await supabase
+        .from('me_effective_role')
+        .select('role, store_id, store_name')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      setUserRole(roleRow?.role || null)
+      setStoreId(roleRow?.store_id || null)
+      setStoreName(roleRow?.store_name || null)
+    })()
+  }, [supabase])
+
+
+  /* ---------- Load vouchers ---------- */
+  useEffect(() => {
+    ;(async () => {
+      if (!storeId) return
+
+      setLoading(true)
+
+      let query = supabase
+        .from('vouchers')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('activated_at', { ascending: false })
+
+      if (selectedStatus !== 'all') query = query.eq('status', selectedStatus)
+
+      const { data, error } = await query
+      if (error) console.error('Error loading vouchers:', error)
+
+      setRows(data || [])
+      setLoading(false)
+    })()
+  }, [storeId, selectedStatus, supabase])
+
+
+  /* ---------- Filters ---------- */
+  const filtered = useMemo(() => {
+    let data = rows
+
+    if (selectedStatus !== 'all') data = data.filter(v => v.status === selectedStatus)
+
+    if (q.trim()) {
+      const t = q.trim().toLowerCase()
+      data = data.filter(v => v.buyer_name?.toLowerCase().includes(t))
+    }
+
+    if (selectedDate) {
+      data = data.filter((v) => {
+        const d = v.activated_at
+          ? new Date(v.activated_at).toISOString().slice(0, 10)
+          : null
+        return d === selectedDate
+      })
+    }
+
+    return data
+  }, [rows, q, selectedStatus, selectedDate])
+
+
+  /* ---------- Paginate ---------- */
+  const paginated = useMemo(() => {
+    const start = (page - 1) * ITEMS_PER_PAGE
+    return filtered.slice(start, start + ITEMS_PER_PAGE)
+  }, [filtered, page])
+
+
+  /* ---------- UI ---------- */
+  return (
+    <div className={`min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-6 space-y-8 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
+
+      {/* ⭐ Store owner request button */}
+      {userRole === "store_owner" && (
+        <button
+          onClick={() => setOpenRequestModal(true)}
+          className="w-full bg-[var(--c-accent)] text-white py-2 rounded-lg"
+        >
+          Demander des nouveaux vouchers
+        </button>
+      )}
+
+
+      {/* ... all your UI code ... */}
+
+      {/* ⭐ Render Voucher Request Modal */}
+      {openRequestModal && (
+        <VoucherRequestModal
+          onClose={() => setOpenRequestModal(false)}
+          supabase={supabase}
+          storeId={storeId}
+          storeName={storeName}
+        />
+      )}
+
+    </div>
+  )
+}
+
+
+/* ---------- Voucher Request Modal ---------- */
+function VoucherRequestModal({
+  onClose,
+  supabase,
+  storeId,
+  storeName
+}: {
+  onClose: () => void
+  supabase: any
+  storeId: string | null
+  storeName: string | null
+}) {
+  const [count, setCount] = useState(10)
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    if (!storeId) return alert("Store ID manquant.")
+    if (!storeName) return alert("Nom du magasin manquant.")
+
+    setSaving(true)
+
+    const { error } = await supabase.from("voucher_requests").insert({
+      store_id: storeId,
+      store_name: storeName,
+      count
+    })
+
+    setSaving(false)
+
+    if (error) return alert("Erreur: " + error.message)
+
+    alert("Votre demande a été envoyée à l'administrateur.")
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 p-4 flex items-center justify-center">
+      <div className="bg-white p-4 rounded-xl w-full max-w-sm">
+        <h2 className="text-lg font-semibold mb-3">Demande de Vouchers</h2>
+
+        <p className="text-sm text-gray-600 mb-2">
+          Magasin: <b>{storeName ?? "—"}</b>
+        </p>
+
+        <input
+          type="number"
+          min="1"
+          value={count}
+          onChange={e => setCount(Number(e.target.value))}
+          className="border p-2 w-full rounded mb-3"
+        />
+
+        <button
+          onClick={submit}
+          disabled={saving}
+          className="w-full bg-[var(--c-accent)] text-white py-2 rounded-lg"
+        >
+          {saving ? "Envoi…" : "Envoyer la demande"}
+        </button>
+      </div>
+    </div>
+  )
+}
+

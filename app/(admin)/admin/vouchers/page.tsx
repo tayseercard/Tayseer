@@ -89,7 +89,7 @@ export default function AdminVouchersPage() {
       let query = supabase
         .from('vouchers')
         .select('*')
-        .order('activated_at', { ascending: true })
+        .order('updated_at', { ascending: false })
 
       if (currentStoreId) query = query.eq('store_id', currentStoreId)
       if (selectedStatus !== 'all') query = query.eq('status', selectedStatus)
@@ -106,7 +106,8 @@ export default function AdminVouchersPage() {
   async function loadData() {
     setLoading(true)
     const [{ data: vouchers }, { data: storesData }] = await Promise.all([
-      supabase.from('vouchers').select('*').order('created_at', { ascending: false }),
+      supabase.from('vouchers').select('*').order('updated_at', { ascending: false })
+,
       supabase.from('stores').select('id, name'),
     ])
     setRows(vouchers || [])
@@ -121,22 +122,30 @@ export default function AdminVouchersPage() {
   
   /* -------- Filters -------- */
   const filtered = useMemo(() => {
-    let data = rows
-    if (selectedStore !== 'all') data = data.filter((v) => v.store_id === selectedStore)
-    if (selectedStatus !== 'all') data = data.filter((v) => v.status === selectedStatus)
-   if (q.trim()) {
-  const t = q.trim().toLowerCase()
-  data = data.filter((v) => v.buyer_name?.toLowerCase().includes(t))
-}
-// 📅 DATE FILTER
+  let data = rows
+
+  if (selectedStore !== 'all') data = data.filter(v => v.store_id === selectedStore)
+  if (selectedStatus !== 'all') data = data.filter(v => v.status === selectedStatus)
+
+  // 🔍 Search filter
+  if (q.trim()) {
+    const t = q.trim().toLowerCase()
+    data = data.filter(v => v.buyer_name?.toLowerCase().includes(t))
+  }
+
+  // 📅 Date filter
   if (selectedDate) {
     data = data.filter((v) => {
-      const d = new Date(v.activated_at).toISOString().slice(0, 10)
+      const d = v.activated_at
+        ? new Date(v.activated_at).toISOString().slice(0, 10)
+        : null
       return d === selectedDate
     })
   }
-    return data
-  }, [rows, q, selectedStore, selectedStatus])
+
+  return data
+}, [rows, q, selectedStore, selectedStatus, selectedDate])
+
 
 /* -------- Totals Calculation -------- */
 const totals = useMemo(() => {

@@ -3,10 +3,12 @@
 import DashboardHeader from '@/components/DashboardHeader'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Store as StoreIcon, Gift, TrendingUp } from 'lucide-react'
+import { Store as StoreIcon, Gift, TrendingUp, ListChecks } from 'lucide-react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useLanguage } from '@/lib/useLanguage'
 import { motion } from 'framer-motion'
+import NotificationBell from '@/components/NotificationBell'
+
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +22,22 @@ const [userRole, setUserRole] = useState<string | null>(null)
   const [storeStats, setStoreStats] = useState({ total: 0, open: 0, closed: 0 })
   const [voucherStats, setVoucherStats] = useState({ total: 0, active: 0, redeemed: 0 })
   const [topStores, setTopStores] = useState<any[]>([])
+/* -------- Load Latest Voucher Requests -------- */
+const [latestRequests, setLatestRequests] = useState<any[]>([])
+
+useEffect(() => {
+  ;(async () => {
+    const supabase = createClientComponentClient()
+
+    const { data, error } = await supabase
+      .from('voucher_requests')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5)
+
+    if (!error) setLatestRequests(data || [])
+  })()
+}, [])
 
   useEffect(() => {
   async function fetchRole() {
@@ -106,17 +124,20 @@ console.log('🧠 Current user role:', role)
 
   /* ---------- UI ---------- */
   return (
+    
     <div
       className="relative flex flex-col bg-[var(--bg)] text-[var(--c-text)]
                  px-4 py-6 sm:px-6 lg:px-10 min-h-[calc(100vh-70px)] md:min-h-screen overflow-y-auto"
     >
+     
       {/* === HEADER === */}
       <DashboardHeader
+        rightContent={<NotificationBell />}   
         user={{
-          name: 'Djamil',
-          email: 'admin@tayseer.app',
-          role: 'Admin',
-          avatarUrl: '/icon-192-2.png',
+          name: "Tayseer Admin",
+          email: "admin@tayseer.app",
+          role: "Admin",
+          avatarUrl: "/icon-192-2.png"
         }}
       />
 
@@ -167,6 +188,40 @@ console.log('🧠 Current user role:', role)
       {/* === DASHBOARD CARDS === */}
       {!loading && (
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow">
+
+          {/* Recent Voucher Requests */}
+<DashboardCard
+  title="Recent Voucher Requests"
+  icon={<ListChecks className="h-5 w-5 text-[var(--c-accent)]" />}
+  link="/admin/voucher-requests"
+>
+  {latestRequests.length === 0 ? (
+    <p className="text-sm text-[var(--c-text)]/50">No requests yet.</p>
+  ) : (
+    <ul className="space-y-3">
+      {latestRequests.map((req) => (
+        <li
+          key={req.id}
+          className="flex items-center justify-between border-b border-[var(--c-secondary)]/10 pb-2 text-sm"
+        >
+          <div className="flex flex-col">
+            <span className="font-medium text-[var(--c-primary)]">
+              {req.store_name}
+            </span>
+
+            <span className="text-xs text-[var(--c-text)]/60">
+              {req.count} vouchers • {req.status}
+            </span>
+          </div>
+
+          <span className="text-xs text-[var(--c-text)]/60 whitespace-nowrap">
+            {new Date(req.created_at).toLocaleDateString()}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )}
+</DashboardCard>
           {/* Latest Stores */}
           <DashboardCard
             title={t.latestStores}
@@ -194,35 +249,8 @@ console.log('🧠 Current user role:', role)
             )}
           </DashboardCard>
 
-          {/* Recent Vouchers */}
-          <DashboardCard
-            title={t.recentVouchers}
-            icon={<Gift className="h-5 w-5 text-[var(--c-accent)]" />}
-            link="/admin/vouchers"
-          >
-            {vouchers.length === 0 ? (
-              <p className="text-sm text-[var(--c-text)]/50">{t.noVouchers}</p>
-            ) : (
-              <ul className="space-y-3">
-                {vouchers.slice(0, 5).map((v) => (
-                  <li
-                    key={v.id}
-                    className="flex items-center justify-between border-b border-[var(--c-secondary)]/10 pb-2 text-sm"
-                  >
-                    <span className="truncate font-medium text-[var(--c-primary)]">
-                      {v.code || '—'}
-                      <span className="text-[var(--c-text)]/60 text-xs ml-1">
-                        ({v.status})
-                      </span>
-                    </span>
-                    <span className="text-xs text-[var(--c-text)]/60">
-                      {new Date(v.created_at).toLocaleDateString()}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </DashboardCard>
+
+
 
           {/* Top Stores */}
           <DashboardCard

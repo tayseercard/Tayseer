@@ -10,6 +10,7 @@ export default function DashboardHeader({
   user,
   onAdd,
   actions = [],
+  rightContent, // ⭐ now fully supported
 }: {
   title?: string
   subtitle?: string
@@ -17,6 +18,7 @@ export default function DashboardHeader({
   user?: { name: string; email: string; role?: string; avatarUrl?: string }
   onAdd?: () => void
   actions?: { label: string; onClick: () => void; icon?: React.ReactNode }[]
+  rightContent?: React.ReactNode // ⭐ FIX: add this
 }) {
   return (
     <header
@@ -25,38 +27,55 @@ export default function DashboardHeader({
         rounded-2xl border border-[var(--c-bank)]/25 
         bg-[var(--c-primary)] text-white shadow-md
         before:absolute before:inset-x-0 before:top-0 before:h-[4px]
-         before:rounded-t-2xl
+        before:rounded-t-2xl
       "
     >
-     
+      {/* === TOP ROW: Title + RightContent (like notifications) === */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {icon}
+          <div>
+            <h1 className="text-xl font-semibold text-white">{title}</h1>
+            {subtitle && (
+              <p className="text-sm text-white/70">{subtitle}</p>
+            )}
+          </div>
+        </div>
 
-    {/* === Bottom Row: User Info === */}
-{user && (
-  <div className="flex items-center gap-4">
-    {user.avatarUrl ? (
-      <img
-        src={user.avatarUrl}
-        alt="User avatar"
-        className="h-12 w-12 rounded-full object-cover border border-white/20"
-      />
-    ) : (
-      <div className="h-12 w-12 rounded-full bg-[var(--c-accent)]/20 flex items-center justify-center text-[var(--c-accent)] font-semibold text-lg">
-        {user.name?.[0]?.toUpperCase() || 'U'}
+        {/* ⭐ NotificationBell or any right content */}
+        <div className="flex items-center gap-3">
+          {rightContent}
+        </div>
       </div>
-    )}
 
-    <div>
-      <p className="text-base font-medium text-white leading-tight">
-        {user.name}
-      </p>
-      <p className="text-sm text-white/70">{user.email}</p>
-      <p className="text-xs text-[var(--c-accent)] font-medium mt-0.5 uppercase tracking-wide">
-        {user.role || 'Admin'}
-      </p>
-    </div>
-  </div>
-)}
+      {/* === BOTTOM ROW: USER INFO === */}
+      {user && (
+        <div className="flex items-center gap-4 pt-2">
+          {user.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt="User avatar"
+              className="h-12 w-12 rounded-full object-cover border border-white/20"
+            />
+          ) : (
+            <div className="h-12 w-12 rounded-full bg-[var(--c-accent)]/20 
+              flex items-center justify-center text-[var(--c-accent)] 
+              font-semibold text-lg">
+              {user.name?.[0]?.toUpperCase() || 'U'}
+            </div>
+          )}
 
+          <div>
+            <p className="text-base font-medium leading-tight text-white">
+              {user.name}
+            </p>
+            <p className="text-sm text-white/70">{user.email}</p>
+            <p className="text-xs text-[var(--c-accent)] font-medium mt-0.5 uppercase tracking-wide">
+              {user.role || 'Admin'}
+            </p>
+          </div>
+        </div>
+      )}
     </header>
   )
 }

@@ -21,20 +21,7 @@ import {
   ListChecks,
 } from 'lucide-react'
 
-/* ---------- Types ---------- */
-type Store = { id: string; name: string }
-type Voucher = {
-  id: string
-  store_id: string
-  code: string
-  buyer_name?: string | null
-  recipient_name?: string | null
-  status: string
-  initial_amount: number
-  balance: number
-  created_at: string
-  activated_at: string
-}
+
 
 export default function StoreVouchersPage() {
   return (
@@ -54,8 +41,14 @@ export default function StoreVouchersPage() {
   const [stores, setStores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null)
-  const [adding, setAdding] = useState(false)
-  const [addingLoading, setAddingLoading] = useState(false)
+
+
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [storeName, setStoreName] = useState<string | null>(null)
+  const [adminId, setadminId] = useState<string | null>(null)
+
+  const [openRequestModal, setOpenRequestModal] = useState(false)
+
   const [storeId, setStoreId] = useState<string | null>(null)
   const [count, setCount] = useState(1)
   const [q, setQ] = useState('')
@@ -90,11 +83,14 @@ export default function StoreVouchersPage() {
       // fetch role/store_id
       const { data: roleRow } = await supabase
         .from('me_effective_role')
-        .select('store_id')
+        .select('role, store_id, store_name')
         .eq('user_id', userId)
         .maybeSingle()
 
-        
+      setUserRole(roleRow?.role || null)
+      setStoreId(roleRow?.store_id || null)
+      setStoreName(roleRow?.store_name || null)
+
       const currentStoreId = roleRow?.store_id || null
       setStoreId(currentStoreId)
 
@@ -102,7 +98,7 @@ export default function StoreVouchersPage() {
       let query = supabase
         .from('vouchers')
         .select('*')
-        .order('activated_at', { ascending: false })
+        .order('updated_at', { ascending: false })
 
       if (currentStoreId) query = query.eq('store_id', currentStoreId)
       if (selectedStatus !== 'all') query = query.eq('status', selectedStatus)
@@ -116,10 +112,35 @@ export default function StoreVouchersPage() {
 
   
   /* -------- Load data -------- */
+ /* ---------- Load vouchers ---------- */
+  useEffect(() => {
+    ;(async () => {
+      if (!storeId) return
+
+      setLoading(true)
+
+      let query = supabase
+        .from('vouchers')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('activated_at', { ascending: false })
+
+      if (selectedStatus !== 'all') query = query.eq('status', selectedStatus)
+
+      const { data, error } = await query
+      if (error) console.error('Error loading vouchers:', error)
+
+      setRows(data || [])
+      setLoading(false)
+    })()
+  }, [storeId, selectedStatus, supabase])
+
+/* -------- Load data -------- */
   async function loadData() {
     setLoading(true)
     const [{ data: vouchers }, { data: storesData }] = await Promise.all([
-      supabase.from('vouchers').select('*').order('created_at', { ascending: false }),
+      supabase.from('vouchers').select('*').order('updated_at', { ascending: false })
+,
       supabase.from('stores').select('id, name'),
     ])
     setRows(vouchers || [])
@@ -131,25 +152,33 @@ export default function StoreVouchersPage() {
     loadData()
   }, [])
 
+
   
   /* -------- Filters -------- */
   const filtered = useMemo(() => {
-    let data = rows
-    if (selectedStore !== 'all') data = data.filter((v) => v.store_id === selectedStore)
-    if (selectedStatus !== 'all') data = data.filter((v) => v.status === selectedStatus)
-   if (q.trim()) {
-  const t = q.trim().toLowerCase()
-  data = data.filter((v) => v.buyer_name?.toLowerCase().includes(t))
-}
-// 📅 DATE FILTER
+  let data = rows
+
+  if (selectedStore !== 'all') data = data.filter(v => v.store_id === selectedStore)
+  if (selectedStatus !== 'all') data = data.filter(v => v.status === selectedStatus)
+
+  // 🔍 Search filter
+  if (q.trim()) {
+    const t = q.trim().toLowerCase()
+    data = data.filter(v => v.buyer_name?.toLowerCase().includes(t))
+  }
+
+  // 📅 Date filter
   if (selectedDate) {
     data = data.filter((v) => {
-      const d = new Date(v.activated_at).toISOString().slice(0, 10)
+      const d = v.activated_at
+        ? new Date(v.activated_at).toISOString().slice(0, 10)
+        : null
       return d === selectedDate
     })
   }
-    return data
-  }, [rows, q, selectedStore, selectedStatus])
+
+  return data
+}, [rows, q, selectedStore, selectedStatus, selectedDate])
 
 /* -------- Totals Calculation -------- */
 const totals = useMemo(() => {
@@ -172,14 +201,20 @@ const totals = useMemo(() => {
 
  
 
+
   /* -------- UI -------- */
   return (
-<div
-      className={`min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8 ${
-        lang === 'ar' ? 'rtl' : 'ltr'
-      }`}
-    >
-      
+ <div className={`min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-6 space-y-8 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
+
+      {/* ⭐ Store owner request button */}
+      {userRole === "store_owner" && (
+        <button
+          onClick={() => setOpenRequestModal(true)}
+          className="w-full bg-[var(--c-accent)] text-white py-2 rounded-lg"
+        >
+          Demander des nouveaux vouchers
+        </button>
+      )}
 
 {/* ===== Totals Section (Always One Row) ===== */}
 {!loading && filtered.length > 0 && (
@@ -219,6 +254,8 @@ const totals = useMemo(() => {
     </div>
   </div>
 )}
+
+
 
 
 
@@ -276,8 +313,6 @@ const totals = useMemo(() => {
 
 
 </div>
-
-
 
       {/* Mobile Cards */}
       <div className="block md:hidden space-y-3">
@@ -399,7 +434,96 @@ const totals = useMemo(() => {
         />
       )}
 
+{/* ⭐ Render Voucher Request Modal */}
+      {openRequestModal && (
+        <VoucherRequestModal
+          onClose={() => setOpenRequestModal(false)}
+          supabase={supabase}
+          storeId={storeId}
+          storeName={storeName} 
+          adminId={adminId}        />
+      )}
     
+    </div>
+  )
+}
+
+
+/* ---------- Voucher Request Modal ---------- */
+function VoucherRequestModal({
+  onClose,
+  supabase,
+  storeId,
+  adminId,
+  storeName
+}: {
+  onClose: () => void
+  supabase: any
+  storeId: string | null
+  adminId: string | null
+  storeName: string | null
+}) {
+  const [count, setCount] = useState(10)
+  const [saving, setSaving] = useState(false)
+
+  async function submit() {
+    if (!storeId) return alert("Store ID manquant.")
+    if (!storeName) return alert("Nom du magasin manquant.")
+
+    setSaving(true)
+
+    // 1️⃣ Insert voucher request
+    const { error } = await supabase.from("voucher_requests").insert({
+      store_id: storeId,
+      store_name: storeName,
+      admin_id: adminId,
+      count
+    })
+
+    if (error) {
+      setSaving(false)
+      return alert("Erreur: " + error.message)
+    }
+
+    // 2️⃣ Notify admin
+    if (adminId) {
+      await supabase.from("notifications").insert({
+        user_id: adminId,
+        title: "Nouvelle demande de vouchers",
+        message: `${storeName} demande ${count} vouchers`
+      })
+    }
+
+    setSaving(false)
+    alert("Votre demande a été envoyée à l'administrateur.")
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 p-4 flex items-center justify-center">
+      <div className="bg-white p-4 rounded-xl w-full max-w-sm">
+        <h2 className="text-lg font-semibold mb-3">Demande de Vouchers</h2>
+
+        <p className="text-sm text-gray-600 mb-2">
+          Magasin: <b>{storeName ?? "—"}</b>
+        </p>
+
+        <input
+          type="number"
+          min="1"
+          value={count}
+          onChange={e => setCount(Number(e.target.value))}
+          className="border p-2 w-full rounded mb-3"
+        />
+
+        <button
+          onClick={submit}
+          disabled={saving}
+          className="w-full bg-[var(--c-accent)] text-white py-2 rounded-lg"
+        >
+          {saving ? "Envoi…" : "Envoyer la demande"}
+        </button>
+      </div>
     </div>
   )
 }
