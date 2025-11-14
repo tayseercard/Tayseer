@@ -7,6 +7,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import VoucherScanner from '@/components/VoucherScanner'
 import { useLanguage } from '@/lib/useLanguage'
+import RealtimeAdminAlerts from "@/components/RealtimeAdminAlerts"
 
 import {
   LayoutDashboard,
@@ -52,6 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         lang === 'ar' ? 'rtl' : 'ltr'
       } md:overflow-hidden`}
     >
+      <RealtimeAdminAlerts />
       {/* ===== Desktop Top Navigation ===== */}
       <header className="hidden md:flex flex-col w-full sticky top-0 z-50 bg-[var(--c-bg)] text-[var(--c-text)] border-b border-[var(--c-bank)]/20 shadow-sm">
         <div

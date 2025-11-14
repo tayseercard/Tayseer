@@ -3,8 +3,8 @@
 import { Plus } from 'lucide-react'
 import React from 'react'
 
+
 export default function DashboardHeader({
-  title = 'Dashboard',
   subtitle,
   icon,
   user,
@@ -32,25 +32,9 @@ export default function DashboardHeader({
     >
       {/* === TOP ROW: Title + RightContent (like notifications) === */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {icon}
-          <div>
-            <h1 className="text-xl font-semibold text-white">{title}</h1>
-            {subtitle && (
-              <p className="text-sm text-white/70">{subtitle}</p>
-            )}
-          </div>
-        </div>
-
-        {/* ⭐ NotificationBell or any right content */}
-        <div className="flex items-center gap-3">
-          {rightContent}
-        </div>
-      </div>
-
-      {/* === BOTTOM ROW: USER INFO === */}
+         {/* === BOTTOM ROW: USER INFO === */}
       {user && (
-        <div className="flex items-center gap-4 pt-2">
+        <div className="flex items-center gap-3 pt-2">
           {user.avatarUrl ? (
             <img
               src={user.avatarUrl}
@@ -76,6 +60,14 @@ export default function DashboardHeader({
           </div>
         </div>
       )}
+
+        {/* ⭐ NotificationBell or any right content */}
+        <div className="flex items-center gap-2">
+          {rightContent}
+        </div>
+      </div>
+
+     
     </header>
   )
 }

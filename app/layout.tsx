@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css'
+import { Toaster } from "sonner"
 
 
 
@@ -62,6 +63,14 @@ export default function RootLayout({
         {/* <PWAUpdater /> */}
 
         <div className="flex flex-col">{children}</div>
+
+        {/* 🌟 Global Toast System */}
+        <Toaster
+          position="top-right"
+          richColors
+          closeButton
+          expand
+        />
       </body>
     </html>
   );
