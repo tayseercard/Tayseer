@@ -46,7 +46,7 @@ export default function StoreVouchersPage() {
   const [userRole, setUserRole] = useState<string | null>(null)
   const [storeName, setStoreName] = useState<string | null>(null)
   const [adminId, setadminId] = useState<string | null>(null)
-
+const [requestId,setrequestId] = useState<string | null>(null)
   const [openRequestModal, setOpenRequestModal] = useState(false)
 
   const [storeId, setStoreId] = useState<string | null>(null)
@@ -441,7 +441,8 @@ const totals = useMemo(() => {
           supabase={supabase}
           storeId={storeId}
           storeName={storeName} 
-          adminId={adminId}        />
+          adminId={adminId}   
+          requestId={requestId}  />
       )}
     
     </div>
@@ -455,13 +456,15 @@ function VoucherRequestModal({
   supabase,
   storeId,
   adminId,
-  storeName
+  storeName,
+  requestId
 }: {
   onClose: () => void
   supabase: any
   storeId: string | null
   adminId: string | null
   storeName: string | null
+  requestId : string | null
 }) {
   const [count, setCount] = useState(10)
   const [saving, setSaving] = useState(false)
@@ -490,7 +493,10 @@ function VoucherRequestModal({
       await supabase.from("notifications").insert({
         user_id: adminId,
         title: "Nouvelle demande de vouchers",
-        message: `${storeName} demande ${count} vouchers`
+        message: `${storeName} demande ${count} vouchers`,
+        request_id: requestId, // ⭐ link to the request
+
+
       })
     }
 

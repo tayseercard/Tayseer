@@ -9,6 +9,7 @@ import { useLanguage } from '@/lib/useLanguage'
 import { motion } from 'framer-motion'
 import NotificationBell from '@/components/NotificationBell'
 import NotificationModal from '@/components/NotificationModal'
+import { useRouter } from "next/navigation"
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +26,7 @@ const [userRole, setUserRole] = useState<string | null>(null)
 /* -------- Load Latest Voucher Requests -------- */
 const [latestRequests, setLatestRequests] = useState<any[]>([])
 const [notifOpen, setNotifOpen] = useState(false)
+const router = useRouter()
 
 useEffect(() => {
   ;(async () => {
@@ -149,10 +151,23 @@ rightContent={
           avatarUrl: "/icon-192-2.png"
         }}
       />
- <NotificationModal
-        open={notifOpen}
-        onClose={() => setNotifOpen(false)}
-      />
+<NotificationModal
+  open={notifOpen}
+  onClose={() => setNotifOpen(false)}
+  onClickNotification={(n) => {
+    setNotifOpen(false)
+
+    // If the notif is linked to a voucher request
+    if (n.request_id) {
+      router.push(`/admin/voucher-requests?id=${n.request_id}`)
+      return
+    }
+
+    // Fallback
+    router.push("/admin/notifications")
+  }}
+/>
+
 
       {/* === SUMMARY STATS === */}
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -1,18 +1,28 @@
 'use client'
 
-import { X, Check, Trash } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { X, Check, Trash, MoreVertical } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter } from 'next/navigation'
 
-export default function NotificationModal({ open, onClose }: {
+export default function NotificationModal({
+  open,
+  onClose,
+  onClickNotification,
+}: {
   open: boolean
   onClose: () => void
+  onClickNotification?: (notif: any) => void
 }) {
   const supabase = createClientComponentClient()
   const [notifications, setNotifications] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
-  // Load notifications
+  const router = useRouter()
+
+  /* ---------------- LOAD NOTIFICATIONS ---------------- */
   async function load() {
     setLoading(true)
 
@@ -32,59 +42,62 @@ export default function NotificationModal({ open, onClose }: {
     setNotifications(data || [])
     setLoading(false)
   }
-async function markAllAsRead() {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
 
-  const userId = session?.user?.id
-  if (!userId) return
-
-  await supabase
-    .from('notifications')
-    .update({ read: true })
-    .eq('user_id', userId)
-    .eq('read', false)
-}
-
-  // Mark all as read
+  /* ---------------- MARK ALL READ ---------------- */
   async function markAllRead() {
     const {
       data: { session },
     } = await supabase.auth.getSession()
-
-    const userId = session?.user.id
-    if (!userId) return
+    if (!session) return
 
     await supabase
       .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', userId)
+      .update({ read: true })
+      .eq('user_id', session.user.id)
 
     load()
+    setMenuOpen(false)
   }
 
-  // Delete one
-  async function deleteNotification(id: string) {
-    await supabase.from('notifications').delete().eq('id', id)
-    load()
-  }
-
-  // Delete all
+  /* ---------------- DELETE ALL ---------------- */
   async function deleteAll() {
     const {
       data: { session },
     } = await supabase.auth.getSession()
+    if (!session) return
 
     await supabase
       .from('notifications')
       .delete()
-      .eq('user_id', session?.user.id)
+      .eq('user_id', session.user.id)
 
+    load()
+    setMenuOpen(false)
+  }
+
+  /* ---------------- DELETE ONE ---------------- */
+  async function deleteOne(id: string) {
+    await supabase.from('notifications').delete().eq('id', id)
     load()
   }
 
-  // Auto-load when modal opens
+  /* ---------------- MARK ONE READ ---------------- */
+  async function markOneRead(id: string) {
+    await supabase.from('notifications').update({ read: true }).eq('id', id)
+  }
+
+  /* ---------------- OUTSIDE CLICK CLOSE MENU ---------------- */
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    if (menuOpen) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [menuOpen])
+
+  /* ---------------- AUTO LOAD WHEN OPEN ---------------- */
   useEffect(() => {
     if (open) load()
   }, [open])
@@ -92,63 +105,81 @@ async function markAllAsRead() {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex items-start justify-end">
-      {/* Panel */}
-      <div className="w-full max-w-md bg-white h-full shadow-xl flex flex-col animate-slide-in-right">
-        {/* Header */}
+    <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex justify-end">
+
+      {/* RIGHT PANEL */}
+      <div className="w-full max-w-md h-full bg-white shadow-2xl rounded-l-2xl animate-slide-in flex flex-col">
+
+        {/* HEADER */}
         <div className="p-4 border-b flex items-center justify-between">
           <h2 className="text-lg font-semibold">Notifications</h2>
 
-          <button onClick={onClose}>
-            <X className="w-5 h-5" />
-          </button>
+          <div className="relative flex items-center gap-3" ref={menuRef}>
+            <button onClick={() => setMenuOpen(!menuOpen)}>
+              <MoreVertical className="w-5 h-5 text-gray-700" />
+            </button>
+
+            <button onClick={onClose}>
+              <X className="w-5 h-5 text-gray-700" />
+            </button>
+
+            {/* Small menu */}
+            {menuOpen && (
+              <div className="absolute right-8 top-8 w-40 bg-white border rounded-xl shadow-xl text-sm animate-fade-in">
+                <button
+                  onClick={markAllRead}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                >
+                  Mark all as read
+                </button>
+                <button
+                  onClick={deleteAll}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 text-red-600"
+                >
+                  Delete all
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Actions */}
-        <div className="p-3 flex items-center justify-between border-b text-sm">
-          <button
-            onClick={markAllRead}
-            className="flex items-center gap-2 text-emerald-600"
-          >
-            <Check className="w-4 h-4" />
-            Mark all as read
-          </button>
-
-          <button
-            onClick={deleteAll}
-            className="flex items-center gap-2 text-red-600"
-          >
-            <Trash className="w-4 h-4" />
-            Delete all
-          </button>
-        </div>
-
-        {/* List */}
+        {/* LIST */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {loading ? (
-            <p className="text-gray-500 text-sm">Loading...</p>
+            <p className="text-gray-400 text-sm text-center">Loading…</p>
           ) : notifications.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center">
-              No notifications yet.
-            </p>
+            <div className="flex flex-col items-center text-center mt-10">
+              <div className="text-gray-400 text-5xl mb-3">🔔</div>
+              <p className="text-gray-500">No notifications yet.</p>
+            </div>
           ) : (
             notifications.map((n) => (
               <div
                 key={n.id}
+                onClick={async () => {
+                  await markOneRead(n.id)
+                  load()
+                  onClickNotification?.(n)
+                }}
                 className={`
-                  p-3 rounded-lg border shadow-sm flex justify-between
-                  ${n.is_read ? 'bg-gray-50' : 'bg-emerald-50 border-emerald-100'}
+                  p-4 rounded-xl border shadow-sm flex justify-between items-start cursor-pointer transition
+                  ${!n.read ? 'bg-emerald-50 border-emerald-200' : 'bg-white hover:bg-gray-50'}
                 `}
               >
-                <div>
-                  <p className="font-medium">{n.title}</p>
+                <div className="flex-1 pr-3">
+                  <p className="font-semibold text-gray-800">{n.title}</p>
                   <p className="text-sm text-gray-600">{n.message}</p>
                   <p className="text-xs text-gray-400 mt-1">
                     {new Date(n.created_at).toLocaleString()}
                   </p>
                 </div>
 
-                <button onClick={() => deleteNotification(n.id)}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteOne(n.id)
+                  }}
+                >
                   <Trash className="w-4 h-4 text-red-500" />
                 </button>
               </div>
@@ -157,18 +188,21 @@ async function markAllAsRead() {
         </div>
       </div>
 
-      {/* Animation */}
+      {/* ANIMATION */}
       <style jsx>{`
-        .animate-slide-in-right {
-          animation: slide-in 0.25s ease-out;
+        .animate-slide-in {
+          animation: slide-in 0.25s ease-out forwards;
+        }
+        .animate-fade-in {
+          animation: fade-in 0.15s ease-out forwards;
         }
         @keyframes slide-in {
-          from {
-            transform: translateX(100%);
-          }
-          to {
-            transform: translateX(0);
-          }
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
