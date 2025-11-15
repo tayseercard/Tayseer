@@ -43,6 +43,18 @@ export default function NotificationModal({
     setLoading(false)
   }
 
+ function handleNotificationClick(n: any) {
+  if (n.request_id) {
+    router.push(`/store/requests?highlight=${n.request_id}`)
+    onClose()
+    return
+  }
+
+  // Fallback
+  onClose()
+}
+
+
   /* ---------------- MARK ALL READ ---------------- */
   async function markAllRead() {
     const {
@@ -162,7 +174,7 @@ useEffect(() => {
                 onClick={async () => {
                   await markOneRead(n.id)
                   load()
-                  onClickNotification?.(n)
+                  handleNotificationClick?.(n)
                 }}
                 className={`
                   p-4 rounded-xl border shadow-sm flex justify-between items-start cursor-pointer transition

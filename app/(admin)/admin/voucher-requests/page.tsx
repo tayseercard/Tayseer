@@ -64,6 +64,7 @@ export default function AdminVoucherRequestsPage() {
         user_id: req.store_owner_id,
         title: 'Demande approuvée',
         message: `${req.count} vouchers ont été ajoutés à votre magasin.`,
+        type: "voucher_request_approved",
         request_id: req.id, // ⭐ link back to this request
 
       })

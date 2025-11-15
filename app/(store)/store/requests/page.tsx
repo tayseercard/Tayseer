@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useRef } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Calendar } from 'lucide-react'
+import { useSearchParams } from "next/navigation"
+
 
 export default function StoreRequestsPage() {
   return (
@@ -17,7 +19,24 @@ function StoreRequestsInner() {
 
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  
+const params = useSearchParams()
+const highlightId = params.get("highlight")
 
+const highlightRef = useRef<HTMLDivElement | null>(null)
+// After loading the requests:
+useEffect(() => {
+  if (!highlightId) return
+
+  // small delay to ensure rendering
+  setTimeout(() => {
+    const el = document.getElementById(`request-${highlightId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" })
+      el.classList.add("animate-highlight")
+    }
+  }, 300)
+}, [highlightId, loading])
   // Filters
   const [selectedStatus, setSelectedStatus] =
     useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
@@ -167,10 +186,12 @@ function StoreRequestsInner() {
           <p className="text-gray-500">Aucune demande trouvée.</p>
         ) : (
           filtered.map((req) => (
-            <div
-              key={req.id}
-              className="bg-white p-4 rounded-xl shadow-sm border space-y-2"
-            >
+           <div
+  key={req.id}
+  id={`request-${req.id}`}
+  className="bg-white p-4 rounded-xl shadow-sm border space-y-2"
+>
+
               <div className="flex justify-between">
                 <h3 className="font-semibold">Demande #{req.id.slice(0, 6)}</h3>
                 <StatusBadge status={req.status} />
@@ -214,7 +235,11 @@ function StoreRequestsInner() {
             </thead>
             <tbody>
               {filtered.map((req) => (
-                <tr key={req.id} className="border-b hover:bg-gray-50">
+<tr
+  key={req.id}
+  id={`request-${req.id}`}
+  className="border-b hover:bg-gray-50"
+>
                   <Td>{req.id}</Td>
                   <Td>{req.count}</Td>
                   <Td><StatusBadge status={req.status} /></Td>
@@ -245,20 +270,19 @@ function StoreRequestsInner() {
 /* ---------- UI Components ---------- */
 
 function StatusBadge({ status }: { status: string }) {
-  const map = {
+  const map: any = {
     pending: 'bg-amber-100 text-amber-700',
     approved: 'bg-emerald-100 text-emerald-700',
     rejected: 'bg-rose-100 text-rose-700',
   }
 
   return (
-    <span
-      className={`px-2 py-0.5 rounded-full text-xs ${status || ''}`}
-    >
+    <span className={`px-2 py-0.5 rounded-full text-xs ${map[status]}`}>
       {status}
     </span>
   )
 }
+
 
 function Th({ children }: any) {
   return <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">{children}</th>
@@ -308,3 +332,27 @@ function RequestModal({ onClose, onSubmit }: any) {
     </div>
   )
 }
+
+
+
+
+<style jsx global>{`
+  .animate-highlight {
+    animation: highlightGlow 2s ease-in-out;
+  }
+
+  @keyframes highlightGlow {
+    0% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8);
+      background-color: #ecfdf5;
+    }
+    50% {
+      box-shadow: 0 0 20px 4px rgba(16, 185, 129, 0.9);
+      background-color: #d1fae5;
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      background-color: white;
+    }
+  }
+`}</style>

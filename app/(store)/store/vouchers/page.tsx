@@ -495,7 +495,7 @@ function VoucherRequestModal({
         title: "Nouvelle demande de vouchers",
         message: `${storeName} demande ${count} vouchers`,
         request_id: requestId, // ⭐ link to the request
-
+        type: "voucher_request_status" 
 
       })
     }

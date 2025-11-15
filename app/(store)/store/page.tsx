@@ -22,6 +22,7 @@ export default function StoreDashboardPage() {
   const { t } = useLanguage()
   const supabase = createClientComponentClient()
   const [loading, setLoading] = useState(true)
+  const [notifRefresh, setNotifRefresh] = useState(0)
   const [notifOpen, setNotifOpen] = useState(false)
   const router = useRouter()
   const [store, setStore] = useState<{ name: string; email: string; role: string; logoUrl?: string } | null>(null)
@@ -36,6 +37,11 @@ export default function StoreDashboardPage() {
   const [clientStats, setClientStats] = useState({
     totalClients: 0,
   })
+
+function closeNotifModal() {
+  setNotifOpen(false)
+  setNotifRefresh((x) => x + 1)   // 🔥 triggers refresh
+}
 
 const [latestRequests, setLatestRequests] = useState<any[]>([])
 
@@ -113,12 +119,21 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
       setLoading(false)
     })()
   }, [supabase])
-
+  
+{notifOpen && (
+  <NotificationModal
+    open={notifOpen}
+    onClose={closeNotifModal}
+  />
+)}
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 md:px-10 py-8 space-y-8">
       <StoreHeader
    rightContent={
-          <NotificationBell onOpen={() => setNotifOpen(true)} />
+          <NotificationBell onOpen={() => setNotifOpen(true)}
+          
+            refreshSignal={notifRefresh}
+ />
         }
               store={store || { name: 'Loading…', email: '', role: '', logoUrl: '' }} />
 
@@ -327,4 +342,6 @@ function DashboardRequestCard({
     </div>
   )
 }
+
+
 
