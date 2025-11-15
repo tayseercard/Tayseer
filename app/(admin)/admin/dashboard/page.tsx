@@ -16,6 +16,8 @@ export const dynamic = 'force-dynamic'
 export default function AdminDashboardPage() {
   const supabase = createClientComponentClient()
   const { t } = useLanguage()
+    const [notifRefresh, setNotifRefresh] = useState(0)
+
   const [loading, setLoading] = useState(true)
 const [userRole, setUserRole] = useState<string | null>(null)
   const [stores, setStores] = useState<any[]>([])
@@ -141,7 +143,7 @@ console.log('🧠 Current user role:', role)
       <DashboardHeader
 
 rightContent={
-    <NotificationBell onOpen={() => setNotifOpen(true)} />
+    <NotificationBell onOpen={() => setNotifOpen(true)} refreshSignal={notifRefresh} />
   }
         
                user={{
