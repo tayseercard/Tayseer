@@ -3,7 +3,16 @@
 import { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-export default function NotificationBell({ onOpen }: { onOpen: () => void }) {
+export default function NotificationBell({
+  
+  onOpen ,
+  refreshSignal,       // 👈 NEW
+
+
+}: { onOpen: () => void 
+  refreshSignal: number
+
+}) {
   const supabase = createClientComponentClient()
   const [count, setCount] = useState(0)
 
@@ -51,6 +60,24 @@ export default function NotificationBell({ onOpen }: { onOpen: () => void }) {
       if (channel) supabase.removeChannel(channel)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+  const reload = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const userId = session?.user?.id
+    if (!userId) return
+
+    const { data } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('read', false)
+
+    setCount(data?.length || 0)
+  }
+
+  reload()
+}, [refreshSignal])
 
   return (
     <div className="relative cursor-pointer" onClick={onOpen}>
