@@ -8,7 +8,10 @@ export default function NotificationBell({ onOpen }: { onOpen: () => void }) {
   const [count, setCount] = useState(0)
 
   useEffect(() => {
-    const load = async () => {
+    let channel: any
+
+    const init = async () => {
+      // 1️⃣ Get user session
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -16,17 +19,17 @@ export default function NotificationBell({ onOpen }: { onOpen: () => void }) {
       const userId = session?.user?.id
       if (!userId) return
 
-      // 🔹 Load unread notifications
+      // 2️⃣ Load initial unread notifications
       const { data } = await supabase
         .from('notifications')
-        .select('*', { count: 'exact' })
+        .select('*')
         .eq('user_id', userId)
         .eq('read', false)
 
       setCount(data?.length || 0)
 
-      // 🔹 Live updates
-      const channel = supabase
+      // 3️⃣ Subscribe for realtime INSERT events
+      channel = supabase
         .channel(`notifications-${userId}`)
         .on(
           'postgres_changes',
@@ -36,27 +39,21 @@ export default function NotificationBell({ onOpen }: { onOpen: () => void }) {
             table: 'notifications',
             filter: `user_id=eq.${userId}`,
           },
-          () => {
-            setCount((c) => c + 1)
-          }
+          () => setCount((c) => c + 1)
         )
         .subscribe()
-
-      return () => {
-        supabase.removeChannel(channel)
-      }
     }
 
-    load()
-  }, [supabase])
+    init()
 
-  /* 👉 When clicking the bell, open modal AND reset count */
-  function handleOpen() {
-    onOpen()
-  }
+    // 4️⃣ Cleanup on unmount
+    return () => {
+      if (channel) supabase.removeChannel(channel)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="relative cursor-pointer" onClick={handleOpen}>
+    <div className="relative cursor-pointer" onClick={onOpen}>
       <svg
         className="w-6 h-6 text-white"
         fill="none"
