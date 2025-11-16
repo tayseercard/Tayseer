@@ -157,9 +157,8 @@ export default function AdminStoreDetailPage() {
 
         <PrintVouchersModal
           open={printModal}
-          onClose={() => setPrintModal(false)}
-          storeId={store?.id}
-        />
+          onClose={() => setPrintModal(false)} 
+          stores={[]}        />
 
         {/* Search Bar */}
         <div className="flex items-center gap-2 sticky top-0 bg-[var(--bg)]/90 backdrop-blur-sm py-1 z-30">
