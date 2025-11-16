@@ -118,7 +118,7 @@ export default function SettingsPage() {
             <SettingRow
   icon={<Shield />}
   label={t.roles}
-  onClick={() => router.push("/admin/settings/roles")}
+  onClick={() => router.push("/admin/users")}
 />
           </div>
         </div>
