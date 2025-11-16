@@ -141,10 +141,10 @@ console.log('🧠 Current user role:', role)
      
       {/* === HEADER === */}
       <DashboardHeader
-
-rightContent={
-    <NotificationBell onOpen={() => setNotifOpen(true)} refreshSignal={notifRefresh} />
-  }
+        rightContent={
+            <NotificationBell 
+              onOpen={() => setNotifOpen(true)} 
+              refreshSignal={notifRefresh} />}
         
                user={{
           name: "Tayseer Admin",

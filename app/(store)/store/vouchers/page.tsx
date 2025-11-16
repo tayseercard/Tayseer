@@ -45,7 +45,7 @@ export default function StoreVouchersPage() {
 
   const [userRole, setUserRole] = useState<string | null>(null)
   const [storeName, setStoreName] = useState<string | null>(null)
-  const [adminId, setadminId] = useState<string | null>(null)
+const [adminId, setAdminId] = useState<string[]>([])
 const [requestId,setrequestId] = useState<string | null>(null)
   const [openRequestModal, setOpenRequestModal] = useState(false)
 
@@ -57,12 +57,31 @@ const [requestId,setrequestId] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
 
 
+
   
   /* ---------- Pagination ---------- */
   const ITEMS_PER_PAGE = 10
   const [page, setPage] = useState(1)
   const totalPages = useMemo(() => Math.ceil(rows.length / ITEMS_PER_PAGE), [rows])
 
+    // load all admins
+
+  useEffect(() => {
+  (async () => {
+    const { data, error } = await supabase
+      .from("me_effective_role")
+      .select("user_id")
+      .eq("role", "admin")
+
+    if (error) {
+      console.log("Load admins failed:", error)
+      return
+    }
+
+    // Extract IDs into array
+    setAdminId(data.map(a => a.user_id))
+  })()
+}, [supabase])
  // ✅ Read status from query (?status=active)
   useEffect(() => {
     const s = params.get('status')
@@ -462,7 +481,7 @@ function VoucherRequestModal({
   onClose: () => void
   supabase: any
   storeId: string | null
-  adminId: string | null
+  adminId: string[]
   storeName: string | null
   requestId:string | null
 }) {
@@ -491,17 +510,23 @@ function VoucherRequestModal({
       return alert("Erreur: " + error.message)
     }
 
+
+
     // 2️⃣ Notify admin (with request_id)
-    if (adminId) {
-      await supabase.from("notifications").insert({
-        user_id: adminId,
-        title: "Nouvelle demande de vouchers",
-        message: `${storeName} a demandé ${count} vouchers`,
-        request_id: newReq.id,   // ⭐ FIXED
-        type: "voucher_request",
-        read: false,
-      })
-    }
+        // 2️⃣ Notify ALL admins
+if (adminId && adminId.length > 0) {
+  for (const id of adminId) {
+    await supabase.from("notifications").insert({
+      user_id: id,
+      title: "Nouvelle demande de vouchers",
+      message: `${storeName} a demandé ${count} vouchers`,
+      request_id: newReq.id,
+      type: "voucher_request",
+      read: false,
+    })
+  }
+}
+  
 
     setSaving(false)
     alert("Votre demande a été envoyée à l'administrateur.")

@@ -126,7 +126,9 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
       <StoreHeader
    
    rightContent={
-          <NotificationBell onOpen={() => setNotifOpen(true)}
+          <NotificationBell 
+          onOpen={() => 
+            setNotifOpen(true)}
           refreshSignal={notifRefresh}/>
         }
               store={store || { name: 'Loading…', email: '', role: '', logoUrl: '' }} />

@@ -4,20 +4,17 @@ import { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export default function NotificationBell({
-  
-  onOpen ,
-  refreshSignal,       // 👈 NEW
-
-
-}: { onOpen: () => void 
+  onOpen,
+  refreshSignal,
+}: {
+  onOpen: () => void
   refreshSignal: number
-
 }) {
   const supabase = createClientComponentClient()
   const [count, setCount] = useState(0)
 
   useEffect(() => {
-    let channel: any
+    let channel: any = null
 
     const init = async () => {
       // 1️⃣ Get user session
@@ -31,15 +28,16 @@ export default function NotificationBell({
       // 2️⃣ Load initial unread notifications
       const { data } = await supabase
         .from('notifications')
-        .select('*')
+        .select('id')
         .eq('user_id', userId)
         .eq('read', false)
 
       setCount(data?.length || 0)
 
-      // 3️⃣ Subscribe for realtime INSERT events
+      // 3️⃣ Subscribe for realtime events
       channel = supabase
         .channel(`notifications-${userId}`)
+        // 🟢 INSERT (new notification)
         .on(
           'postgres_changes',
           {
@@ -48,36 +46,67 @@ export default function NotificationBell({
             table: 'notifications',
             filter: `user_id=eq.${userId}`,
           },
-          () => setCount((c) => c + 1)
+          (payload) => {
+            setCount((c) => c + 1)
+          }
+        )
+        // 🟡 UPDATE (notification marked as read)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`,
+          },
+          (payload) => {
+            // If "read" changed from false → true, decrease count
+            if (payload.old.read === false && payload.new.read === true) {
+              setCount((c) => Math.max(0, c - 1))
+            }
+          }
+        )
+        // 🔴 DELETE (notification removed)
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            setCount((c) => Math.max(0, c - 1))
+          }
         )
         .subscribe()
     }
 
     init()
 
-    // 4️⃣ Cleanup on unmount
     return () => {
       if (channel) supabase.removeChannel(channel)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // 🔄 Manual reload after reading notifications panel
   useEffect(() => {
-  const reload = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    const userId = session?.user?.id
-    if (!userId) return
+    const reload = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      const userId = session?.user?.id
+      if (!userId) return
 
-    const { data } = await supabase
-      .from('notifications')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('read', false)
+      const { data } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('read', false)
 
-    setCount(data?.length || 0)
-  }
+      setCount(data?.length || 0)
+    }
 
-  reload()
-}, [refreshSignal])
+    reload()
+  }, [refreshSignal])
 
   return (
     <div className="relative cursor-pointer" onClick={onOpen}>
