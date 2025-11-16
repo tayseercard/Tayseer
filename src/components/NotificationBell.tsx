@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import toast from 'react-hot-toast'
 
 export default function NotificationBell({
   onOpen,
@@ -13,11 +14,19 @@ export default function NotificationBell({
   const supabase = createClientComponentClient()
   const [count, setCount] = useState(0)
 
+  // 🔊 Prepare sound (keep same instance)
+  const soundRef = useRef<HTMLAudioElement | null>(null)
+
+  useEffect(() => {
+    if (!soundRef.current) {
+      soundRef.current = new Audio('/notify.mp3')
+    }
+  }, [])
+
   useEffect(() => {
     let channel: any = null
 
     const init = async () => {
-      // 1️⃣ Get user session
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -25,7 +34,7 @@ export default function NotificationBell({
       const userId = session?.user?.id
       if (!userId) return
 
-      // 2️⃣ Load initial unread notifications
+      // Load initial unread notifications
       const { data } = await supabase
         .from('notifications')
         .select('id')
@@ -34,10 +43,11 @@ export default function NotificationBell({
 
       setCount(data?.length || 0)
 
-      // 3️⃣ Subscribe for realtime events
+      // Realtime channel
       channel = supabase
         .channel(`notifications-${userId}`)
-        // 🟢 INSERT (new notification)
+
+        // 🟢 INSERT
         .on(
           'postgres_changes',
           {
@@ -48,9 +58,22 @@ export default function NotificationBell({
           },
           (payload) => {
             setCount((c) => c + 1)
+
+            // 🔊 Play sound
+            if (soundRef.current) {
+              soundRef.current.currentTime = 0
+              soundRef.current.play().catch(() => {})
+            }
+
+            // 🔥 Toast popup
+            toast.success(payload.new.title || "New notification", {
+              duration: 4000,
+              position: "top-right",
+            })
           }
         )
-        // 🟡 UPDATE (notification marked as read)
+
+        // 🟡 UPDATE
         .on(
           'postgres_changes',
           {
@@ -60,13 +83,13 @@ export default function NotificationBell({
             filter: `user_id=eq.${userId}`,
           },
           (payload) => {
-            // If "read" changed from false → true, decrease count
             if (payload.old.read === false && payload.new.read === true) {
               setCount((c) => Math.max(0, c - 1))
             }
           }
         )
-        // 🔴 DELETE (notification removed)
+
+        // 🔴 DELETE
         .on(
           'postgres_changes',
           {
@@ -79,17 +102,19 @@ export default function NotificationBell({
             setCount((c) => Math.max(0, c - 1))
           }
         )
+
         .subscribe()
     }
 
     init()
 
+    // Cleanup
     return () => {
       if (channel) supabase.removeChannel(channel)
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // no deps
 
-  // 🔄 Manual reload after reading notifications panel
+  // Manual refresh (after opening panel)
   useEffect(() => {
     const reload = async () => {
       const { data: { session } } = await supabase.auth.getSession()
