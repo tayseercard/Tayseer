@@ -430,34 +430,43 @@ return (
   )
 }
 
-/* ---------- Subcomponents ---------- */
 function StoreCard({ s }: { s: any }) {
-   async function handleDeleteStore(id: string, name: string) {
-  if (!confirm(`❌ Delete store "${name}"? This action cannot be undone.`))
-    return
+  // Delete handler (passed from parent instead of local undefined function)
+  async function handleDelete(e: any) {
+    e.stopPropagation() // prevent card click redirect
+    
+    if (!confirm(`❌ Delete store "${s.name}"?`)) return
 
-  try {
     const res = await fetch('/api/admin/delete-store', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ store_id: id }),
+      body: JSON.stringify({ store_id: s.id }),
     })
 
     const result = await res.json()
 
-    if (!res.ok) throw new Error(result.error)
+    if (!res.ok) {
+      alert('❌ ' + (result.error || 'Error deleting store'))
+      return
+    }
 
-    alert(`🗑️ Store "${name}" deleted.`)
-    loadStores()
-  } catch (err: any) {
-    alert('❌ ' + err.message)
+    alert(`🗑️ Store "${s.name}" deleted.`)
+    // You reload using window.location for now:
+    window.location.reload()
   }
-}
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+    <Link
+      href={`/admin/stores/${s.id}`}
+      className="
+        block rounded-xl border border-gray-200 bg-white p-4 shadow-sm
+        hover:bg-gray-50 transition cursor-pointer
+      "
+    >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="font-medium text-gray-900 truncate">{s.name ?? 'Unnamed'}</h3>
+        <h3 className="font-medium text-gray-900 truncate">
+          {s.name ?? 'Unnamed'}
+        </h3>
         <ChevronRight className="h-4 w-4 text-gray-400" />
       </div>
 
@@ -472,23 +481,26 @@ function StoreCard({ s }: { s: any }) {
       </div>
 
       <div className="flex items-center justify-between mb-3">
-        <Badge kind={s.status === 'open' ? 'green' : 'rose'}>{s.status ?? '—'}</Badge>
+        <Badge kind={s.status === 'open' ? 'green' : 'rose'}>
+          {s.status ?? '—'}
+        </Badge>
         <div className="flex items-center gap-1 text-amber-500">
           <Star className="h-3 w-3" />
           <span className="text-xs">{s.rating ?? '—'}</span>
         </div>
       </div>
 
-      {/* Delete Button */}
+      {/* Delete button (does NOT trigger navigation) */}
       <button
-        onClick={() => handleDeleteStore(s.id, s.name)}
+        onClick={handleDelete}
         className="text-red-600 text-xs underline hover:text-red-800"
       >
         Delete Store
       </button>
-    </div>
+    </Link>
   )
 }
+
 
 
 function Th({ children }: { children: React.ReactNode }) {

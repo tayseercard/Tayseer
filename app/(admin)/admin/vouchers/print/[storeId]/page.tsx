@@ -5,7 +5,9 @@ import { useParams, useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import QRCodeStyling from 'qr-code-styling'
 
-const CARDS_PER_PAGE = 50// 🔧 adjust per page (A4 usually fits 15–20)
+const CARDS_PER_ROW =5
+const ROWS_PER_PAGE = 6
+const CARDS_PER_PAGE = CARDS_PER_ROW * ROWS_PER_PAGE // 40 per A4 sheet
 
 export default function PrintVouchersPage() {
   const supabase = createClientComponentClient()
@@ -19,7 +21,7 @@ export default function PrintVouchersPage() {
   const from = searchParams.get('from')
   const to = searchParams.get('to')
 
-  /* 🟢 Load vouchers filtered by date range */
+  /* Load vouchers */
   useEffect(() => {
     if (!storeId) return
     ;(async () => {
@@ -41,15 +43,14 @@ export default function PrintVouchersPage() {
     })()
   }, [storeId, from, to, supabase])
 
-  // 🖨 Auto print after load
+  // Auto print
   useEffect(() => {
     if (!loading && vouchers.length > 0) {
-      const timer = setTimeout(() => window.print(), 1000)
-      return () => clearTimeout(timer)
+      setTimeout(() => window.print(), 1000)
     }
   }, [loading, vouchers])
 
-  // ➕ Split vouchers into pages
+  // Split into pages
   const pages = []
   for (let i = 0; i < vouchers.length; i += CARDS_PER_PAGE) {
     pages.push(vouchers.slice(i, i + CARDS_PER_PAGE))
@@ -57,36 +58,40 @@ export default function PrintVouchersPage() {
 
   return (
     <div className="bg-white text-black min-h-screen flex flex-col items-center p-4 print:p-0">
-      {/* ===== Header (hidden during print) ===== */}
-      <div className="print:hidden flex justify-between items-center w-full max-w-5xl mb-4">
-        <h1 className="text-lg font-semibold">🧾 Voucher Batch</h1>
+      
+      {/* Hidden during print */}
+      <div className="print:hidden mb-4 flex justify-between w-full max-w-4xl">
+        <h1 className="text-xl font-semibold">Voucher Batch Printing</h1>
         <button
           onClick={() => window.print()}
-          className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-sm hover:bg-emerald-700"
+          className="px-3 py-1.5 rounded bg-emerald-600 text-white hover:bg-emerald-700"
         >
           Print Now
         </button>
       </div>
 
       {loading ? (
-        <div className="text-gray-500 py-10 text-sm">Loading vouchers...</div>
-      ) : vouchers.length === 0 ? (
-        <div className="text-gray-500 py-10 text-sm">
-          No vouchers found in this date range.
-        </div>
+        <div className="py-10 text-gray-500">Loading vouchers...</div>
+      ) : pages.length === 0 ? (
+        <div className="py-10 text-gray-500">No vouchers found.</div>
       ) : (
-        <div className="print-area w-full flex flex-col items-center">
+        <div className="w-full flex flex-col items-center print-area">
           {pages.map((page, pageIndex) => (
             <div
               key={pageIndex}
-              className={`
-                page-block
-                grid grid-cols-3 xs:grid-cols-4 sm:grid-cols-5 md:grid-cols-5
-                gap-3 print:gap-x-[6mm] print:gap-y-[6mm]
-                w-full max-w-[210mm] mx-auto
-                print:p-[5mm]
-                ${pageIndex < pages.length - 1 ? 'print:page-break-after' : ''}
-              `}
+className={`
+  page-block 
+  grid 
+  grid-cols-5
+  grid-rows-[repeat(6,38mm)]
+  gap-[6mm]
+  p-[10mm]
+  w-[210mm]
+  h-[270mm]
+  bg-white
+  ${pageIndex < pages.length - 1 ? 'print:page-break-after' : ''}
+`}
+
             >
               {page.map((v) => (
                 <VoucherCard key={v.id} code={v.code} />
@@ -99,16 +104,15 @@ export default function PrintVouchersPage() {
   )
 }
 
-/* ---------------- Voucher Card ---------------- */
+/* ---------------- Voucher Card with CUT MARKS ---------------- */
 function VoucherCard({ code }: { code: string }) {
   const qrRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!qrRef.current) return
-    const qrSize = 100
     const qr = new QRCodeStyling({
-      width: qrSize,
-      height: qrSize,
+      width: 100,
+      height: 100,
       data: `https://tayseercard.vercel.app/v/${encodeURIComponent(code)}`,
       margin: 1,
       dotsOptions: { color: '#00B686', type: 'rounded' },
@@ -121,31 +125,39 @@ function VoucherCard({ code }: { code: string }) {
   }, [code])
 
   return (
-    <div
-      className="
-        voucher-card
-        border border-gray-300 rounded-md bg-white
-        flex flex-col items-center justify-center
-        w-[85px] h-[85px] sm:w-[95px] sm:h-[95px] md:w-[90px] md:h-[90px]
-        shadow-sm print:shadow-none print:border-gray-200
-        p-2 print:p-1
-        break-inside-avoid
-      "
-    >
+    <div className="relative flex flex-col items-center justify-center w-[38mm] h-[38mm] border border-gray-300 p-2 bg-white break-inside-avoid">
+      
+      {/* Cut Marks (Corners) */}
+      <div className="absolute -top-[2mm] left-1/2 w-[10mm] h-[0.2mm] bg-black"></div>
+      <div className="absolute -bottom-[2mm] left-1/2 w-[10mm] h-[0.2mm] bg-black"></div>
+      <div className="absolute top-1/2 -left-[2mm] h-[10mm] w-[0.2mm] bg-black"></div>
+      <div className="absolute top-1/2 -right-[2mm] h-[10mm] w-[0.2mm] bg-black"></div>
+
+      {/* QR CODE */}
       <div ref={qrRef} className="flex items-center justify-center h-full w-full" />
-      <p className="text-[7px] font-medium tracking-widest mt-1 select-none">
-        {code}
-      </p>
+
+    
     </div>
   )
 }
 
-/* ✅ Add global print CSS in same file or globals.css:
+/* -------------- GLOBAL PRINT CSS -------------- */
+
+//
+// Add in this same file or inside globals.css
+//
+/*
 @media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
   .page-block {
     page-break-after: always;
     page-break-inside: avoid;
   }
+
   .break-inside-avoid {
     break-inside: avoid;
   }

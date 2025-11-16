@@ -98,26 +98,33 @@
   margin: 5mm;
 }
 
-@media print {
-  .page-block {
-    page-break-after: always;
-    page-break-inside: avoid;
-  }
-  .break-inside-avoid {
-    break-inside: avoid;
-  }
-}
+
 /* === Print Styles === */
+
 @media print {
-  /* ✅ Prevent elements from splitting between pages */
-  .avoid-break {
+
+   @page {
+    size: A4;
+    margin: 0; /* printer handles real margins */
+  }
+    .break-inside-avoid {
     break-inside: avoid;
-    page-break-inside: avoid;
   }
 
+  /* ✅ Prevent elements from splitting between pages */
+  .avoid-break {
+    break-inside: always;
+  }
+ /* Avoid page breaks inside grids/pages */
+  .page-block {
+    page-break-inside: avoid;
+    page-break-after: always;
+  }
+  
+  
   /* ✅ Extra margin to prevent clipping on bottom edge */
   .print-area {
-    margin-bottom: 10mm;
+    margin-bottom: 5mm;
   }
 
   html,
@@ -149,7 +156,7 @@
     background: white !important;
     width: 100%;
     margin: 0 auto;
-    padding: 5mm;
+    padding: 2mm;
     box-sizing: border-box;
     page-break-after: always;
     
@@ -162,8 +169,8 @@
   justify-content: center !important;
   flex-direction: column !important;
   text-align: center !important;
-  width: 20mm !important;
-  height: 20mm !important;
+  width: 15mm !important;
+  height: 15mm !important;
   border: 1px solid #ccc !important;
   box-shadow: none !important;
   background: white !important;
