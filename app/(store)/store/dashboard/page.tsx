@@ -120,29 +120,29 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
     })()
   }, [supabase])
   
-{notifOpen && (
-  <NotificationModal
-    open={notifOpen}
-    onClose={closeNotifModal}
-  />
-)}
+
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 md:px-10 py-8 space-y-8">
       <StoreHeader
+   
    rightContent={
           <NotificationBell onOpen={() => setNotifOpen(true)}
-          
-            refreshSignal={notifRefresh}
- />
+          refreshSignal={notifRefresh}/>
         }
               store={store || { name: 'Loading…', email: '', role: '', logoUrl: '' }} />
 
 
-        <NotificationModal
-          open={notifOpen}
-          onClose={() => setNotifOpen(false)}
-         
-        />
+         {/* ✅ Notification Modal goes here */}
+    <NotificationModal
+      open={notifOpen}
+      onClose={closeNotifModal}
+      onClickNotification={(notif) => {
+        if (notif.request_id) {
+          router.push(`/store/requests?highlight=${notif.request_id}`)
+        }
+        setNotifOpen(false)
+      }}
+    />
       {loading ? (
         <div className="py-20 text-center text-[var(--c-text)]/50 text-sm animate-pulse">
           {t.loadingDashboard}

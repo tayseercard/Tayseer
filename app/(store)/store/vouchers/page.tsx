@@ -457,14 +457,14 @@ function VoucherRequestModal({
   storeId,
   adminId,
   storeName,
-  requestId
+  requestId,
 }: {
   onClose: () => void
   supabase: any
   storeId: string | null
   adminId: string | null
   storeName: string | null
-  requestId : string | null
+  requestId:string | null
 }) {
   const [count, setCount] = useState(10)
   const [saving, setSaving] = useState(false)
@@ -475,28 +475,31 @@ function VoucherRequestModal({
 
     setSaving(true)
 
-    // 1️⃣ Insert voucher request
-    const { error } = await supabase.from("voucher_requests").insert({
-      store_id: storeId,
-      store_name: storeName,
-      admin_id: adminId,
-      count
-    })
+    // 1️⃣ Insert request and retrieve new request ID
+    const { data: newReq, error } = await supabase
+      .from("voucher_requests")
+      .insert({
+        store_id: storeId,
+        store_name: storeName,
+        count,
+      })
+      .select()
+      .single()
 
     if (error) {
       setSaving(false)
       return alert("Erreur: " + error.message)
     }
 
-    // 2️⃣ Notify admin
+    // 2️⃣ Notify admin (with request_id)
     if (adminId) {
       await supabase.from("notifications").insert({
         user_id: adminId,
         title: "Nouvelle demande de vouchers",
-        message: `${storeName} demande ${count} vouchers`,
-        request_id: requestId, // ⭐ link to the request
-        type: "voucher_request_status" 
-
+        message: `${storeName} a demandé ${count} vouchers`,
+        request_id: newReq.id,   // ⭐ FIXED
+        type: "voucher_request",
+        read: false,
       })
     }
 
@@ -529,10 +532,18 @@ function VoucherRequestModal({
         >
           {saving ? "Envoi…" : "Envoyer la demande"}
         </button>
+
+        <button
+          onClick={onClose}
+          className="mt-2 w-full py-2 bg-gray-100 rounded-lg text-gray-700"
+        >
+          Annuler
+        </button>
       </div>
     </div>
   )
 }
+
 
 /* ---------- Helpers ---------- */
 function Th({ children, rtl = false }: { children: React.ReactNode; rtl?: boolean }) {

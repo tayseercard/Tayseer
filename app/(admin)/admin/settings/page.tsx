@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import {
   User,
@@ -117,10 +116,10 @@ export default function SettingsPage() {
               onClick={() => setActiveModal('language')}
             />
             <SettingRow
-              icon={<Shield />}
-              label={t.roles}
-              onClick={() => setActiveModal('roles')}
-            />
+  icon={<Shield />}
+  label={t.roles}
+  onClick={() => router.push("/admin/settings/roles")}
+/>
           </div>
         </div>
 
@@ -169,7 +168,7 @@ export default function SettingsPage() {
               }}
             />
           )}
-          {activeModal === 'roles' && <RolesSettings t={t} />}
+{activeModal === 'roles' && <RolesSettings t={t} />}
         </SettingsModal>
       )}
     </div>

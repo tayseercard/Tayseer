@@ -1,18 +1,49 @@
-// app/api/admin/list-stores/route.ts
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server"
+import { createClient } from "@supabase/supabase-js"
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+)
 
 export async function GET() {
   const { data, error } = await supabaseAdmin
-    .from("stores")
-    .select("id,name,email,temp_password,temp_password_set,created_at")
-    .order("created_at", { ascending: false });
+  .from("me_effective_role")
+  .select(`
+    user_id,
+    role,
+    store_id,
+    created_at,
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ stores: data });
+    store:stores (
+      id,
+      name,
+      email,
+      address,
+      phone
+    ),
+
+    cashier:cashiers (
+      id,
+      full_name,
+      email,
+      phone,
+      status,
+      store_id,
+      user_id
+    ),
+
+    auth:auth.users!me_effective_role_user_id_fkey (
+      email,
+      raw_user_meta_data
+    )
+  `)
+  .order("created_at", { ascending: false })
+
+  if (error) {
+    console.error("list-users error:", error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ users: data })
 }

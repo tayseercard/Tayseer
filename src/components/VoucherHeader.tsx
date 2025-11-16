@@ -1,11 +1,13 @@
 'use client'
 
-import { Plus, Printer, Store } from 'lucide-react'
+import { Plus, Printer } from 'lucide-react'
 
-export default function StoresHeader({
+export default function VoucherHeader({
   onAdd,
+  onPrint,
 }: {
   onAdd: () => void
+  onPrint: () => void
 }) {
   return (
     <header
@@ -15,37 +17,40 @@ export default function StoresHeader({
         rounded-2xl
         bg-[var(--c-primary)]
         border border-[var(--c-bank)]/20
-        shadow-[0_4px_16px_rgba(0,0,0,0.06)]
-        backdrop-blur-md
+        shadow-md backdrop-blur-lg
         text-white
       "
     >
-      {/* === Left: Title === */}
-      <h1
-        className="
-          flex items-center gap-2
-          text-lg sm:text-xl font-semibold tracking-tight
-        "
-      >
-        <span className="text-white">Add Voucher</span>
-      </h1>
+      <h1 className="text-lg sm:text-xl font-semibold">Vouchers</h1>
 
-      {/* === Right: Add Button === */}
-     
-      <button
-        onClick={onAdd}
-        className="
-          flex items-center justify-center
-          w-10 h-10 sm:w-11 sm:h-11
-          rounded-full
-          bg-[var(--c-accent)] text-white
-          shadow-md hover:bg-[var(--c-accent)]/90
-          active:scale-95 transition
-        "
-        aria-label="Add Store"
-      >
-        <Plus className="h-5 w-5" />
-      </button>
+      <div className="flex items-center gap-3">
+        {/* PRINT BUTTON */}
+        <button
+          onClick={onPrint}
+          className="
+            flex items-center justify-center
+            w-10 h-10 rounded-full
+            bg-white/20 text-white
+            hover:bg-white/30 active:scale-95 transition
+          "
+        >
+          <Printer className="h-5 w-5" />
+        </button>
+
+        {/* ADD BUTTON */}
+        <button
+          onClick={onAdd}
+          className="
+            flex items-center justify-center
+            w-10 h-10 rounded-full
+            bg-[var(--c-accent)] text-white
+            hover:bg-[var(--c-accent)]/90
+            active:scale-95 transition
+          "
+        >
+          <Plus className="h-5 w-5" />
+        </button>
+      </div>
     </header>
   )
 }

@@ -21,6 +21,7 @@ import {
   Filter,
   ListChecks,
 } from 'lucide-react'
+import PrintVouchersModal from '@/components/PrintVouchersModal'
 
 
 export default function AdminVouchersPage() {
@@ -49,6 +50,7 @@ export default function AdminVouchersPage() {
   const [selectedStore, setSelectedStore] = useState<'all' | string>('all')
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+const [printOpen, setPrintOpen] = useState(false)
 
 
   
@@ -175,7 +177,13 @@ const totals = useMemo(() => {
         lang === 'ar' ? 'rtl' : 'ltr'
       }`}
     >
-      
+
+      <VoucherHeader
+  onAdd={() => setAdding(true)}
+  onPrint={() => setPrintOpen(true)}
+/>
+
+
 
 {/* ===== Totals Section (Always One Row) ===== */}
 {!loading && filtered.length > 0 && (
@@ -364,7 +372,15 @@ const totals = useMemo(() => {
 
         )}
       </div>
-      
+      {printOpen && (
+  <PrintVouchersModal
+    open={printOpen}
+    onClose={() => setPrintOpen(false)}
+    stores={stores}  
+
+  />
+)}
+
 
       {/* Pagination */}
       {!loading && filtered.length > ITEMS_PER_PAGE && (
