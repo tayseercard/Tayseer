@@ -17,6 +17,7 @@ import CountUp from 'react-countup'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import NotificationBell from '@/components/NotificationBell'
 import NotificationModal from '@/components/NotificationModal'
+import NotificationPanel from '@/components/NotificationPanel'
 
 export default function StoreDashboardPage() {
   const { t } = useLanguage()
@@ -137,14 +138,28 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
          {/* ✅ Notification Modal goes here */}
     <NotificationModal
       open={notifOpen}
-      onClose={closeNotifModal}
-      onClickNotification={(notif) => {
-        if (notif.request_id) {
-          router.push(`/store/requests?highlight=${notif.request_id}`)
-        }
-        setNotifOpen(false)
-      }}
+      onClose={() => setNotifOpen(false)}
+          onClickNotification={(n) => {
+                //setNotifOpen(false)
+
+                // If the notif is linked to a voucher request
+                if (n.request_id) {
+                  router.push(`/store/voucher-requests?id=${n.request_id}`)
+                  return
+                }
+
+                // Fallback
+                router.push("/store/requests")
+              }}
+
     />
+
+                <NotificationPanel
+                  open={notifOpen}
+                  onClose={() => setNotifOpen(false)}
+                  onRefreshCount={() => setNotifRefresh((n) => n + 1)}
+                />
+
       {loading ? (
         <div className="py-20 text-center text-[var(--c-text)]/50 text-sm animate-pulse">
           {t.loadingDashboard}

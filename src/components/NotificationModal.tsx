@@ -43,17 +43,40 @@ export default function NotificationModal({
     setLoading(false)
   }
 
- function handleNotificationClick(n: any) {
-  if (n.request_id) {
-    router.push(`/store/requests?highlight=${n.request_id}`)
+  async function handleNotificationClick(n: any) {
+    const { data: { session } } = await supabase.auth.getSession()
+    const userId = session?.user?.id
+    if (!userId) return
+
+    // Get role from me_effective_role
+    const { data: roleRow } = await supabase
+      .from("me_effective_role")
+      .select("role")
+      .eq("user_id", userId)
+      .maybeSingle()
+
+    const role = roleRow?.role ?? "admin" // default admin
+
+    //  If notification is linked to a voucher request
+    if (n.id) {
+      if (role === "admin") {
+        router.push(`/admin/voucher-requests?id=${n.id}`)
+      } else {
+        router.push(`/store/voucher-requests?id=${n.id}`)
+      }
+      onClose()
+      return
+    }
+
+    // If no request_id → go to correct notification page
+    if (role === "admin") {
+      router.push(`/admin/voucher-requests?id=${n.id}`)
+    } else {
+      router.push(`/store/requests`)
+    }
+
     onClose()
-    return
   }
-
-  // Fallback
-  onClose()
-}
-
 
   /* ---------------- MARK ALL READ ---------------- */
   async function markAllRead() {

@@ -127,6 +127,25 @@
     margin-bottom: 5mm;
   }
 
+  .request-highlight {
+  animation: flashGlow 1.8s ease-out forwards;
+}
+
+@keyframes flashGlow {
+  0% {
+    background: #fff3b0;
+    box-shadow: 0 0 12px #ffe58f;
+  }
+  50% {
+    background: #fffbe2;
+    box-shadow: 0 0 20px #ffe58f;
+  }
+  100% {
+    background: white;
+    box-shadow: none;
+  }
+}
+
   html,
   body {
     margin: 0 !important;

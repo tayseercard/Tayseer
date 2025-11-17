@@ -143,39 +143,41 @@ console.log('🧠 Current user role:', role)
       {/* === HEADER === */}
       <DashboardHeader
         rightContent={
+
             <NotificationBell 
               onOpen={() => setNotifOpen(true)} 
               refreshSignal={notifRefresh} />}
-        
+              
                user={{
-          name: "Tayseer Admin",
-          email: "admin@tayseer.app",
-          role: "Admin",
-          avatarUrl: "/icon-192-2.png"
-        }}
-      />
-     <NotificationPanel
-  open={notifOpen}
-  onClose={() => setNotifOpen(false)}
-  onRefreshCount={() => setNotifRefresh((n) => n + 1)}
-/>
+                  name: "Tayseer Admin",
+                  email: "admin@tayseer.app",
+                  role: "Admin",
+                  avatarUrl: "/icon-192-2.png"
+                }}
+                />
 
-<NotificationModal
-  open={notifOpen}
-  onClose={() => setNotifOpen(false)}
-  onClickNotification={(n) => {
-    setNotifOpen(false)
+            <NotificationPanel
+              open={notifOpen}
+              onClose={() => setNotifOpen(false)}
+              onRefreshCount={() => setNotifRefresh((n) => n + 1)}
+            />
 
-    // If the notif is linked to a voucher request
-    if (n.request_id) {
-      router.push(`/admin/voucher-requests?id=${n.request_id}`)
-      return
-    }
+            <NotificationModal
+              open={notifOpen}
+              onClose={() => setNotifOpen(false)}
+              onClickNotification={(n) => {
+                //setNotifOpen(false)
 
-    // Fallback
-    router.push("/admin/notifications")
-  }}
-/>
+                // If the notif is linked to a voucher request
+                if (n.request_id) {
+                  router.push(`/admin/voucher-requests?id=${n.request_id}`)
+                  return
+                }
+
+                // Fallback
+                router.push("/admin/notifications")
+              }}
+            />
 
 
       {/* === SUMMARY STATS === */}

@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Check, X, Calendar, Filter } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 
 export default function AdminVoucherRequestsPage() {
   const supabase = createClientComponentClient()
 
+  const params = useSearchParams()
   const [rows, setRows] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
+  const highlightId = params.get("id") 
   // Filters
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -31,6 +33,27 @@ export default function AdminVoucherRequestsPage() {
     loadRequests()
   }, [])
 
+// ⭐ Highlight effect when coming from notifications
+  useEffect(() => {
+    if (!highlightId) return
+
+    const element = document.getElementById(`req-${highlightId}`)
+    if (!element) return
+
+    element.classList.add("request-highlight")
+
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    })
+
+    const timeout = setTimeout(() => {
+      element.classList.remove("request-highlight")
+    }, 2000)
+
+    return () => clearTimeout(timeout)
+  }, [highlightId])
+  
   /* ---------- APPROVE REQUEST ---------- */
   async function approveRequest(req: any) {
     if (!confirm(`Approve ${req.count} vouchers for ${req.store_name}?`)) return
@@ -65,9 +88,9 @@ export default function AdminVoucherRequestsPage() {
         title: 'Demande approuvée',
         message: `${req.count} vouchers ont été ajoutés à votre magasin.`,
         type: "voucher_request_approved",
-        request_id: req.id, // ⭐ link back to this request
+        request_id: req.id, //  link back to this request
 
-      })
+      }as any)
     }
 
     alert('✅ Request approved & vouchers created!')
@@ -179,7 +202,9 @@ export default function AdminVoucherRequestsPage() {
           <p className="text-gray-500">No requests found.</p>
         ) : (
           filtered.map((req) => (
-            <div key={req.id} className="bg-white p-4 rounded-xl border shadow-sm space-y-2">
+            <div key={req.id}
+             id={`req-${req.id}`} 
+            className="bg-white p-4 rounded-xl border shadow-sm space-y-2">
               <div className="flex justify-between">
                 <h3 className="font-semibold">{req.store_name}</h3>
                 <StatusBadge status={req.status} />
@@ -239,7 +264,9 @@ export default function AdminVoucherRequestsPage() {
             </thead>
             <tbody>
               {filtered.map((req) => (
-                <tr key={req.id} className="border-b hover:bg-gray-50">
+                <tr key={req.id} 
+                id={`req-${req.id}`}
+                className="border-b hover:bg-gray-50">
                   <Td>{req.store_name}</Td>
                   <Td>{req.count}</Td>
                   <Td>{new Date(req.created_at).toLocaleDateString()}</Td>

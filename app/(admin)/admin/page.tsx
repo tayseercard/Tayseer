@@ -9,7 +9,8 @@ import { useLanguage } from '@/lib/useLanguage'
 import { motion } from 'framer-motion'
 import NotificationBell from '@/components/NotificationBell'
 import NotificationModal from '@/components/NotificationModal'
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
+import NotificationPanel from '@/components/NotificationPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -141,10 +142,10 @@ console.log('🧠 Current user role:', role)
      
       {/* === HEADER === */}
       <DashboardHeader
-
-rightContent={
-    <NotificationBell onOpen={() => setNotifOpen(true)} refreshSignal={notifRefresh}/>
-  }
+        rightContent={
+            <NotificationBell 
+              onOpen={() => setNotifOpen(true)} 
+              refreshSignal={notifRefresh} />}
         
                user={{
           name: "Tayseer Admin",
@@ -153,11 +154,17 @@ rightContent={
           avatarUrl: "/icon-192-2.png"
         }}
       />
+     <NotificationPanel
+  open={notifOpen}
+  onClose={() => setNotifOpen(false)}
+  onRefreshCount={() => setNotifRefresh((n) => n + 1)}
+/>
+
 <NotificationModal
   open={notifOpen}
   onClose={() => setNotifOpen(false)}
   onClickNotification={(n) => {
-    setNotifOpen(false)
+    //setNotifOpen(false)
 
     // If the notif is linked to a voucher request
     if (n.request_id) {
@@ -306,7 +313,12 @@ rightContent={
               </ul>
             )}
           </DashboardCard>
+
+
+
+          
         </div>
+
       )}
     </div>
   )
@@ -339,6 +351,8 @@ function DashboardStatCard({
     </div>
   )
 }
+
+
 
 function SectionTitle({ icon, title, href }: { icon: React.ReactNode; title: string; href?: string }) {
   const { t } = useLanguage()
