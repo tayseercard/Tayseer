@@ -8,7 +8,9 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import VoucherScanner from '@/components/VoucherScanner'
 import { useLanguage } from '@/lib/useLanguage'
 import RealtimeAdminAlerts from "@/components/RealtimeAdminAlerts"
-
+import NotificationBell from '@/components/NotificationBell'
+import NotificationPanel from '@/components/NotificationPanel'
+import NotificationModal from '@/components/NotificationModal'
 import {
   LayoutDashboard,
   Package,
@@ -20,6 +22,7 @@ import {
   QrCodeIcon,
   Gift,
 } from 'lucide-react'
+import { Toaster } from 'react-hot-toast'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClientComponentClient()
@@ -27,6 +30,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const [scannerOpen, setScannerOpen] = useState(false)
   const { t, lang } = useLanguage()
+const [notifOpen, setNotifOpen] = useState(false)
+  const [notifRefresh, setNotifRefresh] = useState(0)
 
   // ✅ Flip direction live when language changes
   useEffect(() => {
@@ -65,7 +70,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="relative h-8 w-28">
             <Image alt="tayseer" src="/icon-192.png" fill className="object-contain" />
           </div>
-
+      {/* === GLOBAL NOTIFICATION SYSTEM === */}
+      <Toaster position="top-right" />
+       {/* 🔔 Notification Bell stays mounted forever */}
+        <NotificationBell
+          onOpen={() => setNotifOpen(true)}
+          refreshSignal={notifRefresh}
+        />
           {/* Desktop Nav */}
           <nav
             className={`flex items-center gap-2 overflow-x-auto scrollbar-hide ${
@@ -178,6 +189,31 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* ===== Scanner Modal ===== */}
       {scannerOpen && <VoucherScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />}
+
+
+{/* === GLOBAL NOTIFICATION PANEL === */}
+<NotificationPanel
+  open={notifOpen}
+  onClose={() => setNotifOpen(false)}
+  onRefreshCount={() => setNotifRefresh((n) => n + 1)}
+/>
+
+{/* === GLOBAL NOTIFICATION MODAL === */}
+<NotificationModal
+  open={notifOpen}
+  onClose={() => setNotifOpen(false)}
+  onClickNotification={(n) => {
+    setNotifOpen(false)
+    if (n.request_id) {
+      router.push(`/admin/voucher-requests?id=${n.request_id}`)
+    } else {
+      router.push("/admin/notifications")
+    }
+  }}
+/>
+
+
+
     </div>
   )
 }
