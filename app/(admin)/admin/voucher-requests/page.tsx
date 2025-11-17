@@ -1,11 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense,useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Check, X, Calendar, Filter } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-
 export default function AdminVoucherRequestsPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-gray-500">Signing you in…</div>}>
+      <AdminVoucherRequestsPageInner/>
+    </Suspense>
+  )
+}
+function AdminVoucherRequestsPageInner() {
   const supabase = createClientComponentClient()
 
   const params = useSearchParams()
