@@ -17,7 +17,7 @@ export default function NotificationBell({
 
   /* 🔊 Load sound once */
   useEffect(() => {
-    soundRef.current = new Audio('/notify.mp3')
+    soundRef.current = new Audio('public/notify.wav')
   }, [])
 
   /* Realtime listener */
