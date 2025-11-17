@@ -24,13 +24,15 @@ import {
 import { Toaster } from 'react-hot-toast'
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
+
   const supabase = createClientComponentClient()
   const router = useRouter()
   const pathname = usePathname()
   const [scannerOpen, setScannerOpen] = useState(false)
   const [storeName, setStoreName] = useState<string | null>(null)
-const { t, lang } = useLanguage()
-const [notifOpen, setNotifOpen] = useState(false)
+  const { t, lang } = useLanguage()
+
+  const [notifOpen, setNotifOpen] = useState(false)
   const [notifRefresh, setNotifRefresh] = useState(0)
   
   async function handleLogout() {
@@ -86,6 +88,25 @@ const [notifOpen, setNotifOpen] = useState(false)
           onOpen={() => setNotifOpen(true)}
           refreshSignal={notifRefresh}
         />
+
+ {/* === GLOBAL NOTIFICATION PANEL === */}
+      <NotificationPanel
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        onRefreshCount={() => setNotifRefresh((n) => n + 1)}
+      />
+          <NotificationModal
+  open={notifOpen}
+  onClose={() => setNotifOpen(false)}
+  onClickNotification={(n) => {
+    setNotifOpen(false)
+    if (n.request_id) {
+      router.push(`/store/requests?id=${n.request_id}`)
+      return
+    }
+    router.push("/store/notifications")
+  }}
+/>
           {/* Desktop Nav */}
           <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             {[
@@ -191,12 +212,7 @@ const [notifOpen, setNotifOpen] = useState(false)
       )}
 
       
-      {/* === GLOBAL NOTIFICATION PANEL === */}
-      <NotificationPanel
-        open={notifOpen}
-        onClose={() => setNotifOpen(false)}
-        onRefreshCount={() => setNotifRefresh((n) => n + 1)}
-      />
+     
       
       {/* === GLOBAL NOTIFICATION MODAL === */}
       <NotificationModal

@@ -19,6 +19,7 @@ export default function NotificationBell({
   useEffect(() => {
     soundRef.current = new Audio('/notify.wav')
   }, [])
+
   /* Realtime listener */
   useEffect(() => {
     let channel: any = null
@@ -38,9 +39,11 @@ export default function NotificationBell({
         .eq('user_id', userId)
         .eq('read', false)
 
-      setCount(data?.length ?? 0)
+      const unread = data?.length ?? 0
+      setCount(unread)
+      updateAppBadge(unread)
 
-      // 🟢 Create realtime channel 
+      // 🟢 Realtime channel
       channel = supabase
         .channel(`notifications-${userId}`)
         .on(
@@ -52,18 +55,24 @@ export default function NotificationBell({
             filter: `user_id=eq.${userId}`,
           },
           (payload) => {
-            setCount((c) => c + 1)
+            setCount((prev) => {
+              const newCount = prev + 1
+              updateAppBadge(newCount)
+              return newCount
+            })
 
-            // 🔊 Play sound
+            // 🔊 play sound
             if (soundRef.current) {
               soundRef.current.currentTime = 0
               soundRef.current.play().catch(() => {})
             }
 
-            // 🔔 Show toast
+            // 🔔 toast
             toast.success(payload.new.title || 'Nouvelle notification')
           }
         )
+
+        // 🟡 Mark as read
         .on(
           'postgres_changes',
           {
@@ -74,10 +83,16 @@ export default function NotificationBell({
           },
           (payload) => {
             if (payload.old.read === false && payload.new.read === true) {
-              setCount((c) => Math.max(0, c - 1))
+              setCount((prev) => {
+                const newCount = Math.max(0, prev - 1)
+                updateAppBadge(newCount)
+                return newCount
+              })
             }
           }
         )
+
+        // 🔴 Deleted notif
         .on(
           'postgres_changes',
           {
@@ -87,7 +102,11 @@ export default function NotificationBell({
             filter: `user_id=eq.${userId}`,
           },
           () => {
-            setCount((c) => Math.max(0, c - 1))
+            setCount((prev) => {
+              const newCount = Math.max(0, prev - 1)
+              updateAppBadge(newCount)
+              return newCount
+            })
           }
         )
         .subscribe()
@@ -98,9 +117,9 @@ export default function NotificationBell({
     return () => {
       if (channel) supabase.removeChannel(channel)
     }
-  }, []) // only once
+  }, [])
 
-  /* 🔄 Refresh when modal is opened */
+  /* 🔄 When panel opens, refresh count */
   useEffect(() => {
     const reload = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -113,14 +132,22 @@ export default function NotificationBell({
         .eq('user_id', userId)
         .eq('read', false)
 
-      setCount(data?.length ?? 0)
+      const unread = data?.length ?? 0
+      setCount(unread)
+      updateAppBadge(unread)
     }
 
     reload()
   }, [refreshSignal])
 
+  /* 🟦 When user opens panel → clear badge */
+  function handleOpen() {
+    updateAppBadge(0)
+    onOpen()
+  }
+
   return (
-    <div className="relative cursor-pointer" onClick={onOpen}>
+    <div className="relative cursor-pointer" onClick={handleOpen}>
       <svg
         className="w-6 h-6 text-white"
         fill="none"
@@ -142,4 +169,15 @@ export default function NotificationBell({
       )}
     </div>
   )
+}
+
+/* 🟦 PWA App Badge API */
+function updateAppBadge(count: number) {
+  if ('setAppBadge' in navigator) {
+    // @ts-ignore
+    navigator.setAppBadge(count).catch(() => {})
+  } else if ('setExperimentalAppBadge' in navigator) {
+    // @ts-ignore
+    navigator.setExperimentalAppBadge(count).catch(() => {})
+  }
 }
