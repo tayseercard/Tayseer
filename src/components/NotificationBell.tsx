@@ -20,7 +20,7 @@ export default function NotificationBell({
     soundRef.current = new Audio('/notify.mp3')
   }, [])
 
-  /* 🔥 Realtime listener */
+  /* Realtime listener */
   useEffect(() => {
     let channel: any = null
 
@@ -41,7 +41,7 @@ export default function NotificationBell({
 
       setCount(data?.length ?? 0)
 
-      // 🟢 Create realtime channel (IMPORTANT FIX)
+      // 🟢 Create realtime channel 
       channel = supabase
         .channel(`notifications-${userId}`)
         .on(

@@ -1,10 +1,13 @@
 'use client'
 
 import { Plus } from 'lucide-react'
-import React from 'react'
+import React, { useState } from 'react'
+import NotificationPanel from '@/components/NotificationPanel'
+
 
 
 export default function DashboardHeader({
+  
   subtitle,
   icon,
   user,
@@ -19,7 +22,13 @@ export default function DashboardHeader({
   onAdd?: () => void
   actions?: { label: string; onClick: () => void; icon?: React.ReactNode }[]
   rightContent?: React.ReactNode 
-}) {
+  
+}) 
+{
+const [notifOpen, setNotifOpen] = useState(false)
+const [refreshBell, setRefreshBell] = useState(0)
+
+{
   return (
     <header
       className="
@@ -70,4 +79,5 @@ export default function DashboardHeader({
      
     </header>
   )
+}
 }

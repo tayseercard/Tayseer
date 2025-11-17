@@ -10,6 +10,7 @@ import { motion } from 'framer-motion'
 import NotificationBell from '@/components/NotificationBell'
 import NotificationModal from '@/components/NotificationModal'
 import { useRouter } from "next/navigation"
+import NotificationPanel from '@/components/NotificationPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -153,6 +154,12 @@ console.log('🧠 Current user role:', role)
           avatarUrl: "/icon-192-2.png"
         }}
       />
+     <NotificationPanel
+  open={notifOpen}
+  onClose={() => setNotifOpen(false)}
+  onRefreshCount={() => setNotifRefresh((n) => n + 1)}
+/>
+
 <NotificationModal
   open={notifOpen}
   onClose={() => setNotifOpen(false)}
