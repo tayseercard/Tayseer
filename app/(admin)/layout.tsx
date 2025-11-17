@@ -75,6 +75,8 @@ const [notifOpen, setNotifOpen] = useState(false)
           onOpen={() => setNotifOpen(true)}
           refreshSignal={notifRefresh}
         />
+
+        
           {/* Desktop Nav */}
           <nav
             className={`flex items-center gap-2 overflow-x-auto scrollbar-hide ${
