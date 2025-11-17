@@ -144,7 +144,7 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
 
                 // If the notif is linked to a voucher request
                 if (n.request_id) {
-                  router.push(`/store/voucher-requests?id=${n.request_id}`)
+                  router.push(`/store/requests?id=${n.request_id}`)
                   return
                 }
 

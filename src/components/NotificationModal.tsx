@@ -62,7 +62,7 @@ export default function NotificationModal({
       if (role === "admin") {
         router.push(`/admin/voucher-requests?id=${n.id}`)
       } else {
-        router.push(`/store/voucher-requests?id=${n.id}`)
+        router.push(`/store/requests?id=${n.id}`)
       }
       onClose()
       return
