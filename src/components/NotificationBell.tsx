@@ -19,7 +19,6 @@ export default function NotificationBell({
   useEffect(() => {
     soundRef.current = new Audio('/notify.wav')
   }, [])
-
   /* Realtime listener */
   useEffect(() => {
     let channel: any = null
