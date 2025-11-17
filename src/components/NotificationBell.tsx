@@ -13,16 +13,14 @@ export default function NotificationBell({
 }) {
   const supabase = createClientComponentClient()
   const [count, setCount] = useState(0)
-
-  // 🔊 Prepare sound (keep same instance)
   const soundRef = useRef<HTMLAudioElement | null>(null)
 
+  /* 🔊 Load sound once */
   useEffect(() => {
-    if (!soundRef.current) {
-      soundRef.current = new Audio('/notify.mp3')
-    }
+    soundRef.current = new Audio('/notify.mp3')
   }, [])
 
+  /* 🔥 Realtime listener */
   useEffect(() => {
     let channel: any = null
 
@@ -34,20 +32,18 @@ export default function NotificationBell({
       const userId = session?.user?.id
       if (!userId) return
 
-      // Load initial unread notifications
+      // Load unread notifications
       const { data } = await supabase
         .from('notifications')
         .select('id')
         .eq('user_id', userId)
         .eq('read', false)
 
-      setCount(data?.length || 0)
+      setCount(data?.length ?? 0)
 
-      // Realtime channel
+      // 🟢 Create realtime channel (IMPORTANT FIX)
       channel = supabase
         .channel(`notifications-${userId}`)
-
-        // 🟢 INSERT
         .on(
           'postgres_changes',
           {
@@ -65,15 +61,10 @@ export default function NotificationBell({
               soundRef.current.play().catch(() => {})
             }
 
-            // 🔥 Toast popup
-            toast.success(payload.new.title || "New notification", {
-              duration: 4000,
-              position: "top-right",
-            })
+            // 🔔 Show toast
+            toast.success(payload.new.title || 'Nouvelle notification')
           }
         )
-
-        // 🟡 UPDATE
         .on(
           'postgres_changes',
           {
@@ -88,8 +79,6 @@ export default function NotificationBell({
             }
           }
         )
-
-        // 🔴 DELETE
         .on(
           'postgres_changes',
           {
@@ -102,19 +91,17 @@ export default function NotificationBell({
             setCount((c) => Math.max(0, c - 1))
           }
         )
-
         .subscribe()
     }
 
     init()
 
-    // Cleanup
     return () => {
       if (channel) supabase.removeChannel(channel)
     }
-  }, []) // no deps
+  }, []) // only once
 
-  // Manual refresh (after opening panel)
+  /* 🔄 Refresh when modal is opened */
   useEffect(() => {
     const reload = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -127,7 +114,7 @@ export default function NotificationBell({
         .eq('user_id', userId)
         .eq('read', false)
 
-      setCount(data?.length || 0)
+      setCount(data?.length ?? 0)
     }
 
     reload()
