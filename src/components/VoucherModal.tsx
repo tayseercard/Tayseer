@@ -110,38 +110,6 @@ useEffect(() => {
   fetchStore();
 }, [supabase]);
 
-useEffect(() => {
-  const target =
-    voucher.status === "blank" ? qrRefBlank.current :
-    voucher.status === "active" ? qrRefActive.current :
-    voucher.status === "redeemed" ? qrRefRedeemed.current :
-    null;
-
-  if (!target) return;
-
-  const isMobile = window.innerWidth < 640;
-  const size = isMobile ? 90 : 180;
-
-  const qr = new QRCodeStyling({
-    width: size,
-    height: size,
-    data: voucherDeepLink(voucher.code),
-    margin: 4,
-    dotsOptions: { color: '#000', type: 'rounded' },
-    backgroundOptions: { color: '#fff' },
-    image: '/logo7mm.png',
-    imageOptions: { crossOrigin: 'anonymous', margin: 2 },
-  });
-
-  target.innerHTML = "";
-  qr.append(target);
-
-  // ⭐ Export PNG
-  qr.getRawData("png").then((blob) => {
-    const url = URL.createObjectURL(blob);
-    setQrPng(url);
-  });
-}, [voucher.code, voucher.status]);
 
 
 useEffect(() => {
@@ -526,10 +494,10 @@ useEffect(() => {
       </div>
 
        <button
-  onClick={() => handlePrintReceipt("58mm")} 
+  onClick={handlePrintQROnly}
   className="mt-3 px-3 py-1.5 bg-[var(--c-accent)] text-white rounded-md text-xs"
 >
-  🧾 Print (58mm)
+  🧾 Print Qr Only
 </button>
 
 
@@ -660,13 +628,13 @@ useEffect(() => {
   
 
 
-function handlePrintReceipt(size: "58mm" | "80mm") {
+function handlePrintReceipt(size: "30mm" | "35mm") {
   if (!qrPng) {
     alert("QR loading… please wait 1s");
     return;
   }
 
-  const width = size === "58mm" ? "58mm" : "80mm";
+  const width = size === "30mm" ? "30mm" : "35mm";
 
   const win = window.open("", "_blank", "width=350,height=600");
   if (!win) return;
@@ -688,8 +656,8 @@ function handlePrintReceipt(size: "58mm" | "80mm") {
           }
 
           img.qr {
-            width: 150px;
-            height: 150px;
+            width: 100px;
+            height: 100px;
             margin-bottom: 10px;
           }
 
@@ -707,21 +675,12 @@ function handlePrintReceipt(size: "58mm" | "80mm") {
 
       <body>
 
-        <h3>BON D'ACHAT</h3>
 
         <img class="qr" src="${qrPng}" />
 
-        <div class="line"></div>
+       
 
-        <div class="row"><span>Amount:</span><span>${voucher.initial_amount} DZD</span></div>
-        <div class="row"><span>Buyer:</span><span>${voucher.buyer_name || "—"}</span></div>
-        <div class="row"><span>To:</span><span>${voucher.recipient_name || "—"}</span></div>
-
-        <div class="line"></div>
-
-        <p>Valid 6 months from activation</p>
-        <p style="margin-top:8px;font-size:10px"> <b>${storeName}</b><br>
-  ${new Date().toLocaleDateString()}</p>
+        
 
         <script>
           window.onload = () => { window.print(); window.onafterprint = window.close; }
@@ -732,6 +691,55 @@ function handlePrintReceipt(size: "58mm" | "80mm") {
   `);
 
   win.document.close();
+}
+
+function handlePrintQROnly() {
+  if (!qrPng) {
+    alert("QR code is still loading…");
+    return;
+  }
+
+  const win = window.open("", "_blank", "width=400,height=500");
+
+  win!.document.write(`
+    <html>
+      <head>
+        <title>Print QR</title>
+        <style>
+          @page { 
+            margin: 0; 
+          }
+
+          body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+
+          img {
+  margin: auto;
+  display: block;
+  width: 260px;
+  height: 260px;
+}
+        </style>
+      </head>
+
+      <body>
+        <img src="${qrPng}" />
+        <script>
+          window.onload = () => {
+            window.print();
+            window.onafterprint = window.close;
+          }
+        </script>
+      </body>
+    </html>
+  `);
+
+  win!.document.close();
 }
 
 
