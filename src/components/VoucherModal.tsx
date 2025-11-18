@@ -110,43 +110,46 @@ useEffect(() => {
   fetchStore();
 }, [supabase]);
 
-
-
 useEffect(() => {
   const target =
-    voucher.status === "blank"   ? qrRefBlank.current :
-    voucher.status === "active"  ? qrRefActive.current :
-    voucher.status === "redeemed"? qrRefRedeemed.current :
+    voucher.status === "blank" ? qrRefBlank.current :
+    voucher.status === "active" ? qrRefActive.current :
+    voucher.status === "redeemed" ? qrRefRedeemed.current :
     null;
 
   if (!target) return;
 
-  // detect screen width → choose QR size
-  const isMobile = window.innerWidth < 640 // sm breakpoint
-  const size = isMobile ? 90 : 180 // smaller on phone, bigger on desktop
+  const isMobile = window.innerWidth < 640;
+  const size = isMobile ? 90 : 180;
 
   const qr = new QRCodeStyling({
     width: size,
     height: size,
     data: voucherDeepLink(voucher.code),
     margin: 4,
-    dotsOptions: {
-      color: '--c-text', // Tayseer green
-      type: 'rounded',
-    },
-    backgroundOptions: {
-      color: '#ffffff',
-    },
+    dotsOptions: { color: '#000', type: 'rounded' },
+    backgroundOptions: { color: '#fff' },
     image: '/logo7mm.png',
-    imageOptions: {
-      crossOrigin: 'anonymous',
-      margin: 2,
-    },
-  })
+    imageOptions: { crossOrigin: 'anonymous', margin: 2 },
+  });
 
   target.innerHTML = "";
   qr.append(target);
+
+  // ⭐ Export PNG
+  qr.getRawData("png").then((blob) => {
+  if (!blob || !(blob instanceof Blob)) {
+    console.error("QR export failed, invalid blob:", blob);
+    return;
+  }
+
+  const url = URL.createObjectURL(blob);
+  setQrPng(url);
+});
+
 }, [voucher.code, voucher.status]);
+
+
 
 
 
