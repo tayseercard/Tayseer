@@ -123,15 +123,15 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 md:px-10 py-8 space-y-8">
-      <StoreHeader
-   
-   rightContent={
+      <StoreHeader 
+      rightContent={
           <NotificationBell 
           onOpen={() => 
             setNotifOpen(true)}
           refreshSignal={notifRefresh}/>
-        }
-              store={store || { name: 'Loading…', email: '', role: '', logoUrl: '' }} />
+        } 
+        
+        store={store || { name: 'Loading…', email: '', role: '', logoUrl: '' }} />
 
 
          {/* ✅ Notification Modal goes here */}

@@ -1,6 +1,6 @@
 'use client'
 
-import VoucherHeader from '@/components/VoucherHeader'
+import StoreHeader from '@/components/store/StoreHeader'
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Menu, Combobox } from '@headlessui/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -33,55 +33,75 @@ export default function StoreVouchersPage() {
 
 /* =================== MAIN PAGE =================== */
  function StoreVouchersInner() {
+
+  const [store, setStore] = useState<{ name: string; email: string; role: string; logoUrl?: string } | null>(null)
   const { t, lang } = useLanguage()
   const supabase = createClientComponentClient()
   const params = useSearchParams()
-
   const [rows, setRows] = useState<any[]>([])
   const [stores, setStores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null)
-
-
   const [userRole, setUserRole] = useState<string | null>(null)
   const [storeName, setStoreName] = useState<string | null>(null)
-const [adminId, setAdminId] = useState<string[]>([])
-const [requestId,setrequestId] = useState<string | null>(null)
+  const [adminId, setAdminId] = useState<string[]>([])
+  const [requestId,setrequestId] = useState<string | null>(null)
   const [openRequestModal, setOpenRequestModal] = useState(false)
-
   const [storeId, setStoreId] = useState<string | null>(null)
-  const [count, setCount] = useState(1)
   const [q, setQ] = useState('')
   const [selectedStore, setSelectedStore] = useState<'all' | string>('all')
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-
-
-
   
-  /* ---------- Pagination ---------- */
+  //Pagination
   const ITEMS_PER_PAGE = 10
   const [page, setPage] = useState(1)
   const totalPages = useMemo(() => Math.ceil(rows.length / ITEMS_PER_PAGE), [rows])
 
-    // load all admins
+  // load store
 
   useEffect(() => {
-  (async () => {
-    const { data, error } = await supabase
-      .from("me_effective_role")
-      .select("user_id")
-      .eq("role", "admin")
+    ;(async () => {
+      setLoading(true)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const user = session?.user
+      if (!user) return
 
-    if (error) {
-      console.log("Load admins failed:", error)
-      return
-    }
+      const { data: storeRow } = await supabase
+        .from('stores')
+        .select('name, email, logo_url')
+        .eq('owner_user_id', user.id)
+        .maybeSingle()
 
-    // Extract IDs into array
-    setAdminId(data.map(a => a.user_id))
-  })()
-}, [supabase])
+      setStore({
+        name: storeRow?.name || 'Store',
+        email: storeRow?.email || user.email || '',
+        role: 'Store Owner',
+        logoUrl: storeRow?.logo_url || '/icon-192.png',
+      })
+
+      const { data: roleRow } = await supabase
+        .from('me_effective_role')
+        .select('store_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      const storeId = roleRow?.store_id
+     
+
+      const { data: vouchersData } = await supabase
+        .from('vouchers')
+        .select('*')
+        .eq('store_id', storeId)
+
+    
+      
+      setLoading(false)
+    })()
+  }, [supabase])
+
  // ✅ Read status from query (?status=active)
   useEffect(() => {
     const s = params.get('status')
@@ -99,6 +119,8 @@ const [requestId,setrequestId] = useState<string | null>(null)
       const userId = session?.user.id
       if (!userId) return
 
+
+      
       // fetch role/store_id
       const { data: roleRow } = await supabase
         .from('me_effective_role')
@@ -130,8 +152,7 @@ const [requestId,setrequestId] = useState<string | null>(null)
   }, [selectedStatus, supabase]) 
 
   
-  /* -------- Load data -------- */
- /* ---------- Load vouchers ---------- */
+ //Load vouchers 
   useEffect(() => {
     ;(async () => {
       if (!storeId) return
@@ -154,7 +175,7 @@ const [requestId,setrequestId] = useState<string | null>(null)
     })()
   }, [storeId, selectedStatus, supabase])
 
-/* -------- Load data -------- */
+  //Load data 
   async function loadData() {
     setLoading(true)
     const [{ data: vouchers }, { data: storesData }] = await Promise.all([
@@ -170,13 +191,10 @@ const [requestId,setrequestId] = useState<string | null>(null)
   useEffect(() => {
     loadData()
   }, [])
-
-
   
   /* -------- Filters -------- */
   const filtered = useMemo(() => {
   let data = rows
-
   if (selectedStore !== 'all') data = data.filter(v => v.store_id === selectedStore)
   if (selectedStatus !== 'all') data = data.filter(v => v.status === selectedStatus)
 
@@ -214,18 +232,17 @@ const totals = useMemo(() => {
     return filtered.slice(start, start + ITEMS_PER_PAGE)
   }, [filtered, page])
 
- 
-
   const getStoreName = (id: string) => stores.find((s) => s.id === id)?.name ?? '—'
-
- 
-
 
   /* -------- UI -------- */
   return (
  <div className={`min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-6 space-y-8 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
 
-      {/* ⭐ Store owner request button */}
+      <StoreHeader 
+        store={store || { name: 'Store Loading…', email: '', role: '', logoUrl: '' }} 
+      />
+
+      {/* Store owner request button */}
       {userRole === "store_owner" && (
         <button
           onClick={() => setOpenRequestModal(true)}
@@ -235,103 +252,98 @@ const totals = useMemo(() => {
         </button>
       )}
 
-{/* ===== Totals Section (Always One Row) ===== */}
-{!loading && filtered.length > 0 && (
-  <div
-    className="
-      bg-white/70 border border-gray-100 shadow-sm p-2 rounded-xl text-sm
-      flex  items-center gap-2 text-center overflow-x-auto no-scrollbar
-      whitespace-nowrap mb-0
-    "
-  >
-    {/* Initial */}
-    <div className="flex flex-col min-w-[100px]">
-      <span className="text-gray-600 text-xs">
-        {selectedStatus === 'all'
-          ? t.totalAllVouchers || 'All vouchers'
-          : `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} total`}
-      </span>
-      <span className="font-semibold text-gray-900 text-base">
-        {fmtDZD(totals.totalInitial, lang)}
-      </span>
-    </div>
+      {/* ===== Totals Section (Always One Row) ===== */}
+      {!loading && filtered.length > 0 && (
+        <div
+          className="
+            bg-white/70 border border-gray-100 shadow-sm p-2 rounded-xl text-sm
+            flex  items-center gap-2 text-center overflow-x-auto no-scrollbar
+            whitespace-nowrap mb-0
+          "
+        >
+          {/* Initial */}
+          <div className="flex flex-col min-w-[100px]">
+            <span className="text-gray-600 text-xs">
+              {selectedStatus === 'all'
+                ? t.totalAllVouchers || 'All vouchers'
+                : `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} total`}
+            </span>
+            <span className="font-semibold text-gray-900 text-base">
+              {fmtDZD(totals.totalInitial, lang)}
+            </span>
+          </div>
 
-    {/* Remaining */}
-    <div className="flex flex-col min-w-[100px] text-center">
-      <span className="text-gray-600 text-xs">Remaining</span>
-      <span className="font-semibold text-emerald-700 text-base">
-        {fmtDZD(totals.totalBalance, lang)}
-      </span>
-    </div>
+          {/* Remaining */}
+          <div className="flex flex-col min-w-[100px] text-center">
+            <span className="text-gray-600 text-xs">Remaining</span>
+            <span className="font-semibold text-emerald-700 text-base">
+              {fmtDZD(totals.totalBalance, lang)}
+            </span>
+          </div>
 
-    {/* Consumed */}
-    <div className="flex flex-col min-w-[100px] text-center">
-      <span className="text-gray-600 text-xs">Consumed</span>
-      <span className="font-semibold text-rose-600 text-base">
-        {fmtDZD(totals.consumed, lang)}
-      </span>
-    </div>
-  </div>
-)}
+          {/* Consumed */}
+          <div className="flex flex-col min-w-[100px] text-center">
+            <span className="text-gray-600 text-xs">Consumed</span>
+            <span className="font-semibold text-rose-600 text-base">
+              {fmtDZD(totals.consumed, lang)}
+            </span>
+          </div>
+        </div>
+      )}
 
+      {/* ===== Filters Section ===== */}
+      <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-2 shadow-sm space-y-4">
+        {/* 🔍 Search bar */}
+        <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
+          <Search className="h-4 w-4 text-gray-400" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t.searchByClient || 'Search by client name'}
+            className="flex-1 bg-transparent text-sm focus:outline-none"
+          />
+        </div>
+          {/* 📅 Date Picker */}
+          <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
+            <Calendar className="h-4 w-4 text-gray-400" />
+            <input
+              type="date"
+              className="flex-1 bg-transparent text-sm focus:outline-none"
+              value={selectedDate || ''}
+              onChange={(e) => setSelectedDate(e.target.value || null)}
+            />
+          </div>
 
+      
 
+        
 
-
-
-{/* ===== Filters Section ===== */}
-<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-2 shadow-sm space-y-4">
-  {/* 🔍 Search bar */}
-  <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
-    <Search className="h-4 w-4 text-gray-400" />
-    <input
-      value={q}
-      onChange={(e) => setQ(e.target.value)}
-      placeholder={t.searchByClient || 'Search by client name'}
-      className="flex-1 bg-transparent text-sm focus:outline-none"
-    />
-  </div>
-    {/* 📅 Date Picker */}
-    <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
-      <Calendar className="h-4 w-4 text-gray-400" />
-      <input
-        type="date"
-        className="flex-1 bg-transparent text-sm focus:outline-none"
-        value={selectedDate || ''}
-        onChange={(e) => setSelectedDate(e.target.value || null)}
-      />
-    </div>
-
- 
-
-  
-
-   {/* ⚡ Quick Filter Bar (NEW) */}
-  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-    {[
-      { label: t.all, value: 'all' },
-      { label: t.active, value: 'active' },
-      { label: t.redeemed, value: 'redeemed' },
-      { label: t.blank, value: 'blank' },
-    
-    ].map((f) => (
-      <button
-        key={f.value}
-        onClick={() => setSelectedStatus(f.value)}
-        className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
-          selectedStatus === f.value
-            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
-        }`}
-      >
-        {f.label}
-      </button>
-    ))}
-  </div>
+        {/* ⚡ Quick Filter Bar (NEW) */}
+        <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+          {[
+            { label: t.all, value: 'all' },
+            { label: t.active, value: 'active' },
+            { label: t.redeemed, value: 'redeemed' },
+            { label: t.blank, value: 'blank' },
+          
+          ].map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setSelectedStatus(f.value)}
+              className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                selectedStatus === f.value
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
 
 
 
-</div>
+      </div>
 
       {/* Mobile Cards */}
       <div className="block md:hidden space-y-3">
@@ -378,7 +390,6 @@ const totals = useMemo(() => {
       </div>
 
       {/* Desktop Table */}
-    
       <div className="hidden md:block rounded-xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm overflow-y-auto"
         style={{ maxHeight: 'calc(100vh - 350px)' }}>
         {loading ? (
@@ -423,7 +434,6 @@ const totals = useMemo(() => {
         )}
       </div>
       
-
       {/* Pagination */}
       {!loading && filtered.length > ITEMS_PER_PAGE && (
         <div className="flex justify-center items-center gap-2 mt-4">
@@ -453,7 +463,7 @@ const totals = useMemo(() => {
         />
       )}
 
-{/* ⭐ Render Voucher Request Modal */}
+      {/* ⭐ Render Voucher Request Modal */}
       {openRequestModal && (
         <VoucherRequestModal
           onClose={() => setOpenRequestModal(false)}
@@ -467,7 +477,6 @@ const totals = useMemo(() => {
     </div>
   )
 }
-
 
 /* ---------- Voucher Request Modal ---------- */
 function VoucherRequestModal({
@@ -568,7 +577,6 @@ if (adminId && adminId.length > 0) {
     </div>
   )
 }
-
 
 /* ---------- Helpers ---------- */
 function Th({ children, rtl = false }: { children: React.ReactNode; rtl?: boolean }) {

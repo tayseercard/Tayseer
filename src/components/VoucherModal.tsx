@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { Store, X } from 'lucide-react'
 import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode'
 import { useLanguage } from '@/lib/useLanguage'
 import QRCodeStyling from 'qr-code-styling'
@@ -43,7 +43,12 @@ export default function VoucherModal({
   const [saving, setSaving] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
-  const qrRef = useRef<HTMLDivElement>(null)
+const qrRefActive = useRef<HTMLDivElement>(null)
+const qrRefBlank = useRef<HTMLDivElement>(null)
+const qrRefRedeemed = useRef<HTMLDivElement>(null)
+const [qrPng, setQrPng] = useState<string | null>(null)
+const [storeName, setStoreName] = useState<string>("Store");
+
   // used for debounce
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
   // Phone number validation
@@ -76,8 +81,78 @@ useEffect(() => {
 }, [supabase])
 
 
+//fetch store name
+useEffect(() => {
+  async function fetchStore() {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData.session?.user;
+    if (!user) return;
+
+    // Get store_id of logged-in user
+    const { data: roleRow } = await supabase
+      .from("me_effective_role")
+      .select("store_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!roleRow?.store_id) return;
+
+    // Fetch store info
+    const { data: storeRow } = await supabase
+      .from("stores")
+      .select("name")
+      .eq("id", roleRow.store_id)
+      .maybeSingle();
+
+    if (storeRow?.name) setStoreName(storeRow.name);
+  }
+
+  fetchStore();
+}, [supabase]);
 
 useEffect(() => {
+  const target =
+    voucher.status === "blank" ? qrRefBlank.current :
+    voucher.status === "active" ? qrRefActive.current :
+    voucher.status === "redeemed" ? qrRefRedeemed.current :
+    null;
+
+  if (!target) return;
+
+  const isMobile = window.innerWidth < 640;
+  const size = isMobile ? 90 : 180;
+
+  const qr = new QRCodeStyling({
+    width: size,
+    height: size,
+    data: voucherDeepLink(voucher.code),
+    margin: 4,
+    dotsOptions: { color: '#000', type: 'rounded' },
+    backgroundOptions: { color: '#fff' },
+    image: '/logo7mm.png',
+    imageOptions: { crossOrigin: 'anonymous', margin: 2 },
+  });
+
+  target.innerHTML = "";
+  qr.append(target);
+
+  // ⭐ Export PNG
+  qr.getRawData("png").then((blob) => {
+    const url = URL.createObjectURL(blob);
+    setQrPng(url);
+  });
+}, [voucher.code, voucher.status]);
+
+
+useEffect(() => {
+  const target =
+    voucher.status === "blank"   ? qrRefBlank.current :
+    voucher.status === "active"  ? qrRefActive.current :
+    voucher.status === "redeemed"? qrRefRedeemed.current :
+    null;
+
+  if (!target) return;
+
   // detect screen width → choose QR size
   const isMobile = window.innerWidth < 640 // sm breakpoint
   const size = isMobile ? 90 : 180 // smaller on phone, bigger on desktop
@@ -101,11 +176,9 @@ useEffect(() => {
     },
   })
 
-  if (qrRef.current) {
-    qrRef.current.innerHTML = ''
-    qr.append(qrRef.current)
-  }
-}, [voucher.code])
+  target.innerHTML = "";
+  qr.append(target);
+}, [voucher.code, voucher.status]);
 
 
 
@@ -356,12 +429,15 @@ useEffect(() => {
             <div className="space-y-3 mb-4">
               <div className="flex flex-col items-center justify-center">
         <div
-          ref={qrRef}
+          ref={qrRefBlank}
           className="h-30 w-30 sm:h-34 sm:w-34
                      scale-90 sm:scale-100
                      rounded-lg border border-[var(--c-bank)]/30 shadow-sm
                      bg-white/80 p-1.5 flex items-center justify-center"
         />
+        
+       
+
        
       </div>
               <Input label="Buyer Name" value={buyerName} onChange={setBuyerName} />
@@ -440,7 +516,7 @@ useEffect(() => {
 
       <div className="flex flex-col items-center justify-center">
         <div
-          ref={qrRef}
+          ref={qrRefActive}
           className="h-30 w-30 sm:h-34 sm:w-34
                      scale-90 sm:scale-100
                      rounded-lg border border-[var(--c-bank)]/30 shadow-sm
@@ -448,6 +524,16 @@ useEffect(() => {
         />
        
       </div>
+
+       <button
+  onClick={() => handlePrintReceipt("58mm")} 
+  className="mt-3 px-3 py-1.5 bg-[var(--c-accent)] text-white rounded-md text-xs"
+>
+  🧾 Print (58mm)
+</button>
+
+
+
     </div>
 
     {/* === Edit Active Voucher (admin/superadmin only) === */}
@@ -532,7 +618,7 @@ useEffect(() => {
 
       <div className="flex flex-col items-center justify-center">
         <div
-          ref={qrRef}
+          ref={qrRefRedeemed}
           className="h-30 w-30 sm:h-34 sm:w-34
                      scale-90 sm:scale-100
                      rounded-lg border border-[var(--c-bank)]/30 shadow-sm
@@ -540,6 +626,8 @@ useEffect(() => {
         />
       </div>
     </div>
+
+  
 
     <div className="rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 p-3 text-sm font-medium text-center">
       ✅ {t.voucherRedeemed || 'This voucher has been fully redeemed.'}
@@ -569,6 +657,85 @@ useEffect(() => {
       </div>
     </div>
   )
+  
+
+
+function handlePrintReceipt(size: "58mm" | "80mm") {
+  if (!qrPng) {
+    alert("QR loading… please wait 1s");
+    return;
+  }
+
+  const width = size === "58mm" ? "58mm" : "80mm";
+
+  const win = window.open("", "_blank", "width=350,height=600");
+  if (!win) return;
+
+  win.document.write(`
+    <html>
+      <head>
+        <title>Voucher Receipt</title>
+        <style>
+          @page { size: ${width}; margin: 0; }
+
+          body {
+            width: ${width};
+            margin: 0;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            font-size: 11px;
+          }
+
+          img.qr {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 10px;
+          }
+
+          .line {
+            border-top: 1px dashed #999;
+            margin: 8px 0;
+          }
+
+          .row {
+            display: flex;
+            justify-content: space-between;
+          }
+        </style>
+      </head>
+
+      <body>
+
+        <h3>BON D'ACHAT</h3>
+
+        <img class="qr" src="${qrPng}" />
+
+        <div class="line"></div>
+
+        <div class="row"><span>Amount:</span><span>${voucher.initial_amount} DZD</span></div>
+        <div class="row"><span>Buyer:</span><span>${voucher.buyer_name || "—"}</span></div>
+        <div class="row"><span>To:</span><span>${voucher.recipient_name || "—"}</span></div>
+
+        <div class="line"></div>
+
+        <p>Valid 6 months from activation</p>
+        <p style="margin-top:8px;font-size:10px"> <b>${storeName}</b><br>
+  ${new Date().toLocaleDateString()}</p>
+
+        <script>
+          window.onload = () => { window.print(); window.onafterprint = window.close; }
+        </script>
+
+      </body>
+    </html>
+  `);
+
+  win.document.close();
+}
+
+
+
 }
 
 
