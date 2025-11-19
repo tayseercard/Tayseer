@@ -1,6 +1,7 @@
 'use client'
 
 import StoreHeader from '@/components/store/StoreHeader'
+
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { Menu, Combobox } from '@headlessui/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -20,6 +21,9 @@ import {
   Filter,
   ListChecks,
 } from 'lucide-react'
+import StoreVoucherHeader from '@/components/store/StoreVoucherHeader'
+import PrintVouchersModal from '@/components/PrintVouchersModal'
+import StorePrintVouchersModal from '@/components/store/StorePrintVouchersModal'
 
 
 
@@ -52,7 +56,8 @@ export default function StoreVouchersPage() {
   const [selectedStore, setSelectedStore] = useState<'all' | string>('all')
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  
+  const [printOpen, setPrintOpen] = useState(false)
+
   //Pagination
   const ITEMS_PER_PAGE = 10
   const [page, setPage] = useState(1)
@@ -217,6 +222,7 @@ export default function StoreVouchersPage() {
   return data
 }, [rows, q, selectedStore, selectedStatus, selectedDate])
 
+
 /* -------- Totals Calculation -------- */
 const totals = useMemo(() => {
   const totalInitial = filtered.reduce((sum, v) => sum + (v.initial_amount || 0), 0)
@@ -234,13 +240,17 @@ const totals = useMemo(() => {
 
   const getStoreName = (id: string) => stores.find((s) => s.id === id)?.name ?? '—'
 
+  
   /* -------- UI -------- */
   return (
  <div className={`min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 py-6 space-y-8 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
 
-      <StoreHeader 
-        store={store || { name: 'Store Loading…', email: '', role: '', logoUrl: '' }} 
-      />
+      <StoreVoucherHeader 
+      
+      onPrint={() => setPrintOpen(true)}
+      
+    />
+    
 
       {/* Store owner request button */}
       {userRole === "store_owner" && (
@@ -387,6 +397,7 @@ const totals = useMemo(() => {
             </div>
           ))
         )}
+        
       </div>
 
       {/* Desktop Table */}
@@ -433,6 +444,15 @@ const totals = useMemo(() => {
 
         )}
       </div>
+
+      {printOpen && (
+        <StorePrintVouchersModal
+          open={printOpen}
+          onClose={() => setPrintOpen(false)}
+          stores={stores}  
+      
+        />
+)}
       
       {/* Pagination */}
       {!loading && filtered.length > ITEMS_PER_PAGE && (
@@ -475,7 +495,9 @@ const totals = useMemo(() => {
       )}
     
     </div>
+    
   )
+  
 }
 
 /* ---------- Voucher Request Modal ---------- */
