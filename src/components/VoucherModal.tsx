@@ -120,7 +120,7 @@ useEffect(() => {
   if (!target) return;
 
   const isMobile = window.innerWidth < 640;
-  const size = isMobile ? 90 : 180;
+  const size = isMobile ? 90 : 100;
 
   const qr = new QRCodeStyling({
     width: size,
@@ -490,12 +490,12 @@ useEffect(() => {
         <Info label={t.balance} value={fmtDZD(voucher.balance, lang)} />
       </div>
 
-      <div className="flex flex-col items-center space-y-0.5 justify-center">
+      <div className="flex flex-col items-center space-y-4 justify-center">
         <div
 
       
           ref={qrRefActive}
-          className="h-30 w-30 sm:h-34 sm:w-34
+          className="h-30 w-30 sm:h-30 sm:w-30
                      scale-90 sm:scale-100
                      rounded-lg border border-[var(--c-bank)]/30 shadow-sm
                      bg-white/80 p-1.5 flex items-center justify-center"

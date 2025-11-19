@@ -268,7 +268,7 @@ const totals = useMemo(() => {
         onClick={() => setSelectedStatus(f.value)}
         className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
           selectedStatus === f.value
-            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+            ? 'bg-[var(--c-accent2)] text-white border-emerald-600 shadow-sm'
             : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
         }`}
       >

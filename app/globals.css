@@ -48,6 +48,7 @@
   --c-bank: #2000b1; /* Main blue */
   --c-accent: #ed4b00; /* Orange */
   --c-text: #1a1a1a; /* Neutral text */
+  --c-accent2:#6287AA;
 
   /* --- Map to Tailwind tokens --- */
   --background: var(--bg);

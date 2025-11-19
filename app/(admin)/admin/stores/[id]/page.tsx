@@ -8,6 +8,7 @@ import { X } from 'lucide-react'
 import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode'
 import { v4 as uuidv4 } from 'uuid'
 import PrintVouchersModal from '@/components/PrintVouchersModal'
+import StorePrintVouchersModal from '@/components/store/StorePrintVouchersModal'
 
 type StoreRow = {
   id: string
@@ -155,10 +156,14 @@ export default function AdminStoreDetailPage() {
           onPrintVouchers={() => setPrintModal(true)}
         />
 
-        <PrintVouchersModal
-          open={printModal}
-          onClose={() => setPrintModal(false)} 
-          stores={[]}        />
+        {store && (
+  <PrintVouchersModal
+    open={printModal}
+    onClose={() => setPrintModal(false)}
+    stores={[{ id: store.id, name: store.name ?? '' }]}
+  />
+)}
+
 
         {/* Search Bar */}
         <div className="flex items-center gap-2 sticky top-0 bg-[var(--bg)]/90 backdrop-blur-sm py-1 z-30">
