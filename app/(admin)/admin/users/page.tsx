@@ -67,7 +67,8 @@ const [groups, setGroups] = useState({
     (u) =>
       (u.email ?? '').toLowerCase().includes(q.trim().toLowerCase()) ||
       (u.role ?? '').toLowerCase().includes(q.trim().toLowerCase()) ||
-      (u.store_name ?? '').toLowerCase().includes(q.trim().toLowerCase())
+      (u.store_name ?? '').toLowerCase().includes(q.trim().toLowerCase())||
+        (u.store_temp_password?? '').toLowerCase().includes(q.trim().toLowerCase())
   )
 
   /* ---------- Delete User ---------- */
@@ -147,6 +148,7 @@ const [groups, setGroups] = useState({
                   <Th>Role</Th>
                   <Th>Store</Th>
                   <Th>Cashier Name</Th>
+                  <Th>Temp_password</Th>
                   <Th>Created</Th>
                   <Th>Status</Th>
                   <Th>Actions</Th>
@@ -166,9 +168,10 @@ const [groups, setGroups] = useState({
                     <Td>{u.store_name ?? '—'}</Td>
                     <Td>{u.cashier_full_name ?? (u.role === 'cashier' ? '—' : '')}</Td>
 
+                    <Td>{u.store_temp_password ?? (u.role === 'store_owner' ? '—' : '')}</Td>
                     <Td>
-                      {u.user_created_at
-                        ? new Date(u.user_created_at).toLocaleDateString()
+                      {u.auth_created_at
+                        ? new Date(u.auth_created_at).toLocaleDateString()
                         : '—'}
                     </Td>
 
@@ -217,13 +220,14 @@ const [groups, setGroups] = useState({
 
                 <div className="text-xs text-gray-600 space-y-1">
                   <p><b>Role:</b> {u.role}</p>
+                  <p><b>Temp_Password:</b> {u.store_temp_password}</p>
                   <p><b>Store:</b> {u.store_name ?? '—'}</p>
                   {u.role === 'cashier' && (
                     <p><b>Cashier Name:</b> {u.cashier_full_name ?? '—'}</p>
                   )}
                   <p><b>Created:</b> 
-                    {u.user_created_at
-                      ? new Date(u.user_created_at).toLocaleDateString()
+                    {u.auth_created_at
+                      ? new Date(u.auth_created_at).toLocaleDateString()
                       : '—'}
                   </p>
                   <p>

@@ -409,7 +409,12 @@ useEffect(() => {
         
        
 
-       
+       <button
+  onClick={handlePrintQROnly}
+  className="mt-3 px-3 py-1.5 bg-[var(--c-accent)] text-white rounded-md text-xs"
+>
+  🧾 Print Qr Only
+</button>
       </div>
               <Input label="Buyer Name" value={buyerName} onChange={setBuyerName} />
               <Input label="To Whom?" value={recipientName} onChange={setRecipientName} />
@@ -485,62 +490,64 @@ useEffect(() => {
         <Info label={t.balance} value={fmtDZD(voucher.balance, lang)} />
       </div>
 
-      <div className="flex flex-col items-center justify-center">
+      <div className="flex flex-col items-center space-y-0.5 justify-center">
         <div
+
+      
           ref={qrRefActive}
           className="h-30 w-30 sm:h-34 sm:w-34
                      scale-90 sm:scale-100
                      rounded-lg border border-[var(--c-bank)]/30 shadow-sm
                      bg-white/80 p-1.5 flex items-center justify-center"
         />
-       
-      </div>
+      {/* === Button Print === */}
 
        <button
   onClick={handlePrintQROnly}
-  className="mt-3 px-3 py-1.5 bg-[var(--c-accent)] text-white rounded-md text-xs"
+  className=" px-3 py-1 bg-[var(--c-accent)] text-white rounded-md text-xs"
 >
   🧾 Print Qr Only
-</button>
+      </button>
 
-
+      
+      </div>
 
     </div>
 
-    {/* === Edit Active Voucher (admin/superadmin only) === */}
-    {['admin', 'superadmin','store_owner'].includes(userRole || '') && (
-      <div className="mb-2   ">
-        <div className="flex justify-between items-center ">
-        
-          <button
-            onClick={() => setEditMode(!editMode)}
-            className="text-xs bg-[var(--c-accent)] text-white px-3 py-1 rounded-md hover:bg-[var(--c-accent)]/90"
-          >
-            {editMode ? 'Cancel' : '✏️ Edit'}
-          </button>
-        </div>
+   {/* === Edit Active Voucher (admin/superadmin only) === */}
+          {['admin', 'superadmin','store_owner'].includes(userRole || '') && (
+            <div className="mb-2   ">
+              <div className="flex justify-between items-center ">
+              
+                <button
+                  onClick={() => setEditMode(!editMode)}
+                  className="text-xs bg-[var(--c-accent)] text-white px-3 py-1 rounded-md hover:bg-[var(--c-accent)]/90"
+                >
+                  {editMode ? 'Cancel' : '✏️ Edit'}
+                </button>
+              </div>
 
-        {editMode && (
-          <div className="space-y-2">
-            <Input label="Buyer Name" value={buyerName} onChange={setBuyerName} />
-            <Input label="Buyer Phone" value={buyerPhone} onChange={setBuyerPhone} />
-            <Input
-              label="Amount (DZD)"
-              type="number"
-              value={amount}
-              onChange={setAmount}
-            />
-            <button
-              onClick={handleEditSave}
-              disabled={saving}
-              className="w-full bg-[var(--c-accent)] text-white rounded-md py-2 text-sm hover:bg-[var(--c-accent)]/90"
-            >
-              {saving ? 'Saving…' : 'Save Changes'}
-            </button>
-          </div>
-        )}
-      </div>
-    )}
+              {editMode && (
+                <div className="space-y-2">
+                  <Input label="Buyer Name" value={buyerName} onChange={setBuyerName} />
+                  <Input label="Buyer Phone" value={buyerPhone} onChange={setBuyerPhone} />
+                  <Input
+                    label="Amount (DZD)"
+                    type="number"
+                    value={amount}
+                    onChange={setAmount}
+                  />
+                  <button
+                    onClick={handleEditSave}
+                    disabled={saving}
+                    className="w-full bg-[var(--c-accent)] text-white rounded-md py-2 text-sm hover:bg-[var(--c-accent)]/90"
+                  >
+                    {saving ? 'Saving…' : 'Save Changes'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
     {/* === Consume voucher === */}
     <Input
