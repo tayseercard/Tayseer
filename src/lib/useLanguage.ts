@@ -31,17 +31,16 @@ export const fr: Record<string, any> = { status: {
 const translations: Record<LangCode, Record<string, string>> = {
 
   en: {
-    
-  
-    dashboard: 'Dashboard',
-    vouchers: 'Vouchers',
-    clients: 'Clients',
-    settings: 'Settings',
-    logout: 'Logout',
-    back: 'Back',
-    home: 'Home',
-  
-    voucherDetails: 'Voucher Details',
+    preferences: 'Preferences',
+  accountSettings: 'Account Settings',
+  dashboard: 'Dashboard',
+  vouchers: 'Vouchers',
+  clients: 'Clients',
+  settings: 'Settings',
+  logout: 'Logout',
+  back: 'Back',
+  home: 'Home',
+  voucherDetails: 'Voucher Details',
   buyerName: 'Buyer Name',
   toWhom: 'To Whom?',
   buyerPhone: 'Buyer Phone',
@@ -64,7 +63,7 @@ const translations: Record<LangCode, Record<string, string>> = {
   fullyConsumed: 'Voucher fully consumed.',
   consumed: 'consumed',
   remaining: 'Remaining',
-    search: 'Search',
+  search: 'Search',
     date: 'Date',
     newestFirst: 'Newest first',
     oldestFirst: 'Oldest first',
@@ -151,8 +150,9 @@ const translations: Record<LangCode, Record<string, string>> = {
 
   },
   fr: {
-
-    voucherDetails: 'Détails du bon',
+      preferences: 'Préférences',
+accountSettings: 'Paramètres du compte',
+  voucherDetails: 'Détails du bon',
   buyerName: 'Nom de l’acheteur',
   toWhom: 'À qui ?',
   buyerPhone: 'Téléphone de l’acheteur',
@@ -221,7 +221,6 @@ create: 'Créer',
 errorCreatingVouchers: 'Erreur lors de la création des bons',
 vouchersCreated: 'bons créés avec succès',
 
-    // 🇫🇷 French
 searchPlaceholder: 'Rechercher par nom ou adresse...',
 sort: 'Trier',
 open: 'Ouvert',
@@ -262,7 +261,6 @@ dashboard: 'Tableau de bord',
     managePref: 'Gérez votre profil et vos préférences',
     stores: 'Magasins',
     users: 'Utilisateurs',
-    // 🇫🇷 French
 totalRegistered: 'Nombre total',
 allVouchers: 'Tous les bons',
 
@@ -277,8 +275,8 @@ noActiveVouchers: 'Aucun bon actif trouvé.',
   },
 
   ar: {
-    
-
+    preferences: 'التفضيلات',
+accountSettings: 'إعدادات الحساب',
     dashboard: 'لوحة التحكم',
     vouchers: 'القسائم',
     clients: 'العملاء',
