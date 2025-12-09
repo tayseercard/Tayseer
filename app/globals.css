@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+
 @tailwind utilities;
 
 /* === Small animation utility === */
@@ -40,6 +40,9 @@
 
 /* === Light Mode (Tayseer Palette) === */
 :root {
+  
+  color-scheme: light !important;
+
   /* --- Tayseer Brand Palette --- */
   --bg: #f2f3f4;
   --section-bg: #ebeaed;
@@ -67,30 +70,7 @@
   --card-foreground: var(--c-text);
 }
 
-/* === Dark Mode === */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0b15;
-    --section-bg: #141425;
-    --c-primary: #ebeaed;
-    --c-secondary: #9da2ff;
-    --c-bank: #5a60ff;
-    --c-accent: #ff7a33;
-    --c-text: #f2f3f4;
 
-    --background: var(--bg);
-    --foreground: var(--c-text);
-    --primary: var(--c-primary);
-    --secondary: var(--c-secondary);
-    --accent: var(--c-accent);
-    --muted: var(--section-bg);
-    --muted-foreground: var(--c-text);
-    --border: var(--c-secondary);
-    --ring: var(--c-bank);
-    --card: #141425;
-    --card-foreground: var(--c-text);
-  }
-}
 
 /* === 🖨 Print only voucher area === */
 /* ✅ Force A4 paper format with uniform margins */
