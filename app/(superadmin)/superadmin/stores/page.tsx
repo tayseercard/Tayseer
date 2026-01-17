@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { motion } from 'framer-motion'
 import { Stat } from '@/components/ui/stat'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -37,6 +38,7 @@ export default function AdminStoresPage() {
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
   const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [activeFilter, setActiveFilter] = useState<'all' | 'open' | 'inactive'>('all')
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -50,9 +52,8 @@ export default function AdminStoresPage() {
 
   const [stats, setStats] = useState({
     total: 0,
-    online: 0,
-    offline: 0,
     open: 0,
+    inactive: 0,
     closed: 0,
     topStore: '—',
   })
@@ -69,6 +70,7 @@ export default function AdminStoresPage() {
         ...prev,
         total: data?.length || 0,
         open: data?.filter((s) => s.status === 'open').length || 0,
+        inactive: data?.filter((s) => s.status === 'inactive').length || 0,
         closed: data?.filter((s) => s.status === 'closed').length || 0,
       }))
     } catch (err) {
@@ -82,20 +84,25 @@ export default function AdminStoresPage() {
     loadStores()
   }, [loadStores])
 
-  /* ---------- Search ---------- */
+  /* ---------- Search & Filter ---------- */
   useEffect(() => {
     const term = q.trim().toLowerCase()
-    if (!term) setFiltered(rows)
-    else {
-      setFiltered(
-        rows.filter(
-          (s) =>
-            (s.name ?? '').toLowerCase().includes(term) ||
-            (s.address ?? '').toLowerCase().includes(term)
-        )
+    let filteredData = [...rows]
+
+    if (activeFilter !== 'all') {
+      filteredData = filteredData.filter(s => s.status === activeFilter)
+    }
+
+    if (term) {
+      filteredData = filteredData.filter(
+        (s) =>
+          (s.name ?? '').toLowerCase().includes(term) ||
+          (s.address ?? '').toLowerCase().includes(term)
       )
     }
-  }, [q, rows])
+
+    setFiltered(filteredData)
+  }, [q, rows, activeFilter])
 
   /* ---------- Add Store ---------- */
   async function handleAddStore() {
@@ -122,10 +129,9 @@ export default function AdminStoresPage() {
       if (!res.ok) throw new Error(result.error || 'Failed to create store')
 
       alert(
-        `✅ Store "${result.store.name}" created successfully.${
-          result.temp_password
-            ? `\nTemporary password: ${result.temp_password}`
-            : ''
+        `✅ Store "${result.store.name}" created successfully.${result.temp_password
+          ? `\nTemporary password: ${result.temp_password}`
+          : ''
         }`
       )
 
@@ -152,18 +158,16 @@ export default function AdminStoresPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setView('grid')}
-            className={`rounded-md border px-2.5 py-1.5 text-sm ${
-              view === 'grid' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'
-            }`}
+            className={`rounded-md border px-2.5 py-1.5 text-sm ${view === 'grid' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'
+              }`}
             title="Grid view"
           >
             <LayoutGrid className="h-4 w-4" />
           </button>
           <button
             onClick={() => setView('list')}
-            className={`rounded-md border px-2.5 py-1.5 text-sm ${
-              view === 'list' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'
-            }`}
+            className={`rounded-md border px-2.5 py-1.5 text-sm ${view === 'list' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'
+              }`}
             title="List view"
           >
             <List className="h-4 w-4" />
@@ -179,7 +183,7 @@ export default function AdminStoresPage() {
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Add New Store</DialogTitle>
-                
+
                 <DialogDescription>
                   Fill in the store information below. A temporary password will
                   be generated automatically.
@@ -241,25 +245,44 @@ export default function AdminStoresPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
         <Stat title="Total Stores" value={stats.total.toLocaleString()} />
-        <Stat title="Open" value={stats.open.toLocaleString()} />
-        <Stat title="Closed" value={stats.closed.toLocaleString()} />
+        <Stat title="Actifs" value={stats.open.toLocaleString()} />
+        <Stat title="En attente" value={stats.inactive.toLocaleString()} color="amber" />
+        <Stat title="Fermés" value={stats.closed.toLocaleString()} />
         <Stat title="Top Store" value={stats.topStore} />
       </div>
 
-      {/* Search */}
-      <div className="sticky top-0 z-30 bg-white/70 backdrop-blur-sm p-2 rounded-xl border flex items-center gap-2 shadow-sm">
-        <Search className="h-4 w-4 text-gray-400 ml-1" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search Store…"
-          className="flex-1 bg-transparent text-sm focus:outline-none"
-        />
-        <button className="rounded-md border px-2 py-1 text-sm hover:bg-gray-50 flex items-center gap-1">
-          <Filter className="h-4 w-4" /> Filter
-        </button>
+      {/* Search & Tabs */}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2 border-b overflow-x-auto scrollbar-hide">
+          {(['all', 'open', 'inactive'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveFilter(tab)}
+              className={`pb-3 px-4 text-sm font-medium transition-all relative ${activeFilter === tab ? 'text-[var(--c-accent)]' : 'text-gray-500 hover:text-gray-700'
+                }`}
+            >
+              {tab === 'all' ? 'Tous' : tab === 'open' ? 'Actifs' : 'En attente'}
+              {activeFilter === tab && (
+                <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--c-accent)]" />
+              )}
+            </button>
+          ))}
+        </div>
+
+        <div className="bg-white/70 backdrop-blur-sm p-2 rounded-xl border flex items-center gap-2 shadow-sm">
+          <Search className="h-4 w-4 text-gray-400 ml-1" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Rechercher une boutique…"
+            className="flex-1 bg-transparent text-sm focus:outline-none"
+          />
+          <button className="rounded-md border px-2 py-1 text-sm hover:bg-gray-50 flex items-center gap-1">
+            <Filter className="h-4 w-4" /> Filtre
+          </button>
+        </div>
       </div>
 
       {/* Store List */}
@@ -294,8 +317,8 @@ export default function AdminStoresPage() {
                 <tr key={s.id} className="border-t hover:bg-gray-50">
                   <Td>{s.name ?? '—'}</Td>
                   <Td>
-                    <Badge kind={s.status === 'open' ? 'green' : 'rose'}>
-                      {s.status ?? '—'}
+                    <Badge kind={s.status === 'open' ? 'green' : s.status === 'inactive' ? 'amber' : 'rose'}>
+                      {s.status === 'open' ? 'Actif' : s.status === 'inactive' ? 'En attente' : 'Fermé'}
                     </Badge>
                   </Td>
                   <Td>{s.phone ?? '—'}</Td>
@@ -350,8 +373,8 @@ function StoreCard({ s }: { s: any }) {
         <span>{s.phone ?? '—'}</span>
       </div>
       <div className="flex items-center justify-between">
-        <Badge kind={s.status === 'open' ? 'green' : 'rose'}>
-          {s.status ?? '—'}
+        <Badge kind={s.status === 'open' ? 'green' : s.status === 'inactive' ? 'amber' : 'rose'}>
+          {s.status === 'open' ? 'Actif' : s.status === 'inactive' ? 'En attente' : 'Fermé'}
         </Badge>
         <div className="flex items-center gap-1 text-amber-500">
           <Star className="h-3 w-3" />

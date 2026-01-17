@@ -17,71 +17,71 @@ export const dynamic = 'force-dynamic'
 export default function AdminDashboardPage() {
   const supabase = createClientComponentClient()
   const { t } = useLanguage()
-    const [notifRefresh, setNotifRefresh] = useState(0)
+  const [notifRefresh, setNotifRefresh] = useState(0)
 
   const [loading, setLoading] = useState(true)
-const [userRole, setUserRole] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [stores, setStores] = useState<any[]>([])
   const [vouchers, setVouchers] = useState<any[]>([])
-  const [storeStats, setStoreStats] = useState({ total: 0, open: 0, closed: 0 })
+  const [storeStats, setStoreStats] = useState({ total: 0, open: 0, inactive: 0, closed: 0 })
   const [voucherStats, setVoucherStats] = useState({ total: 0, active: 0, redeemed: 0 })
   const [topStores, setTopStores] = useState<any[]>([])
-/* -------- Load Latest Voucher Requests -------- */
-const [latestRequests, setLatestRequests] = useState<any[]>([])
-const [notifOpen, setNotifOpen] = useState(false)
-const router = useRouter()
-
-useEffect(() => {
-  ;(async () => {
-    const supabase = createClientComponentClient()
-
-    const { data, error } = await supabase
-      .from('voucher_requests')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5)
-
-    if (!error) setLatestRequests(data || [])
-  })()
-}, [])
+  /* -------- Load Latest Voucher Requests -------- */
+  const [latestRequests, setLatestRequests] = useState<any[]>([])
+  const [notifOpen, setNotifOpen] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
-  async function fetchRole() {
-    const { data: sessionData } = await supabase.auth.getSession()
-    const session = sessionData.session
-    let role = session?.user?.user_metadata?.role ?? null
+    ; (async () => {
+      const supabase = createClientComponentClient()
 
-    // fallback: get from view if not in metadata
-    if (!role && session?.user?.id) {
-      const { data: roleData } = await supabase
-        .from('me_effective_role')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .maybeSingle()
-      role = roleData?.role ?? null
+      const { data, error } = await supabase
+        .from('voucher_requests')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      if (!error) setLatestRequests(data || [])
+    })()
+  }, [])
+
+  useEffect(() => {
+    async function fetchRole() {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const session = sessionData.session
+      let role = session?.user?.user_metadata?.role ?? null
+
+      // fallback: get from view if not in metadata
+      if (!role && session?.user?.id) {
+        const { data: roleData } = await supabase
+          .from('me_effective_role')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .maybeSingle()
+        role = roleData?.role ?? null
+      }
+
+      console.log('🧩 Effective role:', role)
+      setUserRole(role)
     }
 
-    console.log('🧩 Effective role:', role)
-    setUserRole(role)
-  }
-
-  fetchRole()
-}, [supabase])
+    fetchRole()
+  }, [supabase])
 
   /* ---------- Load Data ---------- */
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       setLoading(true)
 
-    
+
 
       // 🧩 Get current user role
-const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-if (sessionError) console.error('❌ Error fetching session:', sessionError)
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) console.error('❌ Error fetching session:', sessionError)
 
-const role = sessionData?.session?.user?.user_metadata?.role || null
-setUserRole(role)
-console.log('🧠 Current user role:', role)
+      const role = sessionData?.session?.user?.user_metadata?.role || null
+      setUserRole(role)
+      console.log('🧠 Current user role:', role)
 
 
       const [{ data: storesData }, { data: vouchersData }] = await Promise.all([
@@ -94,6 +94,7 @@ console.log('🧠 Current user role:', role)
         setStoreStats({
           total: storesData.length,
           open: storesData.filter((s) => s.status === 'open').length,
+          inactive: storesData.filter((s) => s.status === 'inactive').length,
           closed: storesData.filter((s) => s.status === 'closed').length,
         })
       }
@@ -134,93 +135,129 @@ console.log('🧠 Current user role:', role)
 
   /* ---------- UI ---------- */
   return (
-    
+
     <div
       className="relative flex flex-col bg-[var(--bg)] text-[var(--c-text)]
                  px-4 py-6 sm:px-6 lg:px-10 min-h-[calc(100vh-70px)] md:min-h-screen overflow-y-auto"
     >
-     
+
       {/* === HEADER === */}
       <DashboardHeader
         rightContent={
 
-            <NotificationBell 
-              onOpen={() => setNotifOpen(true)} 
-              refreshSignal={notifRefresh} />}
-              
-               user={{
-                  name: "Tayseer Admin",
-                  email: "admin@tayseer.app",
-                  role: "Admin",
-                  avatarUrl: "/icon-192-2.png"
-                }}
-                />
+          <NotificationBell
+            onOpen={() => setNotifOpen(true)}
+            refreshSignal={notifRefresh} />}
 
-            <NotificationPanel
-              open={notifOpen}
-              onClose={() => setNotifOpen(false)}
-              onRefreshCount={() => setNotifRefresh((n) => n + 1)}
-            />
+        user={{
+          name: "Tayseer Admin",
+          email: "admin@tayseer.app",
+          role: "Admin",
+          avatarUrl: "/icon-192-2.png"
+        }}
+      />
 
-            <NotificationModal
-              open={notifOpen}
-              onClose={() => setNotifOpen(false)}
-              onClickNotification={(n) => {
-                //setNotifOpen(false)
+      <NotificationPanel
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        onRefreshCount={() => setNotifRefresh((n) => n + 1)}
+      />
 
-                // If the notif is linked to a voucher request
-                if (n.request_id) {
-                  router.push(`/admin/voucher-requests?id=${n.request_id}`)
-                  return
-                }
+      <NotificationModal
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        onClickNotification={(n) => {
+          //setNotifOpen(false)
 
-                // Fallback
-                router.push("/admin/notifications")
-              }}
-            />
+          // If the notif is linked to a voucher request
+          if (n.request_id) {
+            router.push(`/admin/voucher-requests?id=${n.request_id}`)
+            return
+          }
 
+          // Fallback
+          router.push("/admin/notifications")
+        }}
+      />
+
+
+      {/* === PENDING ACTIVATION ALERT === */}
+      {storeStats.inactive > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+              <StoreIcon className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-amber-900">Nouvelles boutiques en attente</h3>
+              <p className="text-xs text-amber-700">
+                {storeStats.inactive} boutique(s) nécessitent votre validation pour accéder à la plateforme.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin/stores"
+            className="w-full sm:w-auto px-5 py-2.5 bg-amber-600 text-white text-sm font-semibold rounded-xl hover:bg-amber-700 transition shadow-sm text-center"
+          >
+            Voir les demandes
+          </Link>
+        </motion.div>
+      )}
 
       {/* === SUMMARY STATS === */}
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-       
-        <Link href="/admin/stores"  className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">
-                <DashboardStatCard
-                title={t.stores}
-                value={storeStats.total}
-                subtitle={t.totalRegistered}
-                /> 
+
+        <Link href="/admin/stores" className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">
+          <DashboardStatCard
+            title={t.stores}
+            value={storeStats.total}
+            subtitle={t.totalRegistered}
+          />
         </Link>
 
-        <Link href="/admin/vouchers" className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">  
-              <DashboardStatCard
-                title={t.vouchers}
-                value={voucherStats.total}
-                subtitle={t.allVouchers}
-              /> 
+        <Link href="/admin/stores" className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">
+          <DashboardStatCard
+            title="En attente"
+            value={storeStats.inactive}
+            subtitle="Activation requise"
+            highlight={storeStats.inactive > 0}
+          />
+        </Link>
+
+        <Link href="/admin/vouchers" className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">
+          <DashboardStatCard
+            title={t.vouchers}
+            value={voucherStats.total}
+            subtitle={t.allVouchers}
+          />
         </Link>
 
         <Link href="/admin/vouchers?status=active" className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">
-              <DashboardStatCard
-                title={t.active}
-                value={voucherStats.active}
-                subtitle={'active Vouchers'}
-                />
+          <DashboardStatCard
+            title={t.active}
+            value={voucherStats.active}
+            subtitle={'active Vouchers'}
+          />
         </Link>
 
         <Link href="/admin/vouchers?status=redeemed" className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl">
 
-        <DashboardStatCard
-          title={t.redeemed}
-          value={voucherStats.redeemed}
-          subtitle={t.usedVouchers}
-        />
+          <DashboardStatCard
+            title={t.redeemed}
+            value={voucherStats.redeemed}
+            subtitle={t.usedVouchers}
+          />
         </Link>
       </div>
       {userRole && (
-  <div className="mt-2 text-xs text-gray-500">
-    🧩 Current role: <b>{userRole}</b>
-  </div>
-)}
+        <div className="mt-2 text-xs text-gray-500">
+          🧩 Current role: <b>{userRole}</b>
+        </div>
+      )}
 
 
       {/* === DASHBOARD CARDS === */}
@@ -228,38 +265,38 @@ console.log('🧠 Current user role:', role)
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow">
 
           {/* Recent Voucher Requests */}
-<DashboardCard
-  title="Recent Voucher Requests"
-  icon={<ListChecks className="h-5 w-5 text-[var(--c-accent)]" />}
-  link="/admin/voucher-requests"
->
-  {latestRequests.length === 0 ? (
-    <p className="text-sm text-[var(--c-text)]/50">No requests yet.</p>
-  ) : (
-    <ul className="space-y-3">
-      {latestRequests.map((req) => (
-        <li
-          key={req.id}
-          className="flex items-center justify-between border-b border-[var(--c-secondary)]/10 pb-2 text-sm"
-        >
-          <div className="flex flex-col">
-            <span className="font-medium text-[var(--c-primary)]">
-              {req.store_name}
-            </span>
+          <DashboardCard
+            title="Recent Voucher Requests"
+            icon={<ListChecks className="h-5 w-5 text-[var(--c-accent)]" />}
+            link="/admin/voucher-requests"
+          >
+            {latestRequests.length === 0 ? (
+              <p className="text-sm text-[var(--c-text)]/50">No requests yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {latestRequests.map((req) => (
+                  <li
+                    key={req.id}
+                    className="flex items-center justify-between border-b border-[var(--c-secondary)]/10 pb-2 text-sm"
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium text-[var(--c-primary)]">
+                        {req.store_name}
+                      </span>
 
-            <span className="text-xs text-[var(--c-text)]/60">
-              {req.count} vouchers • {req.status}
-            </span>
-          </div>
+                      <span className="text-xs text-[var(--c-text)]/60">
+                        {req.count} vouchers • {req.status}
+                      </span>
+                    </div>
 
-          <span className="text-xs text-[var(--c-text)]/60 whitespace-nowrap">
-            {new Date(req.created_at).toLocaleDateString()}
-          </span>
-        </li>
-      ))}
-    </ul>
-  )}
-</DashboardCard>
+                    <span className="text-xs text-[var(--c-text)]/60 whitespace-nowrap">
+                      {new Date(req.created_at).toLocaleDateString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </DashboardCard>
           {/* Latest Stores */}
           <DashboardCard
             title={t.latestStores}
@@ -318,7 +355,7 @@ console.log('🧠 Current user role:', role)
 
 
 
-          
+
         </div>
 
       )}
@@ -343,9 +380,8 @@ function DashboardStatCard({
     <div className="rounded-2xl border border-[var(--c-secondary)]/10 bg-white shadow-sm p-4 flex flex-col justify-between hover:shadow-md transition-all">
       <p className="text-sm text-[var(--c-text)]/70">{title}</p>
       <p
-        className={`text-2xl font-semibold ${
-          highlight ? 'text-[var(--c-accent)]' : 'text-[var(--c-bank)]'
-        }`}
+        className={`text-2xl font-semibold ${highlight ? 'text-[var(--c-accent)]' : 'text-[var(--c-bank)]'
+          }`}
       >
         {value.toLocaleString()}
       </p>
@@ -391,7 +427,7 @@ function DashboardCard({
   link?: string
   children: React.ReactNode
 }) {
-    const { t } = useLanguage() // ✅ Add this
+  const { t } = useLanguage() // ✅ Add this
 
   return (
     <div className="rounded-xl border border-[var(--c-secondary)]/10 bg-white shadow-sm hover:shadow-md transition-all p-4 flex flex-col overflow-hidden min-h-[220px]">
@@ -402,7 +438,7 @@ function DashboardCard({
         </h3>
         {link && (
           <Link href={link} className="text-xs text-[var(--c-accent)] hover:underline">
-             {t.viewAll} 
+            {t.viewAll}
           </Link>
         )}
       </div>

@@ -52,6 +52,7 @@ export default function AdminStoresPage() {
   const [stats, setStats] = useState({
     total: 0,
     open: 0,
+    inactive: 0,
     closed: 0,
   })
 
@@ -66,6 +67,7 @@ export default function AdminStoresPage() {
       setStats({
         total: data?.length || 0,
         open: data?.filter((s) => s.status === 'open').length || 0,
+        inactive: data?.filter((s) => s.status === 'inactive').length || 0,
         closed: data?.filter((s) => s.status === 'closed').length || 0,
       })
     } catch (err) {
@@ -132,36 +134,61 @@ export default function AdminStoresPage() {
   }
 
   async function handleDeleteStore(id: string, name: string) {
-  if (!confirm(`❌ Delete store "${name}"? This action cannot be undone.`))
-    return
+    if (!confirm(`❌ Delete store "${name}"? This action cannot be undone.`))
+      return
 
-  try {
-    const res = await fetch('/api/admin/delete-store', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ store_id: id }),
-    })
+    try {
+      const res = await fetch('/api/admin/delete-store', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ store_id: id }),
+      })
 
-    const result = await res.json()
+      const result = await res.json()
 
-    if (!res.ok) throw new Error(result.error)
+      if (!res.ok) throw new Error(result.error)
 
-    alert(`🗑️ Store "${name}" deleted.`)
-    loadStores()
-  } catch (err: any) {
-    alert('❌ ' + err.message)
+      alert(`🗑️ Store "${name}" deleted.`)
+      loadStores()
+    } catch (err: any) {
+      alert('❌ ' + err.message)
+    }
   }
-}
 
 
   /* ---------- Render ---------- */
-return (
+  return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8 overflow-y-auto">
 
       {/* 🌿 Header */}
       <StoresHeader onAdd={() => setOpen(true)} />
 
-    
+      {/* 🟢 Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Stat title="Total" value={stats.total} color="emerald" />
+        <Stat title="Actifs" value={stats.open} color="emerald" />
+        <Stat title="En attente" value={stats.inactive} color="amber" />
+        <Stat title="Fermés" value={stats.closed} color="rose" />
+      </div>
+
+      {/* 🔵 Status Tabs */}
+      <div className="flex items-center gap-4 border-b overflow-x-auto scrollbar-hide">
+        {(['all', 'open', 'inactive', 'closed'] as const).map((st) => (
+          <button
+            key={st}
+            onClick={() => setSelectedStatus(st)}
+            className={`pb-2 px-1 text-sm font-medium transition-all relative whitespace-nowrap ${selectedStatus === st ? 'text-[var(--c-accent)]' : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            {st === 'all' ? 'Tous' : st === 'open' ? 'Actifs' : st === 'inactive' ? 'En attente' : 'Fermés'}
+            {selectedStatus === st && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--c-accent)]" />
+            )}
+          </button>
+        ))}
+      </div>
+
+
 
       {/* ===== Filters Section ===== */}
       <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
@@ -169,13 +196,13 @@ return (
         {/* 🔍 Search bar */}
         <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
           <Search className="h-4 w-4 text-gray-400" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder={t.searchPlaceholder}
-              className="flex-1 bg-transparent text-sm focus:outline-none"
-            />
-            </div>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t.searchPlaceholder}
+            className="flex-1 bg-transparent text-sm focus:outline-none"
+          />
+        </div>
 
         {/* ⚙️ Filters Row */}
         <div className="flex justify-between gap-2 text-sm">
@@ -280,8 +307,8 @@ return (
                 <tr key={s.id} className="border-t hover:bg-gray-50 cursor-pointer">
                   <Td>{s.name ?? '—'}</Td>
                   <Td>
-                    <Badge kind={s.status === 'open' ? 'green' : 'rose'}>
-                      {s.status ?? '—'}
+                    <Badge kind={s.status === 'open' ? 'green' : s.status === 'inactive' ? 'amber' : 'rose'}>
+                      {s.status === 'open' ? 'Actif' : s.status === 'inactive' ? 'En attente' : 'Fermé'}
                     </Badge>
                   </Td>
                   <Td>{s.wilaya ?? '—'}</Td>
@@ -293,24 +320,24 @@ return (
                     </Link>
                   </Td>
                   <Td>
-  <div className="flex items-center gap-3">
-    <Link
-      href={`/admin/stores/${s.id}`}
-      className="text-blue-600 text-xs hover:underline"
-    >
-      View
-    </Link>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/admin/stores/${s.id}`}
+                        className="text-blue-600 text-xs hover:underline"
+                      >
+                        View
+                      </Link>
 
-    <button
-      onClick={() => handleDeleteStore(s.id, s.name)}
-      className="text-red-600 text-xs hover:underline"
-    >
-      Delete
-    </button>
-  </div>
-</Td>
+                      <button
+                        onClick={() => handleDeleteStore(s.id, s.name)}
+                        className="text-red-600 text-xs hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </Td>
 
-                  
+
                 </tr>
               ))}
             </tbody>
@@ -320,110 +347,110 @@ return (
 
       {/* ➕ Add Store Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-  <DialogContent
-    className="
+        <DialogContent
+          className="
       sm:max-w-md rounded-2xl border border-[var(--c-bank)]/20
       bg-white/95 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.08)]
       text-[var(--c-text)]
       p-6 space-y-4 animate-in fade-in-0 zoom-in-95 duration-200
     "
-  >
-    {/* === Header === */}
-    <DialogHeader className="space-y-1">
-      <DialogTitle className="text-lg font-semibold text-[var(--c-primary)]">
-        {t.addStoreTitle}
-      </DialogTitle>
-      <p className="text-sm text-[var(--c-text)]/70">
-        {t.addStoreDesc}
-      </p>
-    </DialogHeader>
+        >
+          {/* === Header === */}
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-lg font-semibold text-[var(--c-primary)]">
+              {t.addStoreTitle}
+            </DialogTitle>
+            <p className="text-sm text-[var(--c-text)]/70">
+              {t.addStoreDesc}
+            </p>
+          </DialogHeader>
 
-    {/* === Form Fields === */}
-    <div className="flex flex-col gap-3 pt-2">
-      <Input
-        placeholder={t.storeName}
-        value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-        className="
+          {/* === Form Fields === */}
+          <div className="flex flex-col gap-3 pt-2">
+            <Input
+              placeholder={t.storeName}
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="
           border border-[var(--c-bank)]/30 rounded-lg
           focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
           bg-white/90 backdrop-blur-sm text-sm
         "
-      />
-      <Input
-        placeholder={t.email}
-        type="email"
-        value={form.email}
-        onChange={(e) => setForm({ ...form, email: e.target.value })}
-        className="
+            />
+            <Input
+              placeholder={t.email}
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="
           border border-[var(--c-bank)]/30 rounded-lg
           focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
           bg-white/90 backdrop-blur-sm text-sm
         "
-      />
-      <Input
-        placeholder={t.phone}
-        value={form.phone}
-        onChange={(e) => setForm({ ...form, phone: e.target.value })}
-        className="
+            />
+            <Input
+              placeholder={t.phone}
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              className="
           border border-[var(--c-bank)]/30 rounded-lg
           focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
           bg-white/90 backdrop-blur-sm text-sm
         "
-      />
-      <Input
-        placeholder={t.address}
-        value={form.address}
-        onChange={(e) => setForm({ ...form, address: e.target.value })}
-        className="
+            />
+            <Input
+              placeholder={t.address}
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              className="
           border border-[var(--c-bank)]/30 rounded-lg
           focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
           bg-white/90 backdrop-blur-sm text-sm
         "
-      />
-      <Input
-        type="number"
-        placeholder={t.wilayaRange}
-        min={1}
-        max={58}
-        value={form.wilaya}
-        onChange={(e) => setForm({ ...form, wilaya: e.target.value })}
-        className="
+            />
+            <Input
+              type="number"
+              placeholder={t.wilayaRange}
+              min={1}
+              max={58}
+              value={form.wilaya}
+              onChange={(e) => setForm({ ...form, wilaya: e.target.value })}
+              className="
           border border-[var(--c-bank)]/30 rounded-lg
           focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
           bg-white/90 backdrop-blur-sm text-sm
         "
-      />
-    </div>
+            />
+          </div>
 
-    {/* === Footer Buttons === */}
-    <DialogFooter className="flex justify-end gap-2 pt-2">
-      <Button
-        variant="outline"
-        onClick={() => setOpen(false)}
-        className="
+          {/* === Footer Buttons === */}
+          <DialogFooter className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setOpen(false)}
+              className="
           border border-[var(--c-bank)]/40 
           text-[var(--c-text)]/80 hover:bg-[var(--section-bg)]
           rounded-lg transition
         "
-      >
-        {t.cancel}
-      </Button>
+            >
+              {t.cancel}
+            </Button>
 
-      <Button
-        onClick={handleAddStore}
-        disabled={saving}
-        className="
+            <Button
+              onClick={handleAddStore}
+              disabled={saving}
+              className="
           rounded-lg bg-[var(--c-accent)] text-white font-medium
           px-4 py-2 text-sm
           hover:bg-[var(--c-accent)]/90 active:scale-95 transition
           disabled:opacity-50
         "
-      >
-{saving ? t.saving : t.addStore}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
+            >
+              {saving ? t.saving : t.addStore}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
     </div>
@@ -434,7 +461,7 @@ function StoreCard({ s }: { s: any }) {
   // Delete handler (passed from parent instead of local undefined function)
   async function handleDelete(e: any) {
     e.stopPropagation() // prevent card click redirect
-    
+
     if (!confirm(`❌ Delete store "${s.name}"?`)) return
 
     const res = await fetch('/api/admin/delete-store', {
@@ -481,8 +508,8 @@ function StoreCard({ s }: { s: any }) {
       </div>
 
       <div className="flex items-center justify-between mb-3">
-        <Badge kind={s.status === 'open' ? 'green' : 'rose'}>
-          {s.status ?? '—'}
+        <Badge kind={s.status === 'open' ? 'green' : s.status === 'inactive' ? 'amber' : 'rose'}>
+          {s.status === 'open' ? 'Actif' : s.status === 'inactive' ? 'En attente' : 'Fermé'}
         </Badge>
         <div className="flex items-center gap-1 text-amber-500">
           <Star className="h-3 w-3" />

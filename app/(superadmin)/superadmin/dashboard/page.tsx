@@ -25,6 +25,7 @@ export default function SuperadminDashboardPage() {
   const [storeStats, setStoreStats] = useState({
     total: 0,
     open: 0,
+    inactive: 0,
     closed: 0,
   });
 
@@ -48,6 +49,7 @@ export default function SuperadminDashboardPage() {
         setStoreStats({
           total: storesData.length,
           open: storesData.filter((s) => s.status === 'open').length,
+          inactive: storesData.filter((s) => s.status === 'inactive').length,
           closed: storesData.filter((s) => s.status === 'closed').length,
         });
       }
@@ -138,9 +140,34 @@ export default function SuperadminDashboardPage() {
           />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <StatCard title="Total" value={storeStats.total} color="emerald" />
-            <StatCard title="Open" value={storeStats.open} color="sky" />
-            <StatCard title="Closed" value={storeStats.closed} color="rose" />
+            <StatCard title="Actifs" value={storeStats.open} color="sky" />
+            <StatCard title="En attente" value={storeStats.inactive} color="amber" />
+            <StatCard title="Fermés" value={storeStats.closed} color="rose" />
           </div>
+
+          {storeStats.inactive > 0 && (
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-amber-900">Nouvelles inscriptions en attente</h3>
+                  <p className="text-xs text-amber-700">{storeStats.inactive} boutique(s) attendent votre validation.</p>
+                </div>
+              </div>
+              <Link
+                href="/superadmin/stores"
+                className="w-full sm:w-auto px-4 py-2 bg-amber-600 text-white text-sm font-semibold rounded-xl hover:bg-amber-700 transition shadow-sm text-center"
+              >
+                Voir les boutiques
+              </Link>
+            </motion.div>
+          )}
 
           <SectionTitle
             icon={<Gift className="h-5 w-5 text-indigo-600" />}
@@ -219,6 +246,7 @@ function StatCard({
     rose: 'from-rose-50 to-rose-100 text-rose-700 border-rose-200',
     gray: 'from-gray-50 to-gray-100 text-gray-700 border-gray-200',
     sky: 'from-sky-50 to-sky-100 text-sky-700 border-sky-200',
+    amber: 'from-amber-50 to-amber-100 text-amber-700 border-amber-200',
   };
 
   return (

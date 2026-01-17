@@ -12,6 +12,8 @@ import {
   X,
   LogOut,
   ChevronRight,
+  Package,
+  Coins
 } from 'lucide-react'
 import SettingsHeader from '@/components/admin/settings/SettingsHeader'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -21,11 +23,13 @@ import ProfileSettings from '@/components/admin/settings/ProfileSettings'
 import PasswordSettings from '@/components/admin/settings/PasswordSettings'
 import LanguageSettings from '@/components/admin/settings/LanguageSettings'
 import RolesSettings from '@/components/admin/settings/RolesSettings'
+import PacksSettings from '@/components/admin/settings/PacksSettings'
+import AccountingSettings from '@/components/admin/settings/AccountingSettings'
 
 export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(false)
   const [activeModal, setActiveModal] = useState<
-    'profile' | 'password' | 'language' | 'roles' | null
+    'profile' | 'password' | 'language' | 'roles' | 'packs' | 'accounting' | null
   >(null)
 
   const supabase = createClientComponentClient()
@@ -33,23 +37,23 @@ export default function SettingsPage() {
   const { t, lang } = useLanguage()
 
   useEffect(() => {
-  (async () => {
-    const { data } = await supabase.auth.getSession()
-    if (!data.session) {
-      window.location.href = '/auth/login?redirectTo=/admin'
-    }
-  })()
-}, [])
+    (async () => {
+      const { data } = await supabase.auth.getSession()
+      if (!data.session) {
+        window.location.href = '/auth/login?redirectTo=/admin'
+      }
+    })()
+  }, [])
 
   // ✅ Refresh on language change
   useEffect(() => {
     router.refresh()
   }, [lang, router])
 
- 
 
-  
-   async function handleLogout() {
+
+
+  async function handleLogout() {
     try {
       await supabase.auth.signOut()
 
@@ -66,9 +70,8 @@ export default function SettingsPage() {
 
   return (
     <div
-      className={`min-h-screen bg-[var(--bg)] flex flex-col items-center transition-all duration-300 ${
-        lang === 'ar' ? 'rtl' : 'ltr'
-      }`}
+      className={`min-h-screen bg-[var(--bg)] flex flex-col items-center transition-all duration-300 ${lang === 'ar' ? 'rtl' : 'ltr'
+        }`}
     >
       {/* === HEADER === */}
       <div className="w-full max-w-6xl px-4 md:px-8 py-8">
@@ -110,16 +113,16 @@ export default function SettingsPage() {
                 lang === 'fr'
                   ? 'Français'
                   : lang === 'ar'
-                  ? 'العربية 🇩🇿'
-                  : 'English 🇬🇧'
+                    ? 'العربية 🇩🇿'
+                    : 'English 🇬🇧'
               }
               onClick={() => setActiveModal('language')}
             />
             <SettingRow
-  icon={<Shield />}
-  label={t.roles}
-  onClick={() => router.push("/admin/users")}
-/>
+              icon={<Shield />}
+              label={t.roles}
+              onClick={() => router.push("/admin/users")}
+            />
           </div>
         </div>
 
@@ -129,7 +132,7 @@ export default function SettingsPage() {
             {t.preferences || 'Preferences'}
           </div>
           <div className="divide-y divide-gray-100">
-           
+
             <SettingRow
               icon={<Info />}
               label={t.aboutApp || 'About application'}
@@ -138,7 +141,16 @@ export default function SettingsPage() {
               icon={<HelpCircle />}
               label={t.help || 'Help & FAQ'}
             />
-           
+            <SettingRow
+              icon={<Package className="w-5 h-5" />}
+              label="Offres & Packs"
+              onClick={() => setActiveModal('packs')}
+            />
+            <SettingRow
+              icon={<Coins className="w-5 h-5" />}
+              label="Comptabilité"
+              onClick={() => setActiveModal('accounting')}
+            />
           </div>
         </div>
 
@@ -153,7 +165,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-    
+
 
       {/* === MODALS === */}
       {activeModal && (
@@ -168,7 +180,9 @@ export default function SettingsPage() {
               }}
             />
           )}
-{activeModal === 'roles' && <RolesSettings t={t} />}
+          {activeModal === 'roles' && <RolesSettings t={t} />}
+          {activeModal === 'packs' && <PacksSettings t={t} />}
+          {activeModal === 'accounting' && <AccountingSettings t={t} />}
         </SettingsModal>
       )}
     </div>

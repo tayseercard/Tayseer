@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { QrCode, ShieldCheck, Sparkles, ArrowRight, X, Package } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { QrCode, ShieldCheck, Sparkles, ArrowRight, X } from 'lucide-react'
 
 export default function TayseerLanding() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -23,14 +23,18 @@ export default function TayseerLanding() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6 text-sm">
-            <a href="#how" className="hover:text-[var(--c-secondary)]">How it works</a>
-            <a href="#features" className="hover:text-[var(--c-secondary)]">Features</a>
-            <a href="#usecases" className="hover:text-[var(--c-secondary)]">Use cases</a>
+            <a href="#how" className="hover:text-[var(--c-secondary)]">Fonctionnement</a>
+            <Link
+              href="/auth/signup"
+              className="rounded-md border border-[var(--c-primary)] text-[var(--c-primary)] px-4 py-2 font-medium hover:bg-[var(--c-primary)] hover:text-white transition"
+            >
+              S'inscrire
+            </Link>
             <Link
               href="/auth/login"
               className="rounded-md bg-[var(--c-bank)] text-white px-4 py-2 font-medium hover:bg-[var(--c-secondary)] transition"
             >
-              Log in
+              Se connecter
             </Link>
           </div>
 
@@ -56,15 +60,20 @@ export default function TayseerLanding() {
             >
               <X className="h-6 w-6 text-white" />
             </button>
-            <a href="#how" onClick={() => setMenuOpen(false)}>How it works</a>
-            <a href="#features" onClick={() => setMenuOpen(false)}>Features</a>
-            <a href="#usecases" onClick={() => setMenuOpen(false)}>Use cases</a>
+            <a href="#how" onClick={() => setMenuOpen(false)}>Fonctionnement</a>
+            <Link
+              href="/auth/signup"
+              onClick={() => setMenuOpen(false)}
+              className="rounded-md border border-white text-white px-6 py-3 font-semibold hover:bg-white hover:text-[var(--c-primary)] transition"
+            >
+              S'inscrire
+            </Link>
             <Link
               href="/auth/login"
               onClick={() => setMenuOpen(false)}
               className="rounded-md bg-white text-[var(--c-primary)] px-6 py-3 font-semibold hover:bg-[var(--c-accent)] hover:text-white transition"
             >
-              Log in
+              Se connecter
             </Link>
           </div>
         )}
@@ -80,74 +89,83 @@ export default function TayseerLanding() {
             transition={{ duration: 0.6 }}
             className="text-4xl sm:text-5xl md:text-6xl font-bold text-[var(--c-primary)]"
           >
-            Smart vouchers for modern stores
+            Bons d'achat intelligents pour les magasins modernes
           </motion.h1>
 
           <p className="text-base sm:text-lg text-[var(--c-text)]/80 max-w-[45ch]">
-            Create, gift, and redeem Tayseer vouchers in seconds — trusted by merchants and loved by customers.
+            Créez, offrez et utilisez des bons Tayseer en quelques secondes — approuvé par les commerçants et adoré par les clients.
           </p>
 
           <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              href="/auth/login"
+              href="/auth/signup"
               className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--c-primary)] text-white px-6 py-3 font-semibold hover:bg-[var(--c-secondary)] transition"
             >
-              Get Started <ArrowRight size={18} />
+              Lancez votre boutique <ArrowRight size={18} />
             </Link>
-            <a
-              href="#how"
-              className="inline-flex items-center justify-center gap-2 rounded-md px-6 py-3 border border-[var(--c-secondary)] text-[var(--c-secondary)] hover:bg-[var(--c-secondary)] hover:text-white transition"
+            <Link
+              href="/auth/login"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--c-accent)] text-white px-6 py-3 font-semibold hover:bg-[#c53e00] transition"
             >
-              Learn more
-            </a>
+              Se connecter
+            </Link>
           </div>
         </section>
 
         {/* ===== HOW ===== */}
         <section id="how" className="py-20 border-t border-[var(--c-secondary)]/10">
           <h2 className="text-2xl md:text-3xl font-semibold text-[var(--c-primary)] text-center mb-10">
-            How Tayseer works
+            Comment fonctionne Tayseer
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Step icon={<Sparkles className="text-[var(--c-secondary)]" />} title="1. Create" text="Add buyer name, amount, and expiry. Tayseer generates a QR instantly." />
-            <Step icon={<QrCode className="text-[var(--c-bank)]" />} title="2. Redeem" text="Customers show the QR at checkout. The balance updates automatically." />
-            <Step icon={<ShieldCheck className="text-[var(--c-accent)]" />} title="3. Track" text="See all vouchers, redemptions, and reports in your merchant dashboard." />
+            <Step icon={<Sparkles className="text-[var(--c-secondary)]" />} title="1. Créer" text="Ajoutez le nom de l'acheteur, le montant et l'expiration. Tayseer génère un QR code instantanément." />
+            <Step icon={<QrCode className="text-[var(--c-bank)]" />} title="2. Utiliser" text="Les clients présentent le QR code à la caisse. Le solde est mis à jour automatiquement." />
+            <Step icon={<ShieldCheck className="text-[var(--c-accent)]" />} title="3. Suivre" text="Consultez tous les bons, les utilisations et les rapports dans votre tableau de bord commerçant." />
           </div>
         </section>
 
-        {/* ===== FEATURES ===== */}
-        <section id="features" className="py-20 bg-[var(--section-bg)] rounded-3xl px-6">
-          <h2 className="text-2xl md:text-3xl font-semibold text-[var(--c-primary)] text-center mb-12">
-            Why merchants choose Tayseer
+        {/* ===== PRICING ===== */}
+        <section id="pricing" className="py-20 border-t border-[var(--c-secondary)]/10">
+          <h2 className="text-2xl md:text-3xl font-semibold text-[var(--c-primary)] text-center mb-4">
+            Nos Packs QR Codes
           </h2>
+          <p className="text-center text-[var(--c-text)]/70 mb-10 max-w-2xl mx-auto">
+            Des tarifs dégressifs adaptés à vos besoins. Plus vous achetez, moins vous payez.
+          </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <Feature color="var(--c-bank)" title="Multi-role access">
-              Give permissions to owners, managers, and cashiers separately.
-            </Feature>
-            <Feature color="var(--c-secondary)" title="Instant QR redemption">
-              Fast scan-based redemptions — no manual codes or delays.
-            </Feature>
-            <Feature color="var(--c-accent)" title="Promotions made easy">
-              Run seasonal offers like Ramadan or Back-to-School campaigns.
-            </Feature>
-            <Feature color="var(--c-primary)" title="Full transparency">
-              Every voucher action is logged for security and audits.
-            </Feature>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
+            <PricingCard
+              quantity={100}
+              pricePerUnit={50}
+              isPopular={false}
+              features={['Idéal pour démarrer', 'Support par email', 'Validité illimitée']}
+            />
+            <PricingCard
+              quantity={500}
+              pricePerUnit={40}
+              isPopular={true}
+              features={['Le plus populaire', 'Support prioritaire', 'Validité illimitée', 'Badge commerçant vérifié']}
+            />
+            <PricingCard
+              quantity={1000}
+              pricePerUnit={35}
+              isPopular={false}
+              features={['Pour les grands volumes', 'Support dédié 24/7', 'Validité illimitée', 'Personnalisation avancée']}
+            />
           </div>
         </section>
 
         {/* ===== CTA ===== */}
         <section className="py-20 text-center">
           <div className="bg-[var(--c-primary)] text-white rounded-3xl py-12 px-6 md:px-12 shadow-md">
-            <h3 className="text-2xl font-semibold mb-3">Start issuing vouchers today</h3>
-            <p className="text-white/80 mb-8">Join Tayseer and grow your customer loyalty effortlessly.</p>
+            <h3 className="text-2xl font-semibold mb-3">Commencez à émettre des bons dès aujourd'hui</h3>
+            <p className="text-white/80 mb-8">Rejoignez Tayseer et développez la fidélité de vos clients sans effort.</p>
             <Link
-              href="/auth/login"
+              href="/auth/signup"
               className="inline-flex items-center justify-center gap-2 bg-[var(--c-accent)] text-white px-6 py-3 rounded-md font-semibold hover:bg-[#c53e00] transition"
             >
-              Log in to Dashboard <ArrowRight size={18} />
+              Créer votre compte boutique <ArrowRight size={18} />
             </Link>
           </div>
         </section>
@@ -155,10 +173,10 @@ export default function TayseerLanding() {
         {/* ===== FOOTER ===== */}
         <footer className="py-10 text-[var(--c-text)]/70 text-sm border-t border-[var(--c-secondary)]/10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p>© {new Date().getFullYear()} Tayseer. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Tayseer. Tous droits réservés.</p>
             <div className="flex items-center gap-4">
-              <a className="hover:text-[var(--c-secondary)]" href="#">Privacy</a>
-              <a className="hover:text-[var(--c-secondary)]" href="#">Terms</a>
+              <a className="hover:text-[var(--c-secondary)]" href="#">Confidentialité</a>
+              <a className="hover:text-[var(--c-secondary)]" href="#">Conditions</a>
               <a className="hover:text-[var(--c-secondary)]" href="#">Contact</a>
             </div>
           </div>
@@ -179,14 +197,60 @@ function Step({ icon, title, text }: { icon: React.ReactNode; title: string; tex
   )
 }
 
-function Feature({ title, children, color }: { title: string; children: React.ReactNode; color: string }) {
+function PricingCard({
+  quantity,
+  pricePerUnit,
+  isPopular,
+  features,
+}: {
+  quantity: number
+  pricePerUnit: number
+  isPopular: boolean
+  features: string[]
+}) {
+  const totalPrice = quantity * pricePerUnit
+
   return (
-    <div className="p-6 rounded-xl border border-[var(--c-secondary)]/10 bg-white shadow-sm hover:shadow-md transition">
-      <h4 className="font-semibold mb-2" style={{ color }}>{title}</h4>
-      <p className="text-sm text-[var(--c-text)]/80">{children}</p>
+    <div className={`relative p-6 rounded-2xl border ${isPopular ? 'border-[var(--c-accent)] shadow-lg scale-105 bg-white' : 'border-[var(--c-secondary)]/10 bg-white/50 shadow-sm'} flex flex-col items-center text-center transition hover:shadow-md`}>
+      {isPopular && (
+        <span className="absolute -top-3 bg-[var(--c-accent)] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+          Populaire
+        </span>
+      )}
+
+      <div className="mb-4 p-3 rounded-full bg-[var(--c-primary)]/5">
+        <Package className={`h-8 w-8 ${isPopular ? 'text-[var(--c-accent)]' : 'text-[var(--c-primary)]'}`} />
+      </div>
+
+      <h3 className="text-xl font-bold text-[var(--c-primary)] mb-1">Pack {quantity} QR</h3>
+      <div className="flex items-baseline gap-1 mb-1">
+        <span className="text-3xl font-bold text-[var(--c-primary)]">{totalPrice.toLocaleString()} DA</span>
+      </div>
+      <p className="text-sm text-[var(--c-text)]/60 mb-6 font-medium">soit {pricePerUnit} DA / QR code</p>
+
+      <ul className="space-y-3 mb-8 text-sm text-[var(--c-text)]/80 w-full">
+        {features.map((feat, i) => (
+          <li key={i} className="flex items-center gap-2 justify-center">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--c-secondary)]" />
+            {feat}
+          </li>
+        ))}
+      </ul>
+
+      <Link
+        href="/auth/signup"
+        className={`w-full py-2.5 rounded-xl font-semibold transition ${isPopular
+          ? 'bg-[var(--c-accent)] text-white hover:bg-[#c53e00]'
+          : 'bg-[var(--c-primary)] text-white hover:bg-[var(--c-secondary)]'
+          }`}
+      >
+        Choisir ce pack
+      </Link>
     </div>
   )
 }
+
+
 
 /* ===== 🎨 Optimized Palette Usage ===== */
 const paletteVars: React.CSSProperties = {

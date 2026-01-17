@@ -34,7 +34,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifRefresh, setNotifRefresh] = useState(0)
-  
+
   async function handleLogout() {
     try {
       await supabase.auth.signOut()
@@ -45,7 +45,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   }
 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         router.replace('/auth/login?redirectTo=/store')
@@ -54,9 +54,14 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
       const { data: store } = await supabase
         .from('stores')
-        .select('name')
+        .select('name, status')
         .eq('owner_user_id', session.user.id)
         .maybeSingle()
+
+      if (store?.status === 'inactive' && !pathname.includes('/auth/pending')) {
+        router.replace('/auth/pending')
+        return
+      }
 
       setStoreName(store?.name ?? 'Store')
     })()
@@ -81,32 +86,32 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           <div className="relative h-8 w-28">
             <Image alt="tayseer" src="/icon-192.png" fill className="object-contain" />
           </div>
- {/* === GLOBAL NOTIFICATION SYSTEM === */}
-      <Toaster position="top-right" />
-       {/* 🔔 Notification Bell stays mounted forever */}
-        <NotificationBell
-          onOpen={() => setNotifOpen(true)}
-          refreshSignal={notifRefresh}
-        />
+          {/* === GLOBAL NOTIFICATION SYSTEM === */}
+          <Toaster position="top-right" />
+          {/* 🔔 Notification Bell stays mounted forever */}
+          <NotificationBell
+            onOpen={() => setNotifOpen(true)}
+            refreshSignal={notifRefresh}
+          />
 
- {/* === GLOBAL NOTIFICATION PANEL === */}
-      <NotificationPanel
-        open={notifOpen}
-        onClose={() => setNotifOpen(false)}
-        onRefreshCount={() => setNotifRefresh((n) => n + 1)}
-      />
+          {/* === GLOBAL NOTIFICATION PANEL === */}
+          <NotificationPanel
+            open={notifOpen}
+            onClose={() => setNotifOpen(false)}
+            onRefreshCount={() => setNotifRefresh((n) => n + 1)}
+          />
           <NotificationModal
-  open={notifOpen}
-  onClose={() => setNotifOpen(false)}
-  onClickNotification={(n) => {
-    setNotifOpen(false)
-    if (n.request_id) {
-      router.push(`/store/requests?id=${n.request_id}`)
-      return
-    }
-    router.push("/store/notifications")
-  }}
-/>
+            open={notifOpen}
+            onClose={() => setNotifOpen(false)}
+            onClickNotification={(n) => {
+              setNotifOpen(false)
+              if (n.request_id) {
+                router.push(`/store/requests?id=${n.request_id}`)
+                return
+              }
+              router.push("/store/notifications")
+            }}
+          />
           {/* Desktop Nav */}
           <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             {[
@@ -120,11 +125,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                 <Link
                   key={href}
                   href={href}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all whitespace-nowrap ${
-                    active
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all whitespace-nowrap ${active
                       ? 'bg-[var(--c-accent)] text-white shadow-sm'
                       : 'bg-white/10 text-[var(--c-text)] hover:bg-[var(--c-accent)]/20'
-                  }`}
+                    }`}
                 >
                   <Icon className="h-4 w-4" />
                   {label}
@@ -211,9 +215,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         <VoucherScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />
       )}
 
-      
-     
-      
+
+
+
       {/* === GLOBAL NOTIFICATION MODAL === */}
       <NotificationModal
         open={notifOpen}
@@ -227,7 +231,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           }
         }}
       />
-      
+
     </div>
   )
 }
@@ -248,11 +252,10 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`flex flex-col items-center text-[11px] ${
-        active
+      className={`flex flex-col items-center text-[11px] ${active
           ? 'text-[--c-accent] font-medium'
           : 'text-white/70 hover:text-[var(--c-accent)]'
-      }`}
+        }`}
     >
       <Icon className="h-5 w-5 mb-0.5" />
       {label}
