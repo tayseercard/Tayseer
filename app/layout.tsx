@@ -1,29 +1,14 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css'
 import { Toaster } from "sonner"
 
 
-
-/* ======= Fonts ======= */
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-  display: 'swap',
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-  display: 'swap',
-});
 
 /* ======= Metadata ======= */
 export const metadata = {
   title: 'Tayseer',
   description: 'Smart voucher system',
   manifest: '/manifest.json',
-  themeColor: '#059669',
 }
 
 /* ======= Viewport ======= */
@@ -31,6 +16,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  themeColor: '#059669',
 };
 
 
@@ -43,13 +29,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} scroll-smooth`}
+      className="scroll-smooth"
       style={{
         colorScheme: 'dark light',
       }}
     >
       <body
-        className="min-h-[100svh] antialiased bg-[#0A0A0C] text-white selection:bg-white/20"
+        className="min-h-[100svh] antialiased selection:bg-[#020035]/20"
         style={{
           // Safe-area insets for iPhones with notches
           paddingTop: 'env(safe-area-inset-top)',

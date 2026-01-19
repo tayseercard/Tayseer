@@ -15,38 +15,38 @@ export default function PublicVoucherPage() {
 
   useEffect(() => {
     if (!code) return
-    ;(async () => {
-      try {
-        const { data, error } = await supabase
-          .from('vouchers_public')
-          .select(
-            `code, status, initial_amount, balance, currency,
+      ; (async () => {
+        try {
+          const { data, error } = await supabase
+            .from('vouchers_public')
+            .select(
+              `code, status, initial_amount, balance, currency,
              buyer_name, recipient_name, store_id,
              created_at, activated_at, expires_at`
-          )
-          .eq('code', code)
-          .maybeSingle()
+            )
+            .eq('code', code)
+            .maybeSingle()
 
-        if (error) throw error
-        if (!data) {
-          setError('Ce bon est introuvable ou non valide ❌')
-          return
+          if (error) throw error
+          if (!data) {
+            setError('Ce bon est introuvable ou non valide ❌')
+            return
+          }
+
+          // Fetch store name & logo (optional)
+          const { data: store } = await supabase
+            .from('stores')
+            .select('name, logo_url')
+            .eq('id', data.store_id)
+            .maybeSingle()
+
+          setVoucher({ ...data, store_name: store?.name || 'Magasin inconnu', store_logo_url: store?.logo_url })
+        } catch (err: any) {
+          setError(err.message)
+        } finally {
+          setLoading(false)
         }
-
-        // Fetch store name (optional)
-        const { data: store } = await supabase
-          .from('stores')
-          .select('name')
-          .eq('id', data.store_id)
-          .maybeSingle()
-
-        setVoucher({ ...data, store_name: store?.name || 'Magasin inconnu' })
-      } catch (err: any) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
-    })()
+      })()
   }, [code])
 
   if (loading)
@@ -90,36 +90,39 @@ export default function PublicVoucherPage() {
         className="relative w-full max-w-md bg-white/90 backdrop-blur-md shadow-lg rounded-3xl border border-gray-100 
                    overflow-hidden p-6 sm:p-8 animate-fade-in"
       >
-        {/* Header */}
-        <div className="flex flex-col items-center text-center">
-          <Gift className="h-10 w-10 text-emerald-600 mb-2" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Bon Cadeeau</h1>    
-          <h1 className="text-2xl font-bold text-gray-900 mb-1"> {voucher.store_name}</h1>    
-
-          <p className="text-sm text-gray-500">
-            Code : <span className="font-mono">{voucher.code}</span>
-          </p>
+        {/* Header: Logo & Store Name */}
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="w-20 h-20 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shadow-sm mb-3">
+            {voucher.store_logo_url ? (
+              <img src={voucher.store_logo_url} alt="Store Logo" className="w-full h-full object-contain p-1" />
+            ) : (
+              <Store className="h-8 w-8 text-gray-400" />
+            )}
+          </div>
+          <h1 className="text-xl font-bold text-gray-900">{voucher.store_name}</h1>
         </div>
 
         {/* Amount */}
-        <div className="mt-6 text-center">
-          <p className="text-4xl font-extrabold text-gray-900">
-            {voucher.initial_amount.toLocaleString()} {voucher.currency}
+        {/* Amount */}
+        <div className="mt-4 text-center">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Solde Actuel</p>
+          <p className="text-5xl font-extrabold text-[#020035]">
+            {voucher.balance.toLocaleString()} <span className="text-2xl text-gray-400 font-bold">{voucher.currency}</span>
           </p>
-          {voucher.balance !== voucher.initial_amount && (
-            <p className="text-sm text-gray-600 mt-1">
-              Reste : {voucher.balance.toLocaleString()} {voucher.currency}
-            </p>
-          )}
+
+          <p className="text-sm text-gray-500 mt-2 font-medium">
+            Montant initial : {voucher.initial_amount.toLocaleString()} {voucher.currency}
+          </p>
         </div>
 
         {/* Status */}
-        <div
-          className={`mt-4 inline-block px-3 py-1 rounded-full text-sm font-medium ${
-            statusColors[voucher.status] || 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          {statusLabels[voucher.status] || voucher.status}
+        <div className='flex justify-center'>
+          <div
+            className={`mt-4 inline-block px-3 py-1 rounded-full text-sm font-medium ${statusColors[voucher.status] || 'bg-gray-100 text-gray-600'
+              }`}
+          >
+            {statusLabels[voucher.status] || voucher.status}
+          </div>
         </div>
 
         {/* Divider */}
@@ -156,7 +159,7 @@ export default function PublicVoucherPage() {
           )}
         </div>
 
-       
+
 
         {/* Footer */}
         <p className="mt-6 text-[11px] text-gray-400 text-center">

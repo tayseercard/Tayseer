@@ -5,20 +5,11 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import {
   Store as StoreIcon,
-  LayoutGrid,
-  List,
-  Plus,
   Search,
-  Calendar,
-  Filter,
-  ListChecks,
-  ChevronDown,
-  Check,
   X,
-  MapPin,
   Phone,
-  ChevronRight,
-  Star,
+  ArrowUpDown,
+  Mail,
 } from 'lucide-react'
 import { Menu } from '@headlessui/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -26,22 +17,20 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Stat } from '@/components/ui/stat'
 import { useLanguage } from '@/lib/useLanguage'
+import { wilayaLabel } from '@/lib/algeria'
 
 export default function AdminStoresPage() {
-
   const supabase = createClientComponentClient()
   const [rows, setRows] = useState<any[]>([])
-  const [filtered, setFiltered] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
-  const [view, setView] = useState<'grid' | 'list'>('grid')
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
-  const [selectedWilaya, setSelectedWilaya] = useState<'all' | string>('all')
+  const [showFilters, setShowFilters] = useState(false)
   const { t } = useLanguage()
+
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -49,6 +38,7 @@ export default function AdminStoresPage() {
     address: '',
     wilaya: '',
   })
+
   const [stats, setStats] = useState({
     total: 0,
     open: 0,
@@ -60,10 +50,13 @@ export default function AdminStoresPage() {
   const loadStores = useCallback(async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase.from('stores').select('*')
+      const { data, error } = await supabase
+        .from('stores')
+        .select('*')
+        .order('created_at', { ascending: false })
       if (error) throw error
+
       setRows(data || [])
-      setFiltered(data || [])
       setStats({
         total: data?.length || 0,
         open: data?.filter((s) => s.status === 'open').length || 0,
@@ -89,23 +82,19 @@ export default function AdminStoresPage() {
       data = data.filter((s) => s.status === selectedStatus)
     }
 
-    if (selectedWilaya !== 'all') {
-      data = data.filter((s) => s.wilaya?.toString() === selectedWilaya)
-    }
-
     if (q.trim()) {
-      const t = q.trim().toLowerCase()
+      const term = q.trim().toLowerCase()
       data = data.filter(
         (s) =>
-          s.name?.toLowerCase().includes(t) ||
-          s.address?.toLowerCase().includes(t)
+          s.name?.toLowerCase().includes(term) ||
+          s.address?.toLowerCase().includes(term)
       )
     }
 
     return data
-  }, [rows, q, selectedStatus, selectedWilaya])
+  }, [rows, q, selectedStatus])
 
-  /* ---------- Add Store ---------- */
+  /* ---------- Actions ---------- */
   async function handleAddStore() {
     if (!form.name.trim() || !form.email.trim()) {
       alert('Store name and email are required')
@@ -145,7 +134,6 @@ export default function AdminStoresPage() {
       })
 
       const result = await res.json()
-
       if (!res.ok) throw new Error(result.error)
 
       alert(`🗑️ Store "${name}" deleted.`)
@@ -155,389 +143,184 @@ export default function AdminStoresPage() {
     }
   }
 
-
   /* ---------- Render ---------- */
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8 overflow-y-auto">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900">
 
-      {/* 🌿 Header */}
-      <StoresHeader onAdd={() => setOpen(true)} />
+      {/* 🟢 Main Wrapper */}
+      <div className="flex flex-col px-4 sm:px-6 md:px-8 py-4 space-y-4">
 
-      {/* 🟢 Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Stat title="Total" value={stats.total} color="emerald" />
-        <Stat title="Actifs" value={stats.open} color="emerald" />
-        <Stat title="En attente" value={stats.inactive} color="amber" />
-        <Stat title="Fermés" value={stats.closed} color="rose" />
-      </div>
+        {/* 🌿 Header */}
+        <StoresHeader onAdd={() => setOpen(true)} />
 
-      {/* 🔵 Status Tabs */}
-      <div className="flex items-center gap-4 border-b overflow-x-auto scrollbar-hide">
-        {(['all', 'open', 'inactive', 'closed'] as const).map((st) => (
-          <button
-            key={st}
-            onClick={() => setSelectedStatus(st)}
-            className={`pb-2 px-1 text-sm font-medium transition-all relative whitespace-nowrap ${selectedStatus === st ? 'text-[var(--c-accent)]' : 'text-gray-500 hover:text-gray-700'
-              }`}
-          >
-            {st === 'all' ? 'Tous' : st === 'open' ? 'Actifs' : st === 'inactive' ? 'En attente' : 'Fermés'}
-            {selectedStatus === st && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--c-accent)]" />
-            )}
-          </button>
-        ))}
-      </div>
-
-
-
-      {/* ===== Filters Section ===== */}
-      <div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-4 shadow-sm space-y-3">
-
-        {/* 🔍 Search bar */}
-        <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
-          <Search className="h-4 w-4 text-gray-400" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={t.searchPlaceholder}
-            className="flex-1 bg-transparent text-sm focus:outline-none"
-          />
-        </div>
-
-        {/* ⚙️ Filters Row */}
-        <div className="flex justify-between gap-2 text-sm">
-          {/* 🗓 Sort by Date */}
-          <Menu as="div" className="relative flex-1">
-            <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-              <Calendar className="h-4 w-4 text-gray-500" />
-              {t.sort}
-              <ChevronDown className="h-3 w-3" />
-            </Menu.Button>
-            <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg">
-              <Menu.Item>
-                {({ active }) => (
-                  <button
-                    onClick={() =>
-                      setRows([...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
-                    }
-                    className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
-                  >
-                    {t.newestFirst}
-                  </button>
-                )}
-              </Menu.Item>
-              <Menu.Item>
-                {({ active }) => (
-                  <button
-                    onClick={() =>
-                      setRows([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))
-                    }
-                    className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
-                  >
-                    {t.oldestFirst}
-                  </button>
-                )}
-              </Menu.Item>
-            </Menu.Items>
-          </Menu>
-
-
-          {/* 🧩 Wilaya Filter */}
-          <Menu as="div" className="relative flex-1">
-            <Menu.Button className="w-full flex items-center justify-center gap-2 border rounded-lg py-2 hover:bg-gray-50">
-              <Filter className="h-4 w-4 text-gray-500" />
-              {t.wilaya}
-              <ChevronDown className="h-3 w-3" />
-            </Menu.Button>
-            <Menu.Items className="absolute z-50 mt-1 w-full rounded-lg bg-white border shadow-lg max-h-48 overflow-y-auto">
-              <Menu.Item>
-                {({ active }) => (
-                  <button
-                    onClick={() => setSelectedWilaya('all')}
-                    className={`w-full text-left px-4 py-2 ${active ? 'bg-gray-50' : ''}`}
-                  >
-                    All wilayas
-                  </button>
-                )}
-              </Menu.Item>
-              {[...new Set(rows.map((s) => s.wilaya))].map((w) => (
-                <Menu.Item key={w}>
-                  {({ active }) => (
-                    <button
-                      onClick={() => setSelectedWilaya(w)}
-                      className={`w-full text-left px-4 py-2 flex justify-between ${active ? 'bg-gray-50' : ''}`}
-                    >
-                      Wilaya {w}
-                      {selectedWilaya === w && <Check className="h-4 w-4 text-emerald-600" />}
-                    </button>
-                  )}
-                </Menu.Item>
-              ))}
-            </Menu.Items>
-          </Menu>
-        </div>
-      </div>
-
-      {/* 📱 Cards / 💻 Table */}
-      {loading ? (
-        <div className="py-20 text-center text-gray-400">Loading stores...</div>
-      ) : filteredData.length === 0 ? (
-        <div className="py-20 text-center text-gray-400">No stores found.</div>
-      ) : view === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-16">
-          {filteredData.map((s) => (
-            <StoreCard key={s.id} s={s} />
+        {/* 🔵 Status Tabs Row */}
+        <div className="flex items-center gap-1 border-b border-gray-100 overflow-x-auto scrollbar-hide shrink-0">
+          {[
+            { key: 'all', label: 'Tous', count: stats.total },
+            { key: 'open', label: 'Actifs', count: stats.open },
+            { key: 'inactive', label: 'En attente', count: stats.inactive },
+            { key: 'closed', label: 'Fermés', count: stats.closed },
+          ].map((st) => (
+            <button
+              key={st.key}
+              onClick={() => setSelectedStatus(st.key)}
+              className={`flex items-center gap-1.5 pt-4 pb-2 px-3 text-xs font-bold transition-all relative whitespace-nowrap ${selectedStatus === st.key ? 'text-[var(--c-accent)]' : 'text-gray-400 hover:text-gray-600'
+                }`}
+            >
+              <span>{st.label}</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${selectedStatus === st.key ? 'bg-[var(--c-accent)] text-white' : 'bg-gray-100 text-gray-500'
+                }`}>
+                {st.count}
+              </span>
+              {selectedStatus === st.key && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--c-accent)]" />
+              )}
+            </button>
           ))}
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm">
-          <table className="w-full text-sm min-w-[700px]">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <Th>{t.name}</Th>
-                <Th>{t.status}</Th>
-                <Th>{t.wilaya}</Th>
-                <Th>{t.phone}</Th>
-                <Th>{t.address}</Th>
-                <Th>{t.actions}</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredData.map((s) => (
-                <tr key={s.id} className="border-t hover:bg-gray-50 cursor-pointer">
-                  <Td>{s.name ?? '—'}</Td>
-                  <Td>
-                    <Badge kind={s.status === 'open' ? 'green' : s.status === 'inactive' ? 'amber' : 'rose'}>
-                      {s.status === 'open' ? 'Actif' : s.status === 'inactive' ? 'En attente' : 'Fermé'}
-                    </Badge>
-                  </Td>
-                  <Td>{s.wilaya ?? '—'}</Td>
-                  <Td>{s.phone ?? '—'}</Td>
-                  <Td>{s.address ?? '—'}</Td>
-                  <Td>
-                    <Link href={`/admin/stores/${s.id}`} className="text-blue-600 text-xs hover:underline">
-                      View
-                    </Link>
-                  </Td>
-                  <Td>
-                    <div className="flex items-center gap-3">
-                      <Link
-                        href={`/admin/stores/${s.id}`}
-                        className="text-blue-600 text-xs hover:underline"
-                      >
-                        View
-                      </Link>
 
+          <div className="ml-auto pr-2 pb-2 pt-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-1.5 rounded-lg transition-all ${showFilters ? 'bg-[var(--c-accent)] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                }`}
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* ===== Filters Section ===== */}
+        {showFilters && (
+          <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-100 p-3 shadow-sm animate-in slide-in-from-top-2 fade-in duration-200 shrink-0">
+            <div className="flex items-center gap-2 text-sm">
+              <div className="flex-1 flex items-center gap-2 bg-white/50 rounded-xl px-3 py-2 border border-gray-100 h-10">
+                <Search className="h-4 w-4 text-gray-400" />
+                <input
+                  value={q}
+                  autoFocus
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={t.searchPlaceholder}
+                  className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-gray-300 font-medium"
+                />
+              </div>
+
+              <Menu as="div" className="relative">
+                <Menu.Button className="flex items-center justify-center h-10 w-10 border border-gray-100 bg-white/50 rounded-xl hover:bg-white transition-colors">
+                  <ArrowUpDown className="h-4 w-4 text-gray-500" />
+                </Menu.Button>
+                <Menu.Items className="absolute z-50 mt-1 right-0 w-48 rounded-2xl bg-white/95 backdrop-blur-md border border-gray-100 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-right">
+                  <Menu.Item>
+                    {({ active }) => (
                       <button
-                        onClick={() => handleDeleteStore(s.id, s.name)}
-                        className="text-red-600 text-xs hover:underline"
+                        onClick={() => setRows([...rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))}
+                        className={`w-full text-left px-4 py-3 text-xs font-bold ${active ? 'bg-gray-50 text-[var(--c-accent)]' : 'text-gray-600'}`}
                       >
-                        Delete
+                        {t.newestFirst}
                       </button>
-                    </div>
-                  </Td>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={() => setRows([...rows].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()))}
+                        className={`w-full text-left px-4 py-3 text-xs font-bold border-t border-gray-50 ${active ? 'bg-gray-50 text-[var(--c-accent)]' : 'text-gray-600'}`}
+                      >
+                        {t.oldestFirst}
+                      </button>
+                    )}
+                  </Menu.Item>
+                </Menu.Items>
+              </Menu>
+            </div>
+          </div>
+        )}
 
-
-                </tr>
+        {/* 📱 Main List (Scrollable) */}
+        <div className="pb-8">
+          {loading ? (
+            <div className="py-20 text-center text-gray-400 font-medium">Loading stores...</div>
+          ) : filteredData.length === 0 ? (
+            <div className="py-20 text-center text-gray-400 font-medium">No stores found.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 pb-4">
+              {filteredData.map((s) => (
+                <StoreCard key={s.id} s={s} onDelete={handleDeleteStore} />
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* ➕ Add Store Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent
-          className="
-      sm:max-w-md rounded-2xl border border-[var(--c-bank)]/20
-      bg-white/95 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.08)]
-      text-[var(--c-text)]
-      p-6 space-y-4 animate-in fade-in-0 zoom-in-95 duration-200
-    "
-        >
-          {/* === Header === */}
+        <DialogContent className="sm:max-w-md rounded-2xl border border-[var(--c-bank)]/20 bg-white/95 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.08)] text-[var(--c-text)] p-6 space-y-4 animate-in fade-in-0 zoom-in-95 duration-200">
           <DialogHeader className="space-y-1">
-            <DialogTitle className="text-lg font-semibold text-[var(--c-primary)]">
-              {t.addStoreTitle}
-            </DialogTitle>
-            <p className="text-sm text-[var(--c-text)]/70">
-              {t.addStoreDesc}
-            </p>
+            <DialogTitle className="text-lg font-semibold text-[var(--c-primary)]">{t.addStoreTitle}</DialogTitle>
+            <p className="text-sm text-[var(--c-text)]/70">{t.addStoreDesc}</p>
           </DialogHeader>
-
-          {/* === Form Fields === */}
           <div className="flex flex-col gap-3 pt-2">
-            <Input
-              placeholder={t.storeName}
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="
-          border border-[var(--c-bank)]/30 rounded-lg
-          focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
-          bg-white/90 backdrop-blur-sm text-sm
-        "
-            />
-            <Input
-              placeholder={t.email}
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="
-          border border-[var(--c-bank)]/30 rounded-lg
-          focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
-          bg-white/90 backdrop-blur-sm text-sm
-        "
-            />
-            <Input
-              placeholder={t.phone}
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="
-          border border-[var(--c-bank)]/30 rounded-lg
-          focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
-          bg-white/90 backdrop-blur-sm text-sm
-        "
-            />
-            <Input
-              placeholder={t.address}
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-              className="
-          border border-[var(--c-bank)]/30 rounded-lg
-          focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
-          bg-white/90 backdrop-blur-sm text-sm
-        "
-            />
-            <Input
-              type="number"
-              placeholder={t.wilayaRange}
-              min={1}
-              max={58}
-              value={form.wilaya}
-              onChange={(e) => setForm({ ...form, wilaya: e.target.value })}
-              className="
-          border border-[var(--c-bank)]/30 rounded-lg
-          focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
-          bg-white/90 backdrop-blur-sm text-sm
-        "
-            />
+            <Input placeholder={t.storeName} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="border border-[var(--c-bank)]/30 rounded-lg focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none bg-white/90 backdrop-blur-sm text-sm" />
+            <Input placeholder={t.email} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="border border-[var(--c-bank)]/30 rounded-lg focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none bg-white/90 backdrop-blur-sm text-sm" />
+            <Input placeholder={t.phone} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="border border-[var(--c-bank)]/30 rounded-lg focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none bg-white/90 backdrop-blur-sm text-sm" />
+            <Input placeholder={t.address} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="border border-[var(--c-bank)]/30 rounded-lg focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none bg-white/90 backdrop-blur-sm text-sm" />
+            <Input type="number" placeholder={t.wilayaRange} min={1} max={58} value={form.wilaya} onChange={(e) => setForm({ ...form, wilaya: e.target.value })} className="border border-[var(--c-bank)]/30 rounded-lg focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none bg-white/90 backdrop-blur-sm text-sm" />
           </div>
-
-          {/* === Footer Buttons === */}
           <DialogFooter className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={() => setOpen(false)}
-              className="
-          border border-[var(--c-bank)]/40 
-          text-[var(--c-text)]/80 hover:bg-[var(--section-bg)]
-          rounded-lg transition
-        "
-            >
-              {t.cancel}
-            </Button>
-
-            <Button
-              onClick={handleAddStore}
-              disabled={saving}
-              className="
-          rounded-lg bg-[var(--c-accent)] text-white font-medium
-          px-4 py-2 text-sm
-          hover:bg-[var(--c-accent)]/90 active:scale-95 transition
-          disabled:opacity-50
-        "
-            >
-              {saving ? t.saving : t.addStore}
-            </Button>
+            <Button variant="outline" onClick={() => setOpen(false)} className="border border-[var(--c-bank)]/40 text-[var(--c-text)]/80 hover:bg-[var(--section-bg)] rounded-lg transition">{t.cancel}</Button>
+            <Button onClick={handleAddStore} disabled={saving} className="rounded-lg bg-[var(--c-accent)] text-white font-medium px-4 py-2 text-sm hover:bg-[var(--c-accent)]/90 active:scale-95 transition disabled:opacity-50">{saving ? t.saving : t.addStore}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   )
 }
 
-function StoreCard({ s }: { s: any }) {
-  // Delete handler (passed from parent instead of local undefined function)
-  async function handleDelete(e: any) {
-    e.stopPropagation() // prevent card click redirect
-
-    if (!confirm(`❌ Delete store "${s.name}"?`)) return
-
-    const res = await fetch('/api/admin/delete-store', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ store_id: s.id }),
-    })
-
-    const result = await res.json()
-
-    if (!res.ok) {
-      alert('❌ ' + (result.error || 'Error deleting store'))
-      return
-    }
-
-    alert(`🗑️ Store "${s.name}" deleted.`)
-    // You reload using window.location for now:
-    window.location.reload()
-  }
-
+function StoreCard({ s, onDelete }: { s: any; onDelete: (id: string, name: string) => void }) {
   return (
     <Link
       href={`/admin/stores/${s.id}`}
-      className="
-        block rounded-xl border border-gray-200 bg-white p-4 shadow-sm
-        hover:bg-gray-50 transition cursor-pointer
-      "
+      className="block rounded-2xl border border-gray-100/60 bg-white/70 backdrop-blur-sm p-3 shadow-sm hover:bg-white hover:shadow-md transition-all active:scale-[0.98] group relative"
     >
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-medium text-gray-900 truncate">
-          {s.name ?? 'Unnamed'}
-        </h3>
-        <ChevronRight className="h-4 w-4 text-gray-400" />
-      </div>
-
-      <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-        <MapPin className="h-3 w-3" />
-        <span className="truncate">{s.address ?? 'No address'}</span>
-      </div>
-
-      <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
-        <Phone className="h-3 w-3" />
-        <span>{s.phone ?? '—'}</span>
-      </div>
-
-      <div className="flex items-center justify-between mb-3">
-        <Badge kind={s.status === 'open' ? 'green' : s.status === 'inactive' ? 'amber' : 'rose'}>
-          {s.status === 'open' ? 'Actif' : s.status === 'inactive' ? 'En attente' : 'Fermé'}
-        </Badge>
-        <div className="flex items-center gap-1 text-amber-500">
-          <Star className="h-3 w-3" />
-          <span className="text-xs">{s.rating ?? '—'}</span>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-gray-900 truncate text-sm mb-1.5 pr-12 flex items-center gap-1.5">
+            <StoreIcon size={14} className="text-[var(--c-accent)] shrink-0" />
+            <span className="truncate">{s.name ?? 'Unnamed'}</span>
+          </h3>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
+              {wilayaLabel(s.wilaya)}
+            </span>
+            <span className="text-[10px] font-bold text-gray-500 flex items-center gap-1 bg-gray-50/50 px-1.5 py-0.5 rounded border border-transparent truncate max-w-[150px]">
+              <Phone size={10} className="text-gray-300" />
+              {s.phone || '—'}
+            </span>
+            <span className="text-[10px] font-bold text-gray-500 flex items-center gap-1 bg-gray-50/50 px-1.5 py-0.5 rounded border border-transparent truncate max-w-[180px]">
+              <Mail size={10} className="text-gray-300" />
+              {s.email || '—'}
+            </span>
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2 absolute top-3 right-3">
+          <Badge kind={s.status === 'open' ? 'green' : s.status === 'inactive' ? 'amber' : 'rose'}>
+            {s.status === 'open' ? 'Actif' : s.status === 'inactive' ? 'En attente' : 'Fermé'}
+          </Badge>
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(s.id, s.name); }}
+            className="p-1 text-gray-300 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+          >
+            <X size={14} />
+          </button>
         </div>
       </div>
-
-      {/* Delete button (does NOT trigger navigation) */}
-      <button
-        onClick={handleDelete}
-        className="text-red-600 text-xs underline hover:text-red-800"
-      >
-        Delete Store
-      </button>
     </Link>
   )
 }
 
-
-
 function Th({ children }: { children: React.ReactNode }) {
-  return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">{children}</th>
+  return <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{children}</th>
 }
 
 function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-3 py-2">{children}</td>
+  return <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">{children}</td>
 }
-function loadStores() {
-  throw new Error('Function not implemented.')
-}
-

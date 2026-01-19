@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Coins, Loader2, ArrowUpRight } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'sonner';
+import { useLanguage } from '@/lib/useLanguage';
 
 type Payment = {
     id: string;
@@ -15,7 +16,8 @@ type Payment = {
     plans: { name: string; quantity: number } | null;
 };
 
-export default function AccountingSettings({ t }: { t: any }) {
+export default function AccountingSettings() {
+    const { t, lang } = useLanguage();
     const supabase = createClientComponentClient();
     const [payments, setPayments] = useState<Payment[]>([]);
     const [loading, setLoading] = useState(true);
@@ -53,15 +55,19 @@ export default function AccountingSettings({ t }: { t: any }) {
                 <div>
                     <h2 className="text-lg font-semibold flex items-center gap-2 text-[var(--c-primary)]">
                         <Coins className="h-5 w-5 text-[var(--c-accent)]" />
-                        Comptabilité
+                        {t.accounting || 'Comptabilité'}
                     </h2>
-                    <p className="text-sm text-gray-500">View recent store subscription payments.</p>
+                    <p className="text-sm text-gray-500">
+                        {lang === 'ar' ? 'عرض مدفوعات اشتراك المتجر الأخيرة.' :
+                            lang === 'fr' ? 'Afficher les paiements récents des abonnements.' :
+                                'View recent store subscription payments.'}
+                    </p>
                 </div>
             </div>
 
             {/* --- Summary Card --- */}
             <div className="bg-gradient-to-br from-[var(--c-primary)] to-[var(--c-secondary)] rounded-xl p-6 text-white shadow-lg">
-                <p className="text-white/70 text-sm font-medium mb-1">Total Revenue</p>
+                <p className="text-white/70 text-sm font-medium mb-1">{t.totalRevenue || 'Total Revenue'}</p>
                 <h3 className="text-3xl font-bold">{totalRevenue.toLocaleString()} DA</h3>
             </div>
 

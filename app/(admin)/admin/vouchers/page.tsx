@@ -27,13 +27,13 @@ import PrintVouchersModal from '@/components/PrintVouchersModal'
 export default function AdminVouchersPage() {
   return (
     <Suspense fallback={<div className="p-4 text-sm text-gray-500">Signing you in…</div>}>
-      <AdminVouchersInner/>
+      <AdminVouchersInner />
     </Suspense>
   )
 }
 
 /* =================== MAIN PAGE =================== */
- function AdminVouchersInner() {
+function AdminVouchersInner() {
   const { t, lang } = useLanguage()
   const supabase = createClientComponentClient()
   const params = useSearchParams()
@@ -50,24 +50,31 @@ export default function AdminVouchersPage() {
   const [selectedStore, setSelectedStore] = useState<'all' | string>('all')
   const [selectedStatus, setSelectedStatus] = useState<'all' | string>('all')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-const [printOpen, setPrintOpen] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const statusCounts = useMemo(() => ({
+    all: rows.length,
+    active: rows.filter(v => v.status === 'active').length,
+    redeemed: rows.filter(v => v.status === 'redeemed').length,
+    blank: rows.filter(v => v.status === 'blank').length
+  }), [rows])
+  const [printOpen, setPrintOpen] = useState(false)
 
 
-  
+
   /* ---------- Pagination ---------- */
   const ITEMS_PER_PAGE = 10
   const [page, setPage] = useState(1)
   const totalPages = useMemo(() => Math.ceil(rows.length / ITEMS_PER_PAGE), [rows])
 
- // ✅ Read status from query (?status=active)
+  // ✅ Read status from query (?status=active)
   useEffect(() => {
     const s = params.get('status')
     if (s) setSelectedStatus(s)
   }, [params])
 
- // ✅ Fetch current user store_id and vouchers
+  // ✅ Fetch current user store_id and vouchers
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       setLoading(true)
 
       const {
@@ -83,7 +90,7 @@ const [printOpen, setPrintOpen] = useState(false)
         .eq('user_id', userId)
         .maybeSingle()
 
-        
+
       const currentStoreId = roleRow?.store_id || null
       setStoreId(currentStoreId)
 
@@ -101,15 +108,15 @@ const [printOpen, setPrintOpen] = useState(false)
       setRows(data || [])
       setLoading(false)
     })()
-  }, [selectedStatus, supabase]) 
+  }, [selectedStatus, supabase])
 
-  
+
   /* -------- Load data -------- */
   async function loadData() {
     setLoading(true)
     const [{ data: vouchers }, { data: storesData }] = await Promise.all([
       supabase.from('vouchers').select('*').order('updated_at', { ascending: false })
-,
+      ,
       supabase.from('stores').select('id, name'),
     ])
     setRows(vouchers || [])
@@ -121,41 +128,41 @@ const [printOpen, setPrintOpen] = useState(false)
     loadData()
   }, [])
 
-  
+
   /* -------- Filters -------- */
   const filtered = useMemo(() => {
-  let data = rows
+    let data = rows
 
-  if (selectedStore !== 'all') data = data.filter(v => v.store_id === selectedStore)
-  if (selectedStatus !== 'all') data = data.filter(v => v.status === selectedStatus)
+    if (selectedStore !== 'all') data = data.filter(v => v.store_id === selectedStore)
+    if (selectedStatus !== 'all') data = data.filter(v => v.status === selectedStatus)
 
-  // 🔍 Search filter
-  if (q.trim()) {
-    const t = q.trim().toLowerCase()
-    data = data.filter(v => v.buyer_name?.toLowerCase().includes(t))
-  }
+    // 🔍 Search filter
+    if (q.trim()) {
+      const t = q.trim().toLowerCase()
+      data = data.filter(v => v.buyer_name?.toLowerCase().includes(t))
+    }
 
-  // 📅 Date filter
-  if (selectedDate) {
-    data = data.filter((v) => {
-      const d = v.activated_at
-        ? new Date(v.activated_at).toISOString().slice(0, 10)
-        : null
-      return d === selectedDate
-    })
-  }
+    // 📅 Date filter
+    if (selectedDate) {
+      data = data.filter((v) => {
+        const d = v.activated_at
+          ? new Date(v.activated_at).toISOString().slice(0, 10)
+          : null
+        return d === selectedDate
+      })
+    }
 
-  return data
-}, [rows, q, selectedStore, selectedStatus, selectedDate])
+    return data
+  }, [rows, q, selectedStore, selectedStatus, selectedDate])
 
 
-/* -------- Totals Calculation -------- */
-const totals = useMemo(() => {
-  const totalInitial = filtered.reduce((sum, v) => sum + (v.initial_amount || 0), 0)
-  const totalBalance = filtered.reduce((sum, v) => sum + (v.balance || 0), 0)
-  const consumed = totalInitial - totalBalance
-  return { totalInitial, totalBalance, consumed }
-}, [filtered])
+  /* -------- Totals Calculation -------- */
+  const totals = useMemo(() => {
+    const totalInitial = filtered.reduce((sum, v) => sum + (v.initial_amount || 0), 0)
+    const totalBalance = filtered.reduce((sum, v) => sum + (v.balance || 0), 0)
+    const consumed = totalInitial - totalBalance
+    return { totalInitial, totalBalance, consumed }
+  }, [filtered])
 
 
   /* -------- Paginated data -------- */
@@ -164,122 +171,92 @@ const totals = useMemo(() => {
     return filtered.slice(start, start + ITEMS_PER_PAGE)
   }, [filtered, page])
 
- 
+
 
   const getStoreName = (id: string) => stores.find((s) => s.id === id)?.name ?? '—'
 
- 
+
 
   /* -------- UI -------- */
   return (
-<div
-      className={`min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8 ${
-        lang === 'ar' ? 'rtl' : 'ltr'
-      }`}
+    <div
+      className={`min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 sm:px-6 md:px-8 py-6 pb-24 md:pb-6 space-y-8 ${lang === 'ar' ? 'rtl' : 'ltr'
+        }`}
     >
 
-      <VoucherHeader
-  onAdd={() => setAdding(true)}
-  onPrint={() => setPrintOpen(true)}
-/>
+      <VoucherHeader />
 
 
 
-{/* ===== Totals Section (Always One Row) ===== */}
-{!loading && filtered.length > 0 && (
-  <div
-    className="
-      bg-white/70 border border-gray-100 shadow-sm p-2 rounded-xl text-sm
-      flex  items-center gap-2 text-center overflow-x-auto no-scrollbar
-      whitespace-nowrap mb-0
-    "
-  >
-    {/* Initial */}
-    <div className="flex flex-col min-w-[100px]">
-      <span className="text-gray-600 text-xs">
-        {selectedStatus === 'all'
-          ? t.totalAllVouchers || 'All vouchers'
-          : `${selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)} total`}
-      </span>
-      <span className="font-semibold text-gray-900 text-base">
-        {fmtDZD(totals.totalInitial, lang)}
-      </span>
-    </div>
+      {/* 🔵 Status Tabs Row */}
+      <div className="flex items-center gap-1 border-b border-gray-100 overflow-x-auto scrollbar-hide shrink-0">
+        {[
+          { key: 'all', label: t.all || 'All', count: statusCounts.all },
+          { key: 'active', label: t.active || 'Active', count: statusCounts.active },
+          { key: 'redeemed', label: t.redeemed || 'Redeemed', count: statusCounts.redeemed },
+          { key: 'blank', label: t.blank || 'Blank', count: statusCounts.blank },
+        ].map((st) => (
+          <button
+            key={st.key}
+            onClick={() => setSelectedStatus(st.key)}
+            className={`flex items-center gap-1.5 pt-4 pb-2 px-3 text-xs font-bold transition-all relative whitespace-nowrap ${selectedStatus === st.key ? 'text-[var(--c-accent)]' : 'text-gray-400 hover:text-gray-600'
+              }`}
+          >
+            <span>{st.label}</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] ${selectedStatus === st.key ? 'bg-[var(--c-accent)] text-white' : 'bg-gray-100 text-gray-500'
+                }`}
+            >
+              {st.count}
+            </span>
+            {selectedStatus === st.key && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--c-accent)]" />
+            )}
+          </button>
+        ))}
 
-    {/* Remaining */}
-    <div className="flex flex-col min-w-[100px] text-center">
-      <span className="text-gray-600 text-xs">Remaining</span>
-      <span className="font-semibold text-emerald-700 text-base">
-        {fmtDZD(totals.totalBalance, lang)}
-      </span>
-    </div>
+        <div className="ml-auto pr-2 pb-2 pt-2">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`p-1.5 rounded-lg transition-all ${showFilters ? 'bg-[var(--c-accent)] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              }`}
+          >
+            <Search className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
 
-    {/* Consumed */}
-    <div className="flex flex-col min-w-[100px] text-center">
-      <span className="text-gray-600 text-xs">Consumed</span>
-      <span className="font-semibold text-rose-600 text-base">
-        {fmtDZD(totals.consumed, lang)}
-      </span>
-    </div>
-  </div>
-)}
+      {/* ===== Filters Section ===== */}
+      {showFilters && (
+        <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-100 p-3 shadow-sm animate-in slide-in-from-top-2 fade-in duration-200 shrink-0 space-y-3">
 
+          <div className="flex gap-2 text-sm flex-col sm:flex-row">
+            {/* Search */}
+            <div className="flex-1 flex items-center gap-2 bg-white/50 rounded-xl px-3 py-2 border border-gray-100 h-10">
+              <Search className="h-4 w-4 text-gray-400" />
+              <input
+                value={q}
+                autoFocus
+                onChange={(e) => setQ(e.target.value)}
+                placeholder={t.searchByClient || 'Search...'}
+                className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-gray-300 font-medium"
+              />
+            </div>
 
+            {/* Date */}
+            <div className="flex-1 flex items-center gap-2 bg-white/50 rounded-xl px-3 py-2 border border-gray-100 h-10">
+              <Calendar className="h-4 w-4 text-gray-400" />
+              <input
+                type="date"
+                className="flex-1 bg-transparent text-sm focus:outline-none"
+                value={selectedDate || ''}
+                onChange={(e) => setSelectedDate(e.target.value || null)}
+              />
+            </div>
+          </div>
 
-
-{/* ===== Filters Section ===== */}
-<div className="rounded-xl bg-white/80 backdrop-blur-sm border border-gray-100 p-2 shadow-sm space-y-4">
-  {/* 🔍 Search bar */}
-  <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
-    <Search className="h-4 w-4 text-gray-400" />
-    <input
-      value={q}
-      onChange={(e) => setQ(e.target.value)}
-      placeholder={t.searchByClient || 'Search by client name'}
-      className="flex-1 bg-transparent text-sm focus:outline-none"
-    />
-  </div>
-    {/* 📅 Date Picker */}
-    <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
-      <Calendar className="h-4 w-4 text-gray-400" />
-      <input
-        type="date"
-        className="flex-1 bg-transparent text-sm focus:outline-none"
-        value={selectedDate || ''}
-        onChange={(e) => setSelectedDate(e.target.value || null)}
-      />
-    </div>
-
- 
-
-  
-
-   {/* ⚡ Quick Filter Bar (NEW) */}
-  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-    {[
-      { label: t.all, value: 'all' },
-      { label: t.active, value: 'active' },
-      { label: t.redeemed, value: 'redeemed' },
-      { label: t.blank, value: 'blank' },
-    
-    ].map((f) => (
-      <button
-        key={f.value}
-        onClick={() => setSelectedStatus(f.value)}
-        className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
-          selectedStatus === f.value
-            ? 'bg-[var(--c-accent2)] text-white border-emerald-600 shadow-sm'
-            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
-        }`}
-      >
-        {f.label}
-      </button>
-    ))}
-  </div>
-
-
-
-</div>
+        </div>
+      )}
 
 
 
@@ -309,18 +286,18 @@ const totals = useMemo(() => {
                   <span className="text-gray-500">Code: </span>
                   <code className="bg-gray-100 rounded px-1 py-0.5 text-xs">{v.code}</code>
                 </div>
-                
+
                 <span className="font-medium text-emerald-700">{fmtDZD(v.balance)}</span>
               </div>
               <p className="mt-1 text-xs text-gray-400">
                 Created: {new Date(v.created_at).toLocaleDateString()}
               </p>
-             <p className="mt-1 text-xs text-gray-400">
-  Activated:{' '}
-  {v.activated_at
-    ? new Date(v.activated_at).toLocaleDateString()
-    : 'Not activated yet'}
-</p>
+              <p className="mt-1 text-xs text-gray-400">
+                Activated:{' '}
+                {v.activated_at
+                  ? new Date(v.activated_at).toLocaleDateString()
+                  : 'Not activated yet'}
+              </p>
 
             </div>
           ))
@@ -328,7 +305,7 @@ const totals = useMemo(() => {
       </div>
 
       {/* Desktop Table */}
-    
+
       <div className="hidden md:block rounded-xl bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm overflow-y-auto"
         style={{ maxHeight: 'calc(100vh - 350px)' }}>
         {loading ? (
@@ -336,50 +313,50 @@ const totals = useMemo(() => {
         ) : paginated.length === 0 ? (
           <div className="py-20 text-center text-gray-400">No vouchers found.</div>
         ) : (
-            <div dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b sticky top-0 z-10">
-              <tr>
-                <Th rtl={lang === 'ar'}>{t.buyer}</Th>
-                <Th rtl={lang === 'ar'}>{t.recipient}</Th>
-                <Th rtl={lang === 'ar'}>{t.store}</Th>
-                <Th rtl={lang === 'ar'}>{t.code}</Th>
-                <Th rtl={lang === 'ar'}>{t.Status}</Th>
-                <Th rtl={lang === 'ar'}>{t.balance}</Th>
-                <Th rtl={lang === 'ar'}>{t.created}</Th>
-                <Th rtl={lang === 'ar'}>'activated'</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginated.map((v) => (
-                <tr key={v.id}
-                  onClick={() => setSelectedVoucher(v)}
-                  className="border-t hover:bg-gray-50 cursor-pointer">
-                  <Td>{v.buyer_name ?? '—'}</Td>
-                  <Td>{v.recipient_name ?? '—'}</Td>
-                  <Td>{getStoreName(v.store_id)}</Td>
-                  <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
-                  <Td><StatusPill status={v.status} /></Td>
-                  <Td>{fmtDZD(v.balance, lang)}</Td>
-                  <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
-                  <Td>{new Date(v.activated_at).toLocaleDateString()}</Td>
-
+          <div dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b sticky top-0 z-10">
+                <tr>
+                  <Th rtl={lang === 'ar'}>{t.buyer}</Th>
+                  <Th rtl={lang === 'ar'}>{t.recipient}</Th>
+                  <Th rtl={lang === 'ar'}>{t.store}</Th>
+                  <Th rtl={lang === 'ar'}>{t.code}</Th>
+                  <Th rtl={lang === 'ar'}>{t.Status}</Th>
+                  <Th rtl={lang === 'ar'}>{t.balance}</Th>
+                  <Th rtl={lang === 'ar'}>{t.created}</Th>
+                  <Th rtl={lang === 'ar'}>'activated'</Th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-                </div>
+              </thead>
+              <tbody>
+                {paginated.map((v) => (
+                  <tr key={v.id}
+                    onClick={() => setSelectedVoucher(v)}
+                    className="border-t hover:bg-gray-50 cursor-pointer">
+                    <Td>{v.buyer_name ?? '—'}</Td>
+                    <Td>{v.recipient_name ?? '—'}</Td>
+                    <Td>{getStoreName(v.store_id)}</Td>
+                    <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
+                    <Td><StatusPill status={v.status} /></Td>
+                    <Td>{fmtDZD(v.balance, lang)}</Td>
+                    <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
+                    <Td>{new Date(v.activated_at).toLocaleDateString()}</Td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
         )}
       </div>
       {printOpen && (
-  <PrintVouchersModal
-    open={printOpen}
-    onClose={() => setPrintOpen(false)}
-    stores={stores}  
+        <PrintVouchersModal
+          open={printOpen}
+          onClose={() => setPrintOpen(false)}
+          stores={stores}
 
-  />
-)}
+        />
+      )}
 
 
       {/* Pagination */}
@@ -411,7 +388,7 @@ const totals = useMemo(() => {
         />
       )}
 
-    
+
     </div>
   )
 }
@@ -420,9 +397,8 @@ const totals = useMemo(() => {
 function Th({ children, rtl = false }: { children: React.ReactNode; rtl?: boolean }) {
   return (
     <th
-      className={`px-3 py-2 text-xs font-medium text-gray-500 ${
-        rtl ? 'text-right' : 'text-left'
-      }`}
+      className={`px-3 py-2 text-xs font-medium text-gray-500 ${rtl ? 'text-right' : 'text-left'
+        }`}
     >
       {children}
     </th>
@@ -448,8 +424,8 @@ function StatusPill({ status }: { status: string }) {
 function fmtDZD(n: number, lang: 'fr' | 'en' | 'ar' = 'fr') {
   const locale =
     lang === 'ar' ? 'ar-DZ' :
-    lang === 'en' ? 'en-DZ' :
-    'fr-DZ'
+      lang === 'en' ? 'en-DZ' :
+        'fr-DZ'
 
   return new Intl.NumberFormat(locale, {
     style: 'currency',
@@ -540,10 +516,9 @@ function AddVoucherModal({
                       key={s.id}
                       value={s.id}
                       className={({ active }) =>
-                        `cursor-pointer px-4 py-2 ${
-                          active
-                            ? 'bg-[var(--c-accent)]/10 text-[var(--c-accent)]'
-                            : 'text-[var(--c-text)]'
+                        `cursor-pointer px-4 py-2 ${active
+                          ? 'bg-[var(--c-accent)]/10 text-[var(--c-accent)]'
+                          : 'text-[var(--c-text)]'
                         }`
                       }
                     >

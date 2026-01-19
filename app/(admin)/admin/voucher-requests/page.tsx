@@ -1,13 +1,13 @@
 'use client'
 
-import { Suspense,useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { Check, X, Calendar, Filter } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 export default function AdminVoucherRequestsPage() {
   return (
     <Suspense fallback={<div className="p-4 text-sm text-gray-500">Signing you in…</div>}>
-      <AdminVoucherRequestsPageInner/>
+      <AdminVoucherRequestsPageInner />
     </Suspense>
   )
 }
@@ -17,7 +17,7 @@ function AdminVoucherRequestsPageInner() {
   const params = useSearchParams()
   const [rows, setRows] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const highlightId = params.get("id") 
+  const highlightId = params.get("id")
   // Filters
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -39,7 +39,7 @@ function AdminVoucherRequestsPageInner() {
     loadRequests()
   }, [])
 
-// ⭐ Highlight effect when coming from notifications
+  // ⭐ Highlight effect when coming from notifications
   useEffect(() => {
     if (!highlightId) return
 
@@ -59,10 +59,10 @@ function AdminVoucherRequestsPageInner() {
 
     return () => clearTimeout(timeout)
   }, [highlightId])
-  
+
   /* ---------- APPROVE REQUEST ---------- */
   async function approveRequest(req: any) {
-    if (!confirm(`Approve ${req.count} vouchers for ${req.store_name}?`)) return
+    if (!confirm(`Valider le paiement et générer ${req.count} vouchers pour ${req.store_name} ?`)) return
 
     // 1️⃣ Update request
     const { error: updateErr } = await supabase
@@ -96,8 +96,22 @@ function AdminVoucherRequestsPageInner() {
         type: "voucher_request_approved",
         request_id: req.id, //  link back to this request
 
-      }as any)
+      } as any)
     }
+
+    // 4️⃣ Record Payment
+    const priceMap: Record<number, number> = { 50: 5000, 200: 18000, 500: 40000 }
+    const amount = priceMap[req.count] || (req.count * 100)
+
+    const { error: payErr } = await supabase.from('payments').insert({
+      store_id: req.store_id,
+      amount: amount,
+      status: 'completed',
+      payment_method: 'cash',
+      created_at: new Date().toISOString()
+    })
+
+    if (payErr) console.error('Payment record error:', payErr)
 
     alert('✅ Request approved & vouchers created!')
     loadRequests()
@@ -188,11 +202,10 @@ function AdminVoucherRequestsPageInner() {
             <button
               key={f.value}
               onClick={() => setSelectedStatus(f.value as any)}
-              className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
-                selectedStatus === f.value
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
-              }`}
+              className={`px-3 py-1.5 rounded-full text-sm border transition-all ${selectedStatus === f.value
+                ? 'bg-emerald-600 text-white border-emerald-600'
+                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
+                }`}
             >
               {f.label}
             </button>
@@ -209,19 +222,17 @@ function AdminVoucherRequestsPageInner() {
         ) : (
           filtered.map((req) => (
             <div key={req.id}
-             id={`req-${req.id}`} 
-            className="bg-white p-4 rounded-xl border shadow-sm space-y-2">
+              id={`req-${req.id}`}
+              className="bg-white p-4 rounded-xl border shadow-sm space-y-2">
               <div className="flex justify-between">
                 <h3 className="font-semibold">{req.store_name}</h3>
                 <StatusBadge status={req.status} />
               </div>
 
-              <p className="text-sm text-gray-600">
-                Count: <b>{req.count}</b>
-              </p>
-              <p className="text-xs text-gray-400">
-                Created: {new Date(req.created_at).toLocaleDateString()}
-              </p>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">Pack: <span className="font-bold text-gray-900">{req.count} QRs</span> <span className="text-emerald-600 font-bold ml-1">({getEstimatedPrice(req.count)})</span></span>
+                <span className="text-xs text-gray-400">{new Date(req.created_at).toLocaleString()}</span>
+              </div>
               <p className="text-xs text-gray-400">
                 Processed:{' '}
                 {req.processed_at
@@ -233,9 +244,9 @@ function AdminVoucherRequestsPageInner() {
                 <div className="flex gap-2 pt-2">
                   <button
                     onClick={() => approveRequest(req)}
-                    className="flex-1 bg-emerald-600 text-white py-2 rounded-lg"
+                    className="flex-1 bg-emerald-600 text-white py-2 rounded-lg text-sm font-bold"
                   >
-                    Approve
+                    Valider le paiement
                   </button>
                   <button
                     onClick={() => rejectRequest(req)}
@@ -261,8 +272,9 @@ function AdminVoucherRequestsPageInner() {
             <thead className="bg-gray-50 border-b">
               <tr>
                 <Th>Store</Th>
-                <Th>Count</Th>
-                <Th>Requested</Th>
+                <Th>Pack / Quantité</Th>
+                <Th>Prix (Est.)</Th>
+                <Th>Date de commande</Th>
                 <Th>Status</Th>
                 <Th>Processed</Th>
                 <Th>Actions</Th>
@@ -270,12 +282,13 @@ function AdminVoucherRequestsPageInner() {
             </thead>
             <tbody>
               {filtered.map((req) => (
-                <tr key={req.id} 
-                id={`req-${req.id}`}
-                className="border-b hover:bg-gray-50">
+                <tr key={req.id}
+                  id={`req-${req.id}`}
+                  className="border-b hover:bg-gray-50">
                   <Td>{req.store_name}</Td>
-                  <Td>{req.count}</Td>
-                  <Td>{new Date(req.created_at).toLocaleDateString()}</Td>
+                  <Td><span className="font-medium bg-gray-100 px-2 py-1 rounded text-gray-700">{req.count} QRs</span></Td>
+                  <Td><span className="font-black text-emerald-600 whitespace-nowrap">{getEstimatedPrice(req.count)}</span></Td>
+                  <Td className="text-gray-500 text-xs">{new Date(req.created_at).toLocaleString()}</Td>
                   <Td><StatusBadge status={req.status} /></Td>
                   <Td>
                     {req.processed_at
@@ -343,4 +356,11 @@ function ActionBtn({ children, color, onClick }: any) {
       {children}
     </button>
   )
+}
+
+function getEstimatedPrice(count: number) {
+  if (count === 50) return '5,000 DA'
+  if (count === 200) return '18,000 DA'
+  if (count === 500) return '40,000 DA'
+  return (count * 100).toLocaleString() + ' DA'
 }

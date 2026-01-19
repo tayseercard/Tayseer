@@ -29,7 +29,7 @@ import AccountingSettings from '@/components/admin/settings/AccountingSettings'
 export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(false)
   const [activeModal, setActiveModal] = useState<
-    'profile' | 'password' | 'language' | 'roles' | 'packs' | 'accounting' | null
+    'profile' | 'password' | 'language' | 'roles' | 'accounting' | null
   >(null)
 
   const supabase = createClientComponentClient()
@@ -123,6 +123,11 @@ export default function SettingsPage() {
               label={t.roles}
               onClick={() => router.push("/admin/users")}
             />
+            <SettingRow
+              icon={<Package className="w-5 h-5" />}
+              label={t.offers || 'Offres & Packs'}
+              onClick={() => router.push('/admin/offers')}
+            />
           </div>
         </div>
 
@@ -141,14 +146,10 @@ export default function SettingsPage() {
               icon={<HelpCircle />}
               label={t.help || 'Help & FAQ'}
             />
-            <SettingRow
-              icon={<Package className="w-5 h-5" />}
-              label="Offres & Packs"
-              onClick={() => setActiveModal('packs')}
-            />
+
             <SettingRow
               icon={<Coins className="w-5 h-5" />}
-              label="Comptabilité"
+              label={t.accounting || "Comptabilité"}
               onClick={() => setActiveModal('accounting')}
             />
           </div>
@@ -181,8 +182,7 @@ export default function SettingsPage() {
             />
           )}
           {activeModal === 'roles' && <RolesSettings t={t} />}
-          {activeModal === 'packs' && <PacksSettings t={t} />}
-          {activeModal === 'accounting' && <AccountingSettings t={t} />}
+          {activeModal === 'accounting' && <AccountingSettings />}
         </SettingsModal>
       )}
     </div>

@@ -24,7 +24,7 @@ export default function PendingPage() {
                     <h1 className="text-2xl font-bold text-[var(--c-primary)] mb-4">Compte en attente d'activation</h1>
 
                     <p className="text-gray-600 mb-8 leading-relaxed">
-                        Votre boutique a été créée avec succès ! Un administrateur doit maintenant valider et activer votre compte avant que vous puissiez accéder au tableau de bord.
+                        Votre boutique a été créée avec succès ! Un administrateur doit maintenant valider votre payement et activer votre compte, on vous contactera sur le <span className="font-bold text-[var(--c-primary)]">05 52 30 76 34</span>.
                     </p>
 
                     <div className="space-y-4">

@@ -1,14 +1,32 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import StoreIdHeader from '@/components/StoreIdHeader'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { X } from 'lucide-react'
-import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode'
+import { Menu, Transition } from '@headlessui/react'
+import { Fragment } from 'react'
+import {
+  X,
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  Search,
+  Printer,
+  ChevronRight,
+  ChevronLeft,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  MoreHorizontal,
+  Plus,
+  Power
+} from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
 import PrintVouchersModal from '@/components/PrintVouchersModal'
-import StorePrintVouchersModal from '@/components/store/StorePrintVouchersModal'
+import { Badge } from '@/components/ui/badge'
+import { useLanguage } from '@/lib/useLanguage'
+import { wilayaLabel } from '@/lib/algeria'
 
 type StoreRow = {
   id: string
@@ -19,10 +37,12 @@ type StoreRow = {
   wilaya: number | null
   status: 'open' | 'inactive' | 'closed'
   created_at: string | null
+  paid_at: string | null
   payment_status?: 'paid' | 'unpaid'
   plans?: {
     id: string
     name: string
+    quantity: number
     price_per_unit: number
     total_price: number
   } | null
@@ -42,267 +62,500 @@ type VoucherRow = {
 }
 
 export default function AdminStoreDetailPage() {
-  const [printModal, setPrintModal] = useState(false)
   const supabase = createClientComponentClient()
   const router = useRouter()
   const { id: storeId } = useParams<{ id: string }>()
+  const { t } = useLanguage()
 
   const [store, setStore] = useState<StoreRow | null>(null)
+  const [payments, setPayments] = useState<any[]>([])
   const [vouchers, setVouchers] = useState<VoucherRow[]>([])
   const [loadingStore, setLoadingStore] = useState(true)
   const [loadingVouchers, setLoadingVouchers] = useState(true)
   const [q, setQ] = useState('')
-
-  // Modal states
+  const [printModal, setPrintModal] = useState(false)
   const [adding, setAdding] = useState(false)
   const [countToAdd, setCountToAdd] = useState(1)
   const [addingLoading, setAddingLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 8
+  const [activeInfoTab, setActiveInfoTab] = useState<'contact' | 'location'>('contact')
 
-  /* -------- Load store -------- */
-  useEffect(() => {
+  const loadStore = useCallback(async () => {
     if (!storeId) return
-      ; (async () => {
-        setLoadingStore(true)
-        const { data, error } = await supabase
-          .from('stores')
-          .select('*, plans(*)')
-          .eq('id', storeId)
-          .maybeSingle()
-        setLoadingStore(false)
+    setLoadingStore(true)
+    try {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('*, plans(*)')
+        .eq('id', storeId)
+        .maybeSingle()
 
-        if (error || !data) {
-          // eslint-disable-next-line no-console
-          console.error('Error fetching store:', error || 'No data returned')
-          router.replace('/admin/stores')
-          return
-        }
-        if (data) {
-          // Normalize plans if it returns an array (some PostgREST versions/configs do this for relationships)
-          if (Array.isArray(data.plans)) {
-            data.plans = data.plans[0] || null;
-          }
-          setStore(data)
-        }
-      })()
+      if (error || !data) {
+        router.replace('/admin/stores')
+        return
+      }
+
+      if (Array.isArray(data.plans)) {
+        data.plans = data.plans[0] || null
+      }
+      setStore(data)
+
+      const { data: payData } = await supabase
+        .from('payments')
+        .select('*, plans(name)')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false })
+
+      if (payData) setPayments(payData)
+
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingStore(false)
+    }
   }, [storeId, supabase, router])
 
-  /* -------- Load vouchers -------- */
-  async function loadVouchers() {
+  const loadVouchers = useCallback(async () => {
     if (!storeId) return
     setLoadingVouchers(true)
-    const { data, error } = await supabase
-      .from('vouchers')
-      .select('*')
-      .eq('store_id', storeId)
-      .order('created_at', { ascending: false })
+    try {
+      const { data, error } = await supabase
+        .from('vouchers')
+        .select('*')
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false })
 
-    setLoadingVouchers(false)
-    if (!error && data) setVouchers(data as VoucherRow[])
-  }
+      if (!error && data) setVouchers(data as VoucherRow[])
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingVouchers(false)
+    }
+  }, [storeId, supabase])
 
   useEffect(() => {
+    loadStore()
     loadVouchers()
-  }, [storeId])
+  }, [loadStore, loadVouchers])
 
-  /* -------- Filter -------- */
   const filtered = useMemo(() => {
-    const t = q.trim().toLowerCase()
-    if (!t) return vouchers
+    const term = q.trim().toLowerCase()
+    if (!term) return vouchers
     return vouchers.filter(
       (v) =>
-        (v.code ?? '').toLowerCase().includes(t) ||
-        (v.buyer_name ?? '').toLowerCase().includes(t)
+        (v.code ?? '').toLowerCase().includes(term) ||
+        (v.buyer_name ?? '').toLowerCase().includes(term)
     )
   }, [vouchers, q])
 
-  /* ---------- Pagination ---------- */
-  const ITEMS_PER_PAGE = 10
-  const [page, setPage] = useState(1)
-
-  const totalPages = useMemo(
-    () => Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1,
-    [filtered]
-  )
-
   const paginated = useMemo(() => {
-    const start = (page - 1) * ITEMS_PER_PAGE
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
     return filtered.slice(start, start + ITEMS_PER_PAGE)
-  }, [filtered, page])
+  }, [filtered, currentPage])
 
-  // Reset to page 1 when filter changes
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1
+
   useEffect(() => {
-    setPage(1)
+    setCurrentPage(1)
   }, [q])
 
-  /* 🟩 Create blank vouchers */
   async function createBlankVouchers() {
     if (!storeId || countToAdd < 1) return
     setAddingLoading(true)
+    try {
+      const rows = Array.from({ length: countToAdd }).map(() => ({
+        store_id: storeId,
+        code: 'MKD-' + uuidv4().split('-')[0].toUpperCase(),
+        status: 'blank',
+        initial_amount: 0,
+        balance: 0,
+      }))
 
-    const rows = Array.from({ length: countToAdd }).map(() => ({
-      store_id: storeId,
-      code: 'MKD-' + uuidv4().split('-')[0].toUpperCase(),
-      status: 'blank',
-      initial_amount: 0,
-      balance: 0,
-    }))
+      const { error } = await supabase.from('vouchers').insert(rows)
+      if (error) throw error
 
-    const { error } = await supabase.from('vouchers').insert(rows)
-    setAddingLoading(false)
-
-    if (error) {
-      alert('❌ Error creating vouchers: ' + error.message)
-      return
+      alert(`✅ Created ${countToAdd} blank voucher(s)`)
+      setAdding(false)
+      setCountToAdd(1)
+      loadVouchers()
+    } catch (err: any) {
+      alert('❌ Error: ' + err.message)
+    } finally {
+      setAddingLoading(false)
     }
-
-    alert(`✅ Created ${countToAdd} blank voucher(s)`)
-    setAdding(false)
-    setCountToAdd(1)
-    loadVouchers()
   }
 
-  /* 🔄 Toggle Status */
   async function handleToggleStatus() {
     if (!store) return
     const newStatus = store.status === 'open' ? 'inactive' : 'open'
     const confirmMsg = newStatus === 'open'
-      ? "Voulez-vous activer cette boutique ? Elle aura accès immédiat à la plateforme."
-      : "Voulez-vous désactiver cette boutique ? L'accès sera bloqué."
+      ? "Activer cette boutique ?"
+      : "Désactiver cette boutique ?"
 
     if (!confirm(confirmMsg)) return
 
-    const { data, error } = await supabase
-      .from('stores')
-      .update({ status: newStatus })
-      .eq('id', storeId)
-      .select()
+    try {
+      const { error } = await supabase
+        .from('stores')
+        .update({ status: newStatus })
+        .eq('id', storeId)
 
-    if (error) {
-      alert("Erreur: " + error.message)
-      return
+      if (error) throw error
+      setStore({ ...store, status: newStatus })
+    } catch (err: any) {
+      alert("Erreur: " + err.message)
     }
-
-    if (!data || data.length === 0) {
-      alert("Impossible de mettre à jour. Vérifiez vos permissions.")
-      return
-    }
-
-    setStore({ ...store, status: newStatus })
   }
 
-  /* -------- Render -------- */
-  return (
-    <div className="min-h-dvh bg-[var(--bg)] text-[var(--c-text)]">
-      <div className="mx-auto max-w-6xl p-4 sm:p-6 space-y-6">
-        <StoreIdHeader
-          store={store}
-          onAddVoucher={() => setAdding(true)}
-          onPrintVouchers={() => setPrintModal(true)}
-        />
+  async function handleMarkAsPaid() {
+    if (!store) return
+    if (!confirm("Confirmer le paiement ?")) return
 
-        {/* 🛡️ Admin Activation Panel */}
-        {store && (
-          <div className="flex flex-col gap-4 p-5 rounded-xl border border-[var(--c-bank)]/20 bg-white shadow-sm">
-            {/* Header / Status Info */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${store.status === 'open' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
-                  {store.status === 'open' ? <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> : <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-[var(--c-primary)]">
-                    {store.name}
-                  </h3>
-                  <div className="flex flex-wrap gap-2 text-sm mt-1">
-                    <span className={`px-2 py-0.5 rounded-md font-medium ${store.status === 'open' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                      {store.status === 'open' ? 'Active' : 'Inactif'}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-md font-medium ${store.payment_status === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-                      {store.payment_status === 'paid' ? 'Payé' : 'Non Payé'}
-                    </span>
+    try {
+      const amount = store.plans?.total_price || 0
+      const { error: payError } = await supabase.from('payments').insert({
+        store_id: store.id,
+        amount: amount,
+        plan_id: store.plans?.id,
+        status: 'completed',
+        payment_method: 'cash'
+      })
+
+      if (payError) throw payError
+
+      const { error: updateError } = await supabase
+        .from('stores')
+        .update({
+          payment_status: 'paid',
+          paid_at: new Date().toISOString()
+        })
+        .eq('id', store.id)
+
+      if (updateError) throw updateError
+
+      const now = new Date().toISOString()
+      setStore({
+        ...store,
+        payment_status: 'paid',
+        paid_at: now
+      })
+
+      // Refresh payments list
+      setPayments(prev => [{ created_at: now, amount: amount, plans: { name: store.plans?.name } }, ...prev])
+
+      // 3️⃣ Auto-generate vouchers if this is the first payment
+      if (store.plans && vouchers.length === 0) {
+        const count = store.plans.quantity
+        const rows = Array.from({ length: count }).map(() => ({
+          store_id: store.id,
+          code: 'MKD-' + uuidv4().split('-')[0].toUpperCase(),
+          status: 'blank',
+          initial_amount: 0,
+          balance: 0,
+        }))
+
+        const { error: vouchersError } = await supabase.from('vouchers').insert(rows)
+        if (vouchersError) throw vouchersError
+
+        loadVouchers()
+        alert(`Paiement enregistré et ${count} vouchers générés automatiquement !`)
+      } else {
+        alert('Paiement enregistré !')
+      }
+
+      loadStore()
+    } catch (err: any) {
+      alert('Error: ' + err.message)
+    }
+  }
+
+  if (loadingStore) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--c-accent)]" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-900 pb-20">
+      <div className="mx-auto max-w-4xl p-4 sm:p-5 space-y-5">
+
+        {/* 1. Name, Status and Actions */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <div className="flex items-center justify-between gap-4 mb-2">
+            <h2 className="text-2xl font-black text-gray-900 leading-tight truncate">{store?.name}</h2>
+
+            {/* ⚙️ More Actions Menu */}
+            <Menu as="div" className="relative">
+              <Menu.Button className="h-9 w-9 flex items-center justify-center rounded-xl bg-gray-50 border border-gray-100 text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition active:scale-95">
+                <MoreHorizontal className="h-5 w-5" />
+              </Menu.Button>
+
+              <Transition
+                as={Fragment}
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <Menu.Items className="absolute right-0 mt-2 w-52 origin-top-right divide-y divide-gray-50 rounded-xl bg-white border border-gray-200 shadow-xl focus:outline-none z-[100]">
+                  <div className="px-1 py-1">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => setAdding(true)}
+                          className={`
+                            ${active ? 'bg-gray-50 text-[#020035]' : 'text-gray-600'}
+                            group flex w-full items-center rounded-lg px-3 py-2 text-[11px] font-bold transition
+                          `}
+                        >
+                          <Plus className="mr-2 h-4 w-4 text-[#ed4b00]" />
+                          Nouveau Voucher
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => setPrintModal(true)}
+                          className={`
+                            ${active ? 'bg-gray-50 text-[#020035]' : 'text-gray-600'}
+                            group flex w-full items-center rounded-lg px-3 py-2 text-[11px] font-bold transition
+                          `}
+                        >
+                          <Printer className="mr-2 h-4 w-4 text-gray-400" />
+                          Imprimer QR Codes
+                        </button>
+                      )}
+                    </Menu.Item>
                   </div>
+
+                  <div className="px-1 py-1">
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={handleToggleStatus}
+                          className={`
+                            ${active ? 'bg-gray-50' : ''}
+                            ${store?.status === 'open' ? 'text-rose-500' : 'text-emerald-600'}
+                            group flex w-full items-center rounded-lg px-3 py-2 text-[11px] font-bold transition
+                          `}
+                        >
+                          {store?.status === 'open' ? (
+                            <>
+                              <Power className="mr-2 h-4 w-4" />
+                              Désactiver la Boutique
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="mr-2 h-4 w-4" />
+                              Activer la Boutique
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </Menu.Item>
+                  </div>
+                </Menu.Items>
+              </Transition>
+            </Menu>
+          </div>
+
+          <div className="flex gap-2">
+            <Badge kind={store?.status === 'open' ? 'green' : 'amber'}>
+              {store?.status === 'open' ? 'Boutique active' : 'En attente d\'activation'}
+            </Badge>
+            <Badge kind={store?.payment_status === 'paid' ? 'green' : 'rose'}>
+              {store?.payment_status === 'paid' ? 'Plan payé' : 'Paiement requis'}
+            </Badge>
+          </div>
+        </div>
+
+        {/* 2. Coordonnées (Moved under name/status) */}
+        {/* 2. Coordonnées (Left/Right Split) */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+
+            {/* Left Column: Contact */}
+            <div className="space-y-6">
+              <h3 className="font-black text-gray-900 text-[10px] uppercase tracking-widest mb-2 opacity-50">Contact</h3>
+              <div className="flex items-center gap-4">
+                <Mail className="w-5 h-5 text-[#020035]" />
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black text-gray-300 uppercase">Email</p>
+                  <p className="text-sm font-bold text-gray-700 truncate">{store?.email || '—'}</p>
                 </div>
               </div>
-
-              {/* Plan Info */}
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Plan Souscrit</p>
-                <p className="font-bold text-[var(--c-primary)] text-lg">{store.plans?.name || 'Aucun plan'}</p>
-                <p className="text-sm text-gray-600">{store.plans ? `${store.plans.price_per_unit} DA / unité` : '-'}</p>
-                {store.plans && <p className="text-xs font-bold text-[var(--c-accent)]">Total: {store.plans.total_price.toLocaleString()} DA</p>}
+              <div className="flex items-center gap-4">
+                <Phone className="w-5 h-5 text-[#020035]" />
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black text-gray-300 uppercase">Téléphone</p>
+                  <p className="text-sm font-bold text-gray-700">{store?.phone || '—'}</p>
+                </div>
               </div>
             </div>
 
-            <hr className="border-gray-100" />
+            {/* Right Column: Location/Info */}
+            <div className="space-y-6">
+              <h3 className="font-black text-gray-900 text-[10px] uppercase tracking-widest mb-2 opacity-50">Localisation</h3>
+              <div className="flex items-center gap-4">
+                <MapPin className="w-5 h-5 text-[#020035]" />
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black text-gray-300 uppercase">Wilaya</p>
+                  <p className="text-sm font-bold text-gray-700">{wilayaLabel(store?.wilaya)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <Calendar className="w-5 h-5 text-[#020035]" />
+                <div className="min-w-0">
+                  <p className="text-[9px] font-black text-gray-300 uppercase">Inscrit le</p>
+                  <p className="text-sm font-bold text-gray-700">
+                    {store?.created_at ? new Date(store.created_at).toLocaleDateString() : '—'}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-            {/* Actions */}
-            <div className="flex justify-end gap-3">
-              {/* 1. Payment Step */}
-              {store.payment_status !== 'paid' && (
+          </div>
+
+          <div className="mt-8 pt-4 border-t border-gray-50 flex items-start gap-4">
+            <MapPin className="w-5 h-5 text-[#020035] mt-1 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[9px] font-black text-gray-300 uppercase mb-1">Adresse Complète</p>
+              <p className="text-xs text-gray-500 font-medium italic leading-relaxed">
+                {store?.address || 'Aucune adresse renseignée.'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Historique des Paiements */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <div className="space-y-4">
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Historique des Paiements</h3>
+
+            <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50/50">
+              <table className="w-full text-[10px]">
+                <thead className="bg-gray-100/50 text-gray-400 font-black uppercase tracking-widest border-b border-gray-100">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Plan / Pack</th>
+                    <th className="px-4 py-2 text-center">Montant</th>
+                    <th className="px-4 py-2 text-right">Date de Validation</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 bg-white/40">
+                  {payments.length === 0 ? (
+                    <tr className="text-gray-400 italic">
+                      <td className="px-4 py-3 text-xs font-bold">{store?.plans?.name || 'N/A'}</td>
+                      <td className="px-4 py-3 text-center font-bold">
+                        {store?.plans ? fmtDZD(store.plans.total_price) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="text-rose-400 font-black italic">En attente</span>
+                      </td>
+                    </tr>
+                  ) : (
+                    payments.map((p, idx) => (
+                      <tr key={idx} className="text-gray-700 font-bold">
+                        <td className="px-4 py-3 text-xs font-black">{p.plans?.name || store?.plans?.name || 'Pack'}</td>
+                        <td className="px-4 py-3 text-center text-[#020035] font-black">
+                          {fmtDZD(p.amount)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg uppercase font-black text-[9px] whitespace-nowrap">
+                            {new Date(p.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {store?.payment_status !== 'paid' && (
                 <button
-                  onClick={async () => {
-                    if (!confirm("Confirmez-vous la réception du paiement pour ce plan ?")) return;
-
-                    // Insert payment record
-                    const amount = store.plans?.total_price || 0;
-
-                    // Start transaction-like flow (manual)
-                    const { error: payError } = await supabase.from('payments').insert({
-                      store_id: store.id,
-                      amount: amount,
-                      plan_id: store.plans?.id,
-                      status: 'completed',
-                      payment_method: 'cash' // Default for admin manual entry
-                    });
-
-                    if (payError) {
-                      alert('Error creating payment: ' + payError.message);
-                      return;
-                    }
-
-                    // Update store status
-                    const { error: updateError } = await supabase.from('stores').update({ payment_status: 'paid' }).eq('id', store.id);
-                    if (updateError) {
-                      alert('Error updating store status: ' + updateError.message);
-                    } else {
-                      // Refresh local state
-                      setStore({ ...store, payment_status: 'paid' });
-                      alert('Paiement enregistré avec succès !');
-                    }
-                  }}
-                  className="px-5 py-2.5 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition flex items-center gap-2"
+                  onClick={handleMarkAsPaid}
+                  className="w-full h-11 flex items-center justify-center gap-2 bg-[#020035] text-white rounded-xl text-xs font-bold hover:bg-black transition active:scale-95 shadow-lg shadow-gray-200"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                  Marquer comme Payé
+                  <CreditCard className="w-4 h-4" />
+                  Valider le Paiement
                 </button>
               )}
 
-              {/* 2. Activation Step (Only if paid) */}
-              {(store.payment_status === 'paid' || store.status === 'open') && (
+              {store?.payment_status === 'paid' && store?.status !== 'open' && (
                 <button
                   onClick={handleToggleStatus}
-                  className={`
-                      px-5 py-2.5 rounded-lg text-sm font-semibold transition flex items-center gap-2
-                      ${store.status === 'open'
-                      ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200'
-                      : 'bg-[var(--c-primary)] text-white hover:bg-[var(--c-secondary)] shadow-sm'}
-                    `}
+                  className="col-span-full h-11 flex items-center justify-center gap-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 active:scale-95"
                 >
-                  {store.status === 'open' ? (
-                    <>
-                      <X className="w-4 h-4" /> Désactiver la boutique
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                      Activer maintenant
-                    </>
-                  )}
+                  <CheckCircle2 className="w-4 h-4" />
+                  Activer la Boutique
                 </button>
               )}
             </div>
           </div>
-        )}
+        </div>
+
+        {/* 4. Liste des Vouchers */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
+          <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+            <h3 className="font-bold text-gray-900 text-xs flex items-center gap-2">
+              <Printer className="w-4 h-4 text-gray-400" />
+              Liste des Vouchers
+            </h3>
+            <div className="relative w-48">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Filtrer..."
+                className="w-full pl-8 pr-3 py-1.5 bg-gray-50/50 border border-gray-100 rounded-lg text-xs focus:outline-none transition"
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-x-auto">
+            {loadingVouchers ? (
+              <div className="py-20 text-center text-gray-400 text-xs">Chargement...</div>
+            ) : paginated.length === 0 ? (
+              <div className="py-20 text-center text-gray-400 text-xs font-medium">Aucun résultat trouvé.</div>
+            ) : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-gray-50/50 text-gray-400 text-[10px] font-black uppercase">
+                    <th className="px-5 py-3 text-left">Bénéficiaire</th>
+                    <th className="px-5 py-3 text-left">Code</th>
+                    <th className="px-5 py-3 text-left">Statut</th>
+                    <th className="px-5 py-3 text-right">Solde</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {paginated.map((v) => (
+                    <tr key={v.id} className="hover:bg-gray-50/30 transition">
+                      <td className="px-5 py-3 font-bold text-gray-700">{v.buyer_name || '—'}</td>
+                      <td className="px-5 py-3"><span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-black">{v.code}</span></td>
+                      <td className="px-5 py-3"><StatusPill status={v.status} /></td>
+                      <td className="px-5 py-3 text-right font-black text-gray-600">{fmtDZD(v.balance)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {!loadingVouchers && totalPages > 1 && (
+            <div className="p-4 border-t border-gray-50 flex items-center justify-center gap-3">
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1 disabled:opacity-20"><ChevronLeft className="w-4 h-4" /></button>
+              <span className="text-[10px] font-black text-gray-400">{currentPage} / {totalPages}</span>
+              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-1 disabled:opacity-20"><ChevronRight className="w-4 h-4" /></button>
+            </div>
+          )}
+        </div>
 
         {store && (
           <PrintVouchersModal
@@ -312,184 +565,31 @@ export default function AdminStoreDetailPage() {
           />
         )}
 
-
-        {/* Search Bar */}
-        <div className="flex items-center gap-2 sticky top-0 bg-[var(--bg)]/90 backdrop-blur-sm py-1 z-30">
-          <input
-            className="
-              flex-1 rounded-lg border border-[var(--c-bank)]/30 
-              bg-white/80 backdrop-blur-sm 
-              px-3 py-2 text-sm
-              placeholder-[var(--c-text)]/40 focus:outline-none 
-              focus:ring-2 focus:ring-[var(--c-accent)]/40
-            "
-            placeholder="Search vouchers by code or buyer…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-
-        {/* Vouchers Section */}
-        {loadingVouchers ? (
-          <div className="py-8 text-center text-[var(--c-text)]/60 text-sm">
-            Loading vouchers…
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="py-8 text-center text-[var(--c-text)]/60 text-sm">
-            No vouchers found.
-          </div>
-        ) : (
-          <>
-            {/* 🧱 Table (desktop) */}
-            <div className="hidden md:block overflow-hidden rounded-2xl border border-[var(--c-bank)]/20 bg-white shadow-sm">
-              <table className="w-full text-sm">
-                <thead className="bg-[var(--section-bg)] border-b border-[var(--c-bank)]/10">
-                  <tr>
-                    <Th>Buyer</Th>
-                    <Th>Code</Th>
-                    <Th>Status</Th>
-                    <Th>Initial</Th>
-                    <Th>Balance</Th>
-                    <Th>Created</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginated.map((v) => (
-                    <tr
-                      key={v.id}
-                      className="border-t border-[var(--c-bank)]/10 cursor-pointer hover:bg-[var(--section-bg)] transition"
-                    >
-                      <Td>{v.buyer_name ?? '—'}</Td>
-                      <Td>
-                        <code className="rounded bg-[var(--section-bg)] px-1.5 py-0.5">
-                          {v.code}
-                        </code>
-                      </Td>
-                      <Td>
-                        <StatusPill status={v.status} />
-                      </Td>
-                      <Td>{fmtDZD(v.initial_amount)}</Td>
-                      <Td>{fmtDZD(v.balance)}</Td>
-                      <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* 🧩 Cards (mobile) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
-              {paginated.map((v) => (
-                <div
-                  key={v.id}
-                  className="
-                    rounded-2xl border border-[var(--c-bank)]/20 
-                    bg-white/90 backdrop-blur-sm 
-                    p-4 shadow-sm hover:shadow-md transition cursor-pointer
-                  "
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-[var(--c-primary)] text-sm">
-                      {v.buyer_name || '—'}
-                    </h3>
-                    <StatusPill status={v.status} />
-                  </div>
-                  <div className="text-xs text-[var(--c-text)]/70 mb-1">
-                    Code:{' '}
-                    <span className="font-mono bg-[var(--section-bg)] px-1 py-0.5 rounded">
-                      {v.code}
-                    </span>
-                  </div>
-                  <div className="text-xs text-[var(--c-text)]/70 mb-1">
-                    Balance: {fmtDZD(v.balance)} / Init: {fmtDZD(v.initial_amount)}
-                  </div>
-                  <div className="text-xs text-[var(--c-text)]/60">
-                    Created: {new Date(v.created_at).toLocaleDateString()}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {!loadingVouchers && filtered.length > ITEMS_PER_PAGE && (
-              <div className="flex justify-center items-center gap-3 mt-6">
-                <button
-                  disabled={page === 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className={`
-                    px-4 py-1.5 rounded-full border text-sm font-medium transition-all
-                    ${page === 1
-                      ? 'opacity-50 cursor-not-allowed border-gray-300 text-gray-400'
-                      : 'border-[var(--c-accent)] text-[var(--c-accent)] hover:bg-[var(--c-accent)] hover:text-white'
-                    }
-                  `}
-                >
-                  ← Prev
-                </button>
-
-                <span className="text-sm text-gray-600">
-                  Page{' '}
-                  <span className="font-semibold text-[var(--c-primary)]">{page}</span>{' '}
-                  of{' '}
-                  <span className="font-semibold text-[var(--c-primary)]">
-                    {totalPages}
-                  </span>
-                </span>
-
-                <button
-                  disabled={page === totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className={`
-                    px-4 py-1.5 rounded-full border text-sm font-medium transition-all
-                    ${page === totalPages
-                      ? 'opacity-50 cursor-not-allowed border-gray-300 text-gray-400'
-                      : 'border-[var(--c-accent)] text-[var(--c-accent)] hover:bg-[var(--c-accent)] hover:text-white'
-                    }
-                  `}
-                >
-                  Next →
-                </button>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* ✅ Add Voucher Modal */}
         {adding && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
-            <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl border border-[var(--c-bank)]/20">
-              <button
-                onClick={() => setAdding(false)}
-                className="absolute right-3 top-3 text-[var(--c-text)]/60 hover:text-[var(--c-text)]"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              <h2 className="text-lg font-semibold mb-3 text-[var(--c-primary)]">
-                Create Blank Vouchers
-              </h2>
-              <label className="text-sm text-[var(--c-text)]/70 mb-1 block">
-                Number to create
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={countToAdd}
-                onChange={(e) => setCountToAdd(parseInt(e.target.value))}
-                className="
-                  w-full border border-[var(--c-bank)]/30 rounded-md p-2 mb-4 text-sm
-                  focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none
-                "
-              />
-              <button
-                disabled={addingLoading}
-                onClick={createBlankVouchers}
-                className="
-                  w-full rounded-md bg-[var(--c-accent)] px-4 py-2 text-sm font-medium text-white 
-                  hover:bg-[var(--c-accent)]/90 active:scale-95 transition disabled:opacity-50
-                "
-              >
-                {addingLoading ? 'Creating…' : 'Create'}
-              </button>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="relative w-full max-w-xs rounded-3xl bg-white p-6 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+              <h2 className="text-lg font-black text-gray-900 leading-tight mb-1">Vouchers</h2>
+              <p className="text-[10px] text-gray-400 font-bold mb-5">Générer des codes vides.</p>
+
+              <div className="space-y-4">
+                <input
+                  type="number"
+                  min={1}
+                  value={countToAdd}
+                  onChange={(e) => setCountToAdd(parseInt(e.target.value))}
+                  className="w-full h-11 bg-gray-50 border border-gray-100 rounded-xl px-4 text-sm font-black text-gray-900 focus:outline-none focus:border-[var(--c-accent)] transition"
+                />
+                <div className="flex gap-2">
+                  <button onClick={() => setAdding(false)} className="flex-1 h-11 bg-gray-100 text-gray-600 rounded-xl text-xs font-bold">Annuler</button>
+                  <button
+                    disabled={addingLoading}
+                    onClick={createBlankVouchers}
+                    className="flex-[2] h-11 bg-[var(--c-accent)] text-white rounded-xl text-xs font-bold px-6 shadow-sm disabled:opacity-50"
+                  >
+                    {addingLoading ? '...' : 'Confirmer'}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -498,48 +598,26 @@ export default function AdminStoreDetailPage() {
   )
 }
 
-/* --- Helpers --- */
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">
-      {children}
-    </th>
-  )
-}
-function Td({
-  children,
-  colSpan,
-}: {
-  children: React.ReactNode
-  colSpan?: number
-}) {
-  return <td colSpan={colSpan} className="px-3 py-2">{children}</td>
-}
 function StatusPill({ status }: { status: VoucherRow['status'] }) {
-  const map: Record<string, string> = {
-    active: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-    redeemed: 'bg-blue-50 text-blue-700 ring-blue-200',
-    expired: 'bg-amber-50 text-amber-700 ring-amber-200',
-    void: 'bg-rose-50 text-rose-700 ring-rose-200',
-    blank: 'bg-gray-50 text-gray-700 ring-gray-200',
+  const map: Record<string, { label: string, color: string }> = {
+    active: { label: 'Actif', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+    redeemed: { label: 'Utilisé', color: 'bg-blue-50 text-blue-600 border-blue-100' },
+    expired: { label: 'Expiré', color: 'bg-amber-50 text-amber-600 border-amber-100' },
+    void: { label: 'Annulé', color: 'bg-rose-50 text-rose-600 border-rose-100' },
+    blank: { label: 'Vide', color: 'bg-gray-50 text-gray-300 border-gray-100' },
   }
+  const config = map[status] || map.blank
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 ${map[status] ?? map.blank
-        }`}
-    >
-      {status}
+    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border leading-none ${config.color}`}>
+      {config.label}
     </span>
   )
 }
+
 function fmtDZD(n: number) {
-  try {
-    return new Intl.NumberFormat('fr-DZ', {
-      style: 'currency',
-      currency: 'DZD',
-      maximumFractionDigits: 0,
-    }).format(n)
-  } catch {
-    return `${n} DZD`
-  }
+  return new Intl.NumberFormat('fr-DZ', {
+    style: 'currency',
+    currency: 'DZD',
+    maximumFractionDigits: 0,
+  }).format(n)
 }

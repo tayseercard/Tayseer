@@ -12,6 +12,8 @@ import {
   Globe2,
   Shield,
   X,
+  Package,
+  Store,
 } from 'lucide-react'
 import SettingsHeader from '@/components/store/settings/SettingsHeader'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -20,46 +22,48 @@ import { useLanguage } from '@/lib/useLanguage'
 import ProfileSettings from '@/components/store/settings/ProfileSettings'
 import PasswordSettings from '@/components/store/settings/PasswordSettings'
 import LanguageSettings from '@/components/store/settings/LanguageSettings'
+import PlanSettings from '@/components/store/settings/PlanSettings'
+import StoreInfoSettings from '@/components/store/settings/StoreInfoSettings'
 import StoreHeader from '@/components/store/StoreHeader'
 
 export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(false)
   const [activeModal, setActiveModal] = useState<
-    'profile' | 'password' | 'language' | null
+    'profile' | 'password' | 'language' | 'subscription' | 'store' | null
   >(null)
 
   const supabase = createClientComponentClient()
   const router = useRouter()
   const { t, lang } = useLanguage()
   const [profile, setProfile] = useState<{
-  name: string | null
-  email: string | null
-  role: string | null
-  avatarUrl?: string | null
-} | null>(null)
+    name: string | null
+    email: string | null
+    role: string | null
+    avatarUrl?: string | null
+  } | null>(null)
 
-useEffect(() => {
-  (async () => {
-    const { data: sessionData } = await supabase.auth.getUser()
-    const authUser = sessionData?.user
+  useEffect(() => {
+    (async () => {
+      const { data: sessionData } = await supabase.auth.getUser()
+      const authUser = sessionData?.user
 
-    if (!authUser) return
+      if (!authUser) return
 
-    // Fetch row from your "admins" or "users" table
-    const { data: profileRow } = await supabase
-      .from('users')
-      .select('full_name, email, role, avatar_url')
-      .eq('id', authUser.id)
-      .maybeSingle()
+      // Fetch row from your "admins" or "users" table
+      const { data: profileRow } = await supabase
+        .from('users')
+        .select('full_name, email, role, avatar_url')
+        .eq('id', authUser.id)
+        .maybeSingle()
 
-    setProfile({
-      name: profileRow?.full_name ?? authUser.email ?? '',
-      email: profileRow?.email ?? authUser.email,
-      role: profileRow?.role ?? 'Admin',
-      avatarUrl: profileRow?.avatar_url ?? '/icon-192-2.png',
-    })
-  })()
-}, [])
+      setProfile({
+        name: profileRow?.full_name ?? authUser.email ?? '',
+        email: profileRow?.email ?? authUser.email,
+        role: profileRow?.role ?? 'Admin',
+        avatarUrl: profileRow?.avatar_url ?? '/icon-192-2.png',
+      })
+    })()
+  }, [])
 
 
   // ✅ Refresh page when language changes
@@ -74,29 +78,28 @@ useEffect(() => {
 
   return (
     <div
-      className={`min-h-screen bg-[var(--bg)] flex flex-col items-center px-4 py-6 transition-all duration-300 ${
-        lang === 'ar' ? 'rtl' : 'ltr'
-      }`}
+      className={`min-h-screen bg-[var(--bg)] flex flex-col items-center px-4 py-6 transition-all duration-300 ${lang === 'ar' ? 'rtl' : 'ltr'
+        }`}
     >
       <div className="w-full max-w-md space-y-6">
         {/* === Header === */}
-        
-       <SettingsHeader
-  title={t.settings}
-  subtitle={t.managePref}
-  user={{
-    name: profile?.name || '—',
-    email: profile?.email || '—',
-    role: profile?.role || 'Store Owner',
-    avatarUrl: profile?.avatarUrl || '/icon-192-2.png',
-  }}
-  onLogout={handleLogout}
-/>
+
+        <SettingsHeader
+          title={t.settings}
+          subtitle={t.managePref}
+          user={{
+            name: profile?.name || '—',
+            email: profile?.email || '—',
+            role: profile?.role || 'Store Owner',
+            avatarUrl: profile?.avatarUrl || '/icon-192-2.png',
+          }}
+          onLogout={handleLogout}
+        />
 
 
         {/* === Account Section === */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
-          <SettingRow icon={<User />} label={t.profile} onClick={() => setActiveModal('profile')} />
+          <SettingRow icon={<User className="w-5 h-5" />} label={t.profile} onClick={() => setActiveModal('profile')} />
           <SettingRow
             icon={<Lock />}
             label={t.password}
@@ -109,16 +112,21 @@ useEffect(() => {
               lang === 'fr'
                 ? 'Français'
                 : lang === 'ar'
-                ? 'العربية 🇩🇿'
-                : 'English 🇬🇧'
+                  ? 'العربية 🇩🇿'
+                  : 'English 🇬🇧'
             }
             onClick={() => setActiveModal('language')}
           />
           <SettingRow
-  icon={<Shield />}
-  label={t.team || 'Team Members'}
-  onClick={() => router.push('/store/team')}
-/>
+            icon={<Shield />}
+            label={t.team || 'Team Members'}
+            onClick={() => router.push('/store/team')}
+          />
+          <SettingRow
+            icon={<Package />}
+            label={t.subscription}
+            onClick={() => setActiveModal('subscription')}
+          />
 
         </div>
 
@@ -126,7 +134,7 @@ useEffect(() => {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
           <SettingRow icon={<Info />} label={t.aboutApp || 'About application'} />
           <SettingRow icon={<HelpCircle />} label={t.help || 'Help / FAQ'} />
-          
+
         </div>
       </div>
 
@@ -134,6 +142,7 @@ useEffect(() => {
       {activeModal && (
         <SettingsModal onClose={() => setActiveModal(null)}>
           {activeModal === 'profile' && <ProfileSettings t={t} />}
+          {activeModal === 'store' && <StoreInfoSettings t={t} />}
           {activeModal === 'password' && <PasswordSettings t={t} />}
           {activeModal === 'language' && (
             <LanguageSettings
@@ -143,6 +152,7 @@ useEffect(() => {
               }}
             />
           )}
+          {activeModal === 'subscription' && <PlanSettings t={t} />}
         </SettingsModal>
       )}
     </div>
@@ -209,7 +219,7 @@ function SettingsModal({
   return (
     <div
       className="
-        fixed inset-0 z-50
+        fixed inset-0 z-[100]
         bg-black/40 backdrop-blur-sm
         flex items-center justify-center
         animate-fade-in
@@ -222,6 +232,7 @@ function SettingsModal({
           relative w-full max-w-md bg-white rounded-2xl
           p-5 shadow-lg border border-gray-100
           animate-slide-up
+          max-h-[90vh] overflow-y-auto
         "
       >
         <div className="flex justify-between items-center mb-3">

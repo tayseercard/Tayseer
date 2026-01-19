@@ -10,11 +10,13 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 .animate-fade-in {
   animation: fade-in 0.2s ease-out;
 }
@@ -23,8 +25,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
   --color-ring: var(--ring);
   --color-border: var(--border);
   --color-accent: var(--accent);
@@ -40,18 +42,23 @@
 
 /* === Light Mode (Tayseer Palette) === */
 :root {
-  
+
   color-scheme: light !important;
 
   /* --- Tayseer Brand Palette --- */
   --bg: #f2f3f4;
   --section-bg: #ebeaed;
-  --c-primary: #020035; /* Deep navy */
-  --c-secondary: #02066f; /* Blue accent */
-  --c-bank: #2000b1; /* Main blue */
-  --c-accent: #ed4b00; /* Orange */
-  --c-text: #1a1a1a; /* Neutral text */
-  --c-accent2:#6287AA;
+  --c-primary: #020035;
+  /* Deep navy */
+  --c-secondary: #02066f;
+  /* Blue accent */
+  --c-bank: #2000b1;
+  /* Main blue */
+  --c-accent: #ed4b00;
+  /* Orange */
+  --c-text: #1a1a1a;
+  /* Neutral text */
+  --c-accent2: #6287AA;
 
   /* --- Map to Tailwind tokens --- */
   --background: var(--bg);
@@ -84,11 +91,13 @@
 
 @media print {
 
-   @page {
+  @page {
     size: A4;
-    margin: 0; /* printer handles real margins */
+    margin: 0;
+    /* printer handles real margins */
   }
-    .break-inside-avoid {
+
+  .break-inside-avoid {
     break-inside: avoid;
   }
 
@@ -96,36 +105,39 @@
   .avoid-break {
     break-inside: always;
   }
- /* Avoid page breaks inside grids/pages */
+
+  /* Avoid page breaks inside grids/pages */
   .page-block {
     page-break-inside: avoid;
     page-break-after: always;
   }
-  
-  
+
+
   /* ✅ Extra margin to prevent clipping on bottom edge */
   .print-area {
     margin-bottom: 5mm;
   }
 
   .request-highlight {
-  animation: flashGlow 1.8s ease-out forwards;
-}
+    animation: flashGlow 1.8s ease-out forwards;
+  }
 
-@keyframes flashGlow {
-  0% {
-    background: #fff3b0;
-    box-shadow: 0 0 12px #ffe58f;
+  @keyframes flashGlow {
+    0% {
+      background: #fff3b0;
+      box-shadow: 0 0 12px #ffe58f;
+    }
+
+    50% {
+      background: #fffbe2;
+      box-shadow: 0 0 20px #ffe58f;
+    }
+
+    100% {
+      background: white;
+      box-shadow: none;
+    }
   }
-  50% {
-    background: #fffbe2;
-    box-shadow: 0 0 20px #ffe58f;
-  }
-  100% {
-    background: white;
-    box-shadow: none;
-  }
-}
 
   html,
   body {
@@ -135,7 +147,7 @@
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     box-sizing: border-box;
-     -webkit-print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
@@ -159,26 +171,26 @@
     padding: 2mm;
     box-sizing: border-box;
     page-break-after: always;
-    
+
   }
 
   /* ✅ Voucher card: clean, consistent look per page */
-.voucher-card {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  flex-direction: column !important;
-  text-align: center !important;
-  width: 15mm !important;
-  height: 15mm !important;
-  border: 1px solid #ccc !important;
-  box-shadow: none !important;
-  background: white !important;
-  margin: 0 !important;
-  padding: 5px !important;
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
-}
+  .voucher-card {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-direction: column !important;
+    text-align: center !important;
+    width: 15mm !important;
+    height: 15mm !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 5px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
 
 
   /* ✅ Optional: maintain consistent row grouping */
@@ -193,13 +205,14 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

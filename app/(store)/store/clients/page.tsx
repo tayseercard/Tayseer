@@ -2,37 +2,65 @@
 
 import { useEffect, useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { motion } from 'framer-motion'
-import { Users, Search, Phone, Gift, Calendar, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Users,
+  Search,
+  Phone,
+  Gift,
+  Loader2,
+  TrendingUp,
+  User as UserIcon,
+  ChevronRight,
+  X as LucideX
+} from 'lucide-react'
+import { useLanguage } from '@/lib/useLanguage'
+import StoreHeader from '@/components/store/StoreHeader'
 
 export default function StoreClientsPage() {
   const supabase = createClientComponentClient()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(true)
   const [clients, setClients] = useState<any[]>([])
   const [q, setQ] = useState('')
+  const [store, setStore] = useState<any>(null)
 
   useEffect(() => {
-    loadClients()
+    loadData()
   }, [])
 
-  async function loadClients() {
+  async function loadData() {
     setLoading(true)
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-    const user = session?.user
-    if (!user) return
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) return
 
-    // 🔹 Find store_id of this user
+    // Load Store Info for Header
+    const { data: storeRow } = await supabase
+      .from('stores')
+      .select('name, email, logo_url, phone, address')
+      .eq('owner_user_id', session.user.id)
+      .maybeSingle()
+
+    if (storeRow) {
+      setStore({
+        name: storeRow.name,
+        email: storeRow.email || session.user.email,
+        role: 'Propriétaire',
+        logoUrl: storeRow.logo_url,
+        phone: storeRow.phone,
+        address: storeRow.address
+      })
+    }
+
     const { data: roleRow } = await supabase
       .from('me_effective_role')
       .select('store_id')
-      .eq('user_id', user.id)
+      .eq('user_id', session.user.id)
       .maybeSingle()
 
     if (!roleRow?.store_id) return setLoading(false)
 
-    // 🔹 Fetch clients with voucher counts
+    // Fetch clients
     const { data, error } = await supabase
       .from('store_clients_with_vouchers')
       .select('*')
@@ -51,83 +79,115 @@ export default function StoreClientsPage() {
   )
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 md:px-10 py-8 space-y-8">
-      {/* === Header === */}
-      <motion.header
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-      >
-        <div>
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Users className="h-6 w-6 text-[var(--c-accent)]" />
-            Clients
-          </h1>
-          <p className="text-sm text-[var(--c-text)]/70">
-            All customers who purchased or received vouchers
-          </p>
+    <div className="min-h-screen bg-gray-50/50 pb-20 px-4 sm:px-6 md:px-10 py-8 space-y-6">
+
+      <StoreHeader
+        store={store || { name: '...', email: '', role: '' }}
+        subtitle="Gestion de votre base client"
+      />
+
+      {/* 🔍 Search & Stats Row */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="px-4 py-2 bg-white rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
+            <Users className="w-4 h-4 text-[#020035]" />
+            <span className="text-sm font-black text-[#020035]">{clients.length}</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Clients Total</span>
+          </div>
         </div>
 
-        {/* 🔍 Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--c-text)]/40" />
-          <input
-            placeholder="Search clients..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="pl-9 pr-3 py-2 text-sm rounded-lg border border-[var(--c-bank)]/30 bg-white/70 focus:outline-none focus:ring-2 focus:ring-[var(--c-accent)]/30"
-          />
+        <div className="relative w-full md:w-72 group">
+          <div className="absolute inset-0 bg-[#020035]/5 blur-lg group-focus-within:bg-[#020035]/10 transition-colors pointer-events-none" />
+          <div className="relative bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-xl flex items-center px-4 h-11 transition-all focus-within:ring-2 focus-within:ring-[#020035]/10">
+            <Search className="w-4 h-4 text-gray-400 group-focus-within:text-[#020035] transition-colors" />
+            <input
+              type="text"
+              placeholder={t.searchPlaceholder || "Rechercher..."}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="flex-1 bg-transparent border-none outline-none px-3 text-xs font-bold text-gray-900 placeholder:text-gray-300"
+            />
+            {q && (
+              <button onClick={() => setQ('')} className="p-1 rounded-full bg-gray-100 text-gray-400 hover:text-gray-900 transition">
+                <LucideX size={12} />
+              </button>
+            )}
+          </div>
         </div>
-      </motion.header>
+      </div>
 
-      {/* === Content === */}
+      {/* 📋 Grid Section */}
       {loading ? (
-        <div className="py-20 text-center text-[var(--c-text)]/50 text-sm">
-          <Loader2 className="animate-spin inline-block mr-2 h-4 w-4" />
-          Loading clients…
+        <div className="py-20 flex flex-col items-center justify-center text-gray-400">
+          <Loader2 className="w-8 h-8 animate-spin text-[#020035] mb-4" />
+          <p className="text-[10px] font-black uppercase tracking-widest">Chargement...</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="py-20 text-center text-[var(--c-text)]/60 text-sm">
-          No clients found
+        <div className="py-20 text-center space-y-4">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-200">
+            <Search size={24} />
+          </div>
+          <p className="text-xs font-bold text-gray-400">Aucun client trouvé.</p>
         </div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          {filtered.map((c) => (
-            <motion.div
-              key={c.id}
-              whileHover={{ scale: 1.02 }}
-              className="rounded-xl border border-[var(--c-bank)]/20 bg-white/80 backdrop-blur-sm p-4 shadow-sm"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-medium text-[var(--c-primary)] truncate">
-                  {c.full_name || 'Unnamed'}
-                </h3>
-                <span className="text-xs text-[var(--c-text)]/60 flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {new Date(c.created_at).toLocaleDateString()}
-                </span>
-              </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <AnimatePresence>
+            {filtered.map((c, idx) => (
+              <motion.div
+                key={c.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: idx * 0.05 }}
+                className="group relative bg-white/70 backdrop-blur-sm border border-gray-100/60 rounded-2xl p-4 shadow-sm hover:bg-white hover:shadow-md transition-all active:scale-[0.98] cursor-default"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-black text-gray-900 truncate text-sm mb-2 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-[#020035] flex items-center justify-center text-white text-[10px] font-black shadow-lg shadow-[#020035]/10">
+                        {(c.full_name || '?').charAt(0).toUpperCase()}
+                      </div>
+                      <span className="truncate">{c.full_name || 'Anonyme'}</span>
+                    </h3>
 
-              {/* Phone */}
-              <div className="text-sm text-[var(--c-text)]/80 flex items-center gap-2 mb-1">
-                <Phone className="h-4 w-4 text-[var(--c-accent)]" />
-                {c.phone || '—'}
-              </div>
+                    <div className="space-y-1.5 pl-10">
+                      <a
+                        href={`tel:${c.phone}`}
+                        className="flex items-center gap-2 text-[10px] font-bold text-gray-500 hover:text-[#020035] transition"
+                      >
+                        <Phone size={12} className="text-gray-300" />
+                        {c.phone || '—'}
+                      </a>
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-gray-400">
+                        <TrendingUp size={12} className="text-emerald-500/50" />
+                        Client depuis {new Date(c.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Voucher Count */}
-              <div className="text-sm font-medium flex items-center gap-2 text-[var(--c-primary)]">
-                <Gift className="h-4 w-4 text-[var(--c-accent)]" />
-                {c.vouchers_count || 0} voucher{c.vouchers_count > 1 ? 's' : ''}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <Badge kind="green">
+                      {c.vouchers_count || 0} Voucher{c.vouchers_count > 1 ? 's' : ''}
+                    </Badge>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
       )}
     </div>
+  )
+}
+
+function Badge({ children, kind }: { children: React.ReactNode, kind?: 'green' | 'amber' | 'rose' }) {
+  const styles = {
+    green: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+    amber: 'bg-amber-50 text-amber-600 border-amber-100',
+    rose: 'bg-rose-50 text-rose-600 border-rose-100'
+  }
+  return (
+    <span className={`inline-flex px-2 py-0.5 rounded-lg border text-[9px] font-black uppercase tracking-tight ${styles[kind || 'rose']}`}>
+      {children}
+    </span>
   )
 }

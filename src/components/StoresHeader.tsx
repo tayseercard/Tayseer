@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { Plus, Store } from 'lucide-react'
 import { useLanguage } from '@/lib/useLanguage'
 
 export default function StoresHeader({ onAdd }: { onAdd: () => void }) {
@@ -26,7 +26,8 @@ export default function StoresHeader({ onAdd }: { onAdd: () => void }) {
           text-lg sm:text-xl font-semibold tracking-tight
         "
       >
-        <span className="text-white">{t.addStore}</span>
+        <Store className="h-5 w-5 text-white/80" />
+        <span className="text-white">{t.stores || 'Stores'}</span>
       </h1>
 
       {/* === Right: Add Button === */}

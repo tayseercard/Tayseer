@@ -1,14 +1,9 @@
 'use client'
 
-import { Plus, Printer } from 'lucide-react'
+import { Bell } from 'lucide-react'
+import Link from 'next/link'
 
-export default function VoucherHeader({
-  onAdd,
-  onPrint,
-}: {
-  onAdd: () => void
-  onPrint: () => void
-}) {
+export default function VoucherHeader() {
   return (
     <header
       className="
@@ -24,32 +19,20 @@ export default function VoucherHeader({
       <h1 className="text-lg sm:text-xl font-semibold">Vouchers</h1>
 
       <div className="flex items-center gap-3">
-        {/* PRINT BUTTON */}
-        <button
-          onClick={onPrint}
+        {/* NOTIFICATION BELL TO REQUESTS */}
+        <Link
+          href="/admin/voucher-requests"
           className="
             flex items-center justify-center
             w-10 h-10 rounded-full
             bg-white/20 text-white
             hover:bg-white/30 active:scale-95 transition
+            relative
           "
         >
-          <Printer className="h-5 w-5" />
-        </button>
-
-        {/* ADD BUTTON */}
-        <button
-          onClick={onAdd}
-          className="
-            flex items-center justify-center
-            w-10 h-10 rounded-full
-            bg-[var(--c-accent)] text-white
-            hover:bg-[var(--c-accent)]/90
-            active:scale-95 transition
-          "
-        >
-          <Plus className="h-5 w-5" />
-        </button>
+          <Bell className="h-5 w-5" />
+          {/* Optional: Add a red dot if needed later */}
+        </Link>
       </div>
     </header>
   )

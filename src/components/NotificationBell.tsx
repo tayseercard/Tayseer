@@ -7,9 +7,11 @@ import toast from 'react-hot-toast'
 export default function NotificationBell({
   onOpen,
   refreshSignal,
+  light = false,
 }: {
   onOpen: () => void
   refreshSignal: number
+  light?: boolean
 }) {
   const supabase = createClientComponentClient()
   const [count, setCount] = useState(0)
@@ -64,7 +66,7 @@ export default function NotificationBell({
             // 🔊 play sound
             if (soundRef.current) {
               soundRef.current.currentTime = 0
-              soundRef.current.play().catch(() => {})
+              soundRef.current.play().catch(() => { })
             }
 
             // 🔔 toast
@@ -147,9 +149,9 @@ export default function NotificationBell({
   }
 
   return (
-    <div className="relative cursor-pointer" onClick={handleOpen}>
+    <div className="relative cursor-pointer p-2 rounded-xl hover:bg-black/5 transition" onClick={handleOpen}>
       <svg
-        className="w-6 h-6 text-white"
+        className={`w-6 h-6 ${light ? 'text-gray-900' : 'text-white'}`}
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
@@ -163,7 +165,7 @@ export default function NotificationBell({
       </svg>
 
       {count > 0 && (
-        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 rounded-full">
+        <span className="absolute top-1.5 right-1.5 bg-rose-500 text-white text-[9px] font-black min-w-[16px] h-[16px] flex items-center justify-center rounded-full border-2 border-white">
           {count}
         </span>
       )}
@@ -175,9 +177,9 @@ export default function NotificationBell({
 function updateAppBadge(count: number) {
   if ('setAppBadge' in navigator) {
     // @ts-ignore
-    navigator.setAppBadge(count).catch(() => {})
+    navigator.setAppBadge(count).catch(() => { })
   } else if ('setExperimentalAppBadge' in navigator) {
     // @ts-ignore
-    navigator.setExperimentalAppBadge(count).catch(() => {})
+    navigator.setExperimentalAppBadge(count).catch(() => { })
   }
 }

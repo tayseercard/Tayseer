@@ -5,11 +5,13 @@ export function Stat({
   value,
   caption,
   color,
+  compact,
 }: {
   title: string;
   value: string | number;
   caption?: string;
   color?: 'emerald' | 'amber' | 'rose' | 'sky' | 'indigo' | 'gray';
+  compact?: boolean;
 }) {
   const colors = {
     emerald: 'border-emerald-200 bg-emerald-50/50 text-emerald-700',
@@ -22,11 +24,11 @@ export function Stat({
 
   const colorClasses = color ? colors[color] : colors.gray;
   return (
-    <div className={`rounded-xl border p-4 shadow-sm flex flex-col ${colorClasses}`}>
-      <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+    <div className={`rounded-xl border shadow-sm flex flex-col ${compact ? 'p-2.5 px-3' : 'p-4'} ${colorClasses}`}>
+      <div className={`${compact ? 'text-[10px]' : 'text-xs'} font-medium text-gray-500 uppercase tracking-wide mb-0.5`}>
         {title}
       </div>
-      <div className={`text-lg font-semibold ${!color ? 'text-gray-900' : ''}`}>{value}</div>
+      <div className={`${compact ? 'text-base' : 'text-lg'} font-bold ${!color ? 'text-gray-900' : ''}`}>{value}</div>
       {caption && (
         <div className="text-[11px] text-gray-500 mt-0.5">{caption}</div>
       )}

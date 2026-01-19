@@ -105,11 +105,13 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             onClose={() => setNotifOpen(false)}
             onClickNotification={(n) => {
               setNotifOpen(false)
-              if (n.request_id) {
+              if (n.link) {
+                router.push(n.link)
+              } else if (n.request_id) {
                 router.push(`/store/requests?id=${n.request_id}`)
-                return
+              } else {
+                router.push("/store/notifications")
               }
-              router.push("/store/notifications")
             }}
           />
           {/* Desktop Nav */}
@@ -126,8 +128,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   key={href}
                   href={href}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all whitespace-nowrap ${active
-                      ? 'bg-[var(--c-accent)] text-white shadow-sm'
-                      : 'bg-white/10 text-[var(--c-text)] hover:bg-[var(--c-accent)]/20'
+                    ? 'bg-[var(--c-accent)] text-white shadow-sm'
+                    : 'bg-white/10 text-[var(--c-text)] hover:bg-[var(--c-accent)]/20'
                     }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -214,24 +216,6 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       {scannerOpen && (
         <VoucherScanner open={scannerOpen} onClose={() => setScannerOpen(false)} />
       )}
-
-
-
-
-      {/* === GLOBAL NOTIFICATION MODAL === */}
-      <NotificationModal
-        open={notifOpen}
-        onClose={() => setNotifOpen(false)}
-        onClickNotification={(n) => {
-          setNotifOpen(false)
-          if (n.request_id) {
-            router.push(`/admin/voucher-requests?id=${n.request_id}`)
-          } else {
-            router.push("/admin/notifications")
-          }
-        }}
-      />
-
     </div>
   )
 }
@@ -253,8 +237,8 @@ function NavLink({
     <Link
       href={href}
       className={`flex flex-col items-center text-[11px] ${active
-          ? 'text-[--c-accent] font-medium'
-          : 'text-white/70 hover:text-[var(--c-accent)]'
+        ? 'text-[--c-accent] font-medium'
+        : 'text-white/70 hover:text-[var(--c-accent)]'
         }`}
     >
       <Icon className="h-5 w-5 mb-0.5" />
