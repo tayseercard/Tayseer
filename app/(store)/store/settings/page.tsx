@@ -14,8 +14,8 @@ import {
   X,
   Package,
   Store,
+  LogOut,
 } from 'lucide-react'
-import SettingsHeader from '@/components/store/settings/SettingsHeader'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/useLanguage'
@@ -49,17 +49,24 @@ export default function SettingsPage() {
 
       if (!authUser) return
 
-      // Fetch row from your "admins" or "users" table
+      // Fetch Basic Info from users table
       const { data: profileRow } = await supabase
         .from('users')
-        .select('full_name, email, role, avatar_url')
+        .select('full_name, email, avatar_url')
         .eq('id', authUser.id)
         .maybeSingle()
 
+      // Fetch Effective Role
+      const { data: roleRow } = await supabase
+        .from('me_effective_role')
+        .select('role')
+        .eq('user_id', authUser.id)
+        .maybeSingle()
+
       setProfile({
-        name: profileRow?.full_name ?? authUser.email ?? '',
+        name: profileRow?.full_name || 'Utilisateur',
         email: profileRow?.email ?? authUser.email,
-        role: profileRow?.role ?? 'Admin',
+        role: roleRow?.role ?? 'Propriétaire',
         avatarUrl: profileRow?.avatar_url ?? '/icon-192-2.png',
       })
     })()
@@ -84,17 +91,20 @@ export default function SettingsPage() {
       <div className="w-full max-w-md space-y-6">
         {/* === Header === */}
 
-        <SettingsHeader
-          title={t.settings}
-          subtitle={t.managePref}
-          user={{
-            name: profile?.name || '—',
-            email: profile?.email || '—',
-            role: profile?.role || 'Store Owner',
-            avatarUrl: profile?.avatarUrl || '/icon-192-2.png',
-          }}
-          onLogout={handleLogout}
-        />
+        <header
+          className="
+            flex items-center justify-between
+            px-6 py-4
+            rounded-2xl
+            bg-[var(--c-primary)]
+            border border-[var(--c-bank)]/20
+            shadow-md backdrop-blur-lg
+            text-white
+          "
+        >
+          <h1 className="text-lg sm:text-xl font-semibold">{t.settings}</h1>
+
+        </header>
 
 
         {/* === Account Section === */}
@@ -134,6 +144,12 @@ export default function SettingsPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
           <SettingRow icon={<Info />} label={t.aboutApp || 'About application'} />
           <SettingRow icon={<HelpCircle />} label={t.help || 'Help / FAQ'} />
+          <SettingRow
+            icon={<LogOut className="w-5 h-5 text-rose-500" />}
+            label={t.logout || 'Se déconnecter'}
+            labelClass="text-rose-600 font-medium"
+            onClick={handleLogout}
+          />
 
         </div>
       </div>

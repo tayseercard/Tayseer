@@ -41,29 +41,18 @@ export default function StoreHeader({
       {/* Background Accent */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 pointer-events-none" />
 
-      <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+      <div className="relative flex flex-row items-start justify-between gap-4">
         {/* Left: Store Branding */}
         {store && (
-          <div className="flex items-start sm:items-center gap-4">
-            {store.logoUrl ? (
-              <img
-                src={store.logoUrl}
-                alt="Store logo"
-                className="h-16 w-16 rounded-xl object-cover border-2 border-white/20 shadow-sm shrink-0"
-              />
-            ) : (
-              <div className="h-16 w-16 rounded-xl bg-white/10 flex items-center justify-center text-[var(--c-accent)] font-black text-xl border border-white/10 shrink-0">
-                {store.name?.[0]?.toUpperCase() || 'S'}
-              </div>
-            )}
+          <div className="flex-1 min-w-0 flex items-start gap-4">
 
-            <div className="min-w-0 space-y-1.5 transition-all">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-xl font-black leading-tight text-white tracking-tight truncate">
+            <div className="min-w-0 flex-1 space-y-1.5 transition-all">
+              <div className="flex flex-wrap items-start gap-2 pr-2">
+                <p className="text-lg font-black leading-tight text-white tracking-tight line-clamp-2 break-words">
                   {store.name}
                 </p>
                 {store.role && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[var(--c-accent)] text-[8px] font-black uppercase tracking-[0.12em] shadow-sm">
+                  <span className="mt-1 px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-[var(--c-accent)] text-[8px] font-black uppercase tracking-[0.12em] shadow-sm shrink-0">
                     {store.role}
                   </span>
                 )}
@@ -96,7 +85,7 @@ export default function StoreHeader({
         )}
 
         {/* Right: Notification Bell etc. */}
-        <div className="flex items-center gap-3 self-end sm:self-center">
+        <div className="flex items-center gap-3 shrink-0 -mt-2">
           {icon}
           {rightContent}
         </div>

@@ -15,7 +15,6 @@ import {
   X as LucideX
 } from 'lucide-react'
 import { useLanguage } from '@/lib/useLanguage'
-import StoreHeader from '@/components/store/StoreHeader'
 
 export default function StoreClientsPage() {
   const supabase = createClientComponentClient()
@@ -79,22 +78,24 @@ export default function StoreClientsPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50/50 pb-20 px-4 sm:px-6 md:px-10 py-8 space-y-6">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 pt-4 pb-20 space-y-3">
 
-      <StoreHeader
-        store={store || { name: '...', email: '', role: '' }}
-        subtitle="Gestion de votre base client"
-      />
+      <header
+        className="
+          flex items-center justify-between
+          px-6 py-4
+          rounded-2xl
+          bg-[var(--c-primary)]
+          border border-[var(--c-bank)]/20
+          shadow-md backdrop-blur-lg
+          text-white
+        "
+      >
+        <h1 className="text-lg sm:text-xl font-semibold">Clients</h1>
+      </header>
 
-      {/* 🔍 Search & Stats Row */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-2 bg-white rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
-            <Users className="w-4 h-4 text-[#020035]" />
-            <span className="text-sm font-black text-[#020035]">{clients.length}</span>
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">Clients Total</span>
-          </div>
-        </div>
+      {/* 🔍 Search Row */}
+      <div className="flex flex-col md:flex-row items-center justify-end gap-4">
 
         <div className="relative w-full md:w-72 group">
           <div className="absolute inset-0 bg-[#020035]/5 blur-lg group-focus-within:bg-[#020035]/10 transition-colors pointer-events-none" />
@@ -142,10 +143,7 @@ export default function StoreClientsPage() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-black text-gray-900 truncate text-sm mb-2 flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-[#020035] flex items-center justify-center text-white text-[10px] font-black shadow-lg shadow-[#020035]/10">
-                        {(c.full_name || '?').charAt(0).toUpperCase()}
-                      </div>
+                    <h3 className="font-black text-gray-900 truncate text-sm mb-2">
                       <span className="truncate">{c.full_name || 'Anonyme'}</span>
                     </h3>
 

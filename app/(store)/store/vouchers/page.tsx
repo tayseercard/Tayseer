@@ -206,8 +206,9 @@ function StoreVouchersInner() {
   }, [])
 
   /* -------- Filters -------- */
+  /* -------- Filters & Custom Sorting -------- */
   const filtered = useMemo(() => {
-    let data = rows
+    let data = [...rows] // Clone to avoid mutating state
     if (selectedStore !== 'all') data = data.filter(v => v.store_id === selectedStore)
     if (selectedStatus !== 'all') data = data.filter(v => v.status === selectedStatus)
 
@@ -226,6 +227,20 @@ function StoreVouchersInner() {
         return d === selectedDate
       })
     }
+
+    // 🔃 Custom Sorting: Blanks last, then by date descending
+    data.sort((a, b) => {
+      const isBlankA = a.status === 'blank' ? 1 : 0
+      const isBlankB = b.status === 'blank' ? 1 : 0
+
+      // If one is blank and the other isn't, blank goes last
+      if (isBlankA !== isBlankB) return isBlankA - isBlankB
+
+      // Otherwise, sort by date (most recent first)
+      const dateA = new Date(a.activated_at || a.updated_at || a.created_at || 0).getTime()
+      const dateB = new Date(b.activated_at || b.updated_at || b.created_at || 0).getTime()
+      return dateB - dateA
+    })
 
     return data
   }, [rows, q, selectedStore, selectedStatus, selectedDate])
