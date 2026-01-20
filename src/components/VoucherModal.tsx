@@ -124,7 +124,7 @@ export default function VoucherModal({
     if (!target) return;
 
     const isMobile = window.innerWidth < 640;
-    const size = isMobile ? 90 : 100;
+    const size = isMobile ? 100 : 130;
 
     const qr = new QRCodeStyling({
       width: size,
@@ -133,8 +133,6 @@ export default function VoucherModal({
       margin: 4,
       dotsOptions: { color: '#000', type: 'rounded' },
       backgroundOptions: { color: '#fff' },
-      image: '/logo7mm.png',
-      imageOptions: { crossOrigin: 'anonymous', margin: 2 },
     });
 
     target.innerHTML = "";
@@ -367,7 +365,7 @@ export default function VoucherModal({
 
   return (
     <div dir={lang === 'ar' ? 'rtl' : 'ltr'}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3">
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 pb-24">
       <div
         className="
           relative w-full max-w-md rounded-2xl
@@ -413,10 +411,9 @@ export default function VoucherModal({
               <div className="flex flex-col items-center justify-center">
                 <div
                   ref={qrRefBlank}
-                  className="h-30 w-30 sm:h-34 sm:w-34
-                     scale-90 sm:scale-100
-                     rounded-lg border border-[var(--c-bank)]/30 shadow-sm
-                     bg-white/80 p-1.5 flex items-center justify-center"
+                  className="h-28 w-28 sm:h-36 sm:w-36
+                     rounded-2xl border-2 border-[var(--c-accent)]/20 shadow-md
+                     bg-white p-2 flex items-center justify-center shrink-0"
                 />
 
 
@@ -515,10 +512,9 @@ export default function VoucherModal({
 
 
                       ref={qrRefActive}
-                      className="h-30 w-30 sm:h-30 sm:w-30
-                     scale-90 sm:scale-100
-                     rounded-lg border border-[var(--c-bank)]/30 shadow-sm
-                     bg-white/80 p-1.5 flex items-center justify-center"
+                      className="h-28 w-28 sm:h-36 sm:w-36
+                     rounded-2xl border-2 border-[var(--c-accent)]/20 shadow-md
+                     bg-white p-2 flex items-center justify-center shrink-0"
                     />
                     {/* === Button Print === */}
 
@@ -626,10 +622,9 @@ export default function VoucherModal({
               <div className="flex flex-col items-center justify-center">
                 <div
                   ref={qrRefRedeemed}
-                  className="h-30 w-30 sm:h-34 sm:w-34
-                     scale-90 sm:scale-100
-                     rounded-lg border border-[var(--c-bank)]/30 shadow-sm
-                     bg-white/80 p-1.5 flex items-center justify-center"
+                  className="h-28 w-28 sm:h-36 sm:w-36
+                     rounded-2xl border-2 border-[var(--c-accent)]/20 shadow-md
+                     bg-white p-2 flex items-center justify-center shrink-0"
                 />
               </div>
             </div>
