@@ -3,10 +3,27 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
-import { QrCode, ShieldCheck, Sparkles, ArrowRight, X, Package, Facebook, Instagram, Mail } from 'lucide-react'
+import {
+  QrCode,
+  ShieldCheck,
+  Zap,
+  ArrowRight,
+  X,
+  Package,
+  Facebook,
+  Instagram,
+  Mail,
+  CheckCircle2,
+  TrendingUp,
+  CreditCard,
+  Menu,
+  ChevronRight,
+  Star
+} from 'lucide-react'
 import { motion } from 'framer-motion'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
+// --- Types & Defaults ---
 const defaultPlans = [
   {
     id: 'starter',
@@ -61,309 +78,429 @@ export default function TayseerLanding() {
   }, [])
 
   return (
-    <div className="min-h-dvh flex flex-col bg-[var(--bg)] text-[var(--c-text)]" style={paletteVars}>
+    <div className="min-h-screen bg-white text-slate-800 font-sans selection:bg-[#ED4B00] selection:text-white overflow-x-hidden">
+
       {/* ===== HEADER ===== */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-[var(--c-primary)]/20">
-        <nav className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-4">
-          {/* Logo */}
+      <header className="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <div className="relative h-8 w-8 rounded-md overflow-hidden">
-              <Image
-                src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/icon-192.png`}
-                alt="Tayseer Logo"
-                fill
-                className="object-cover"
-              />
+            <div className="relative h-9 w-9 bg-[#020035] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-900/20">
+              T
             </div>
-            <span className="text-lg font-semibold tracking-wide text-[var(--c-primary)]">
-              tayseer
-            </span>
+            <span className="text-xl font-bold text-[#020035] tracking-tight">tayseer</span>
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-6 text-sm">
-            <a href="#how" className="hover:text-[var(--c-secondary)]">Fonctionnement</a>
-            <Link
-              href="/auth/signup"
-              className="rounded-md border border-[var(--c-primary)] text-[var(--c-primary)] px-4 py-2 font-medium hover:bg-[var(--c-primary)] hover:text-white transition"
-            >
-              S'inscrire
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+            <a href="#features" className="hover:text-[#020035] transition">Fonctionnalités</a>
+            <a href="#pricing" className="hover:text-[#020035] transition">Tarifs</a>
+            <a href="#trust" className="hover:text-[#020035] transition">Témoignages</a>
+          </nav>
+
+          <div className="hidden md:flex items-center gap-4">
+            <Link href="/auth/login" className="text-sm font-bold text-[#020035] hover:text-[#ED4B00] transition">
+              Connexion
             </Link>
             <Link
-              href="/auth/login"
-              className="rounded-md bg-[var(--c-bank)] text-white px-4 py-2 font-medium hover:bg-[var(--c-secondary)] transition"
+              href="/auth/signup"
+              className="bg-[#020035] text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-[#ED4B00] hover:shadow-lg hover:shadow-orange-500/30 transition-all duration-300"
             >
-              Se connecter
+              Créer un compte
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="md:hidden rounded-md p-2 text-[var(--c-primary)] hover:bg-[var(--c-secondary)]/10"
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" stroke="currentColor" fill="none">
-              <line x1="3" y1="6" x2="21" y2="6" strokeWidth="2" strokeLinecap="round" />
-              <line x1="3" y1="12" x2="21" y2="12" strokeWidth="2" strokeLinecap="round" />
-              <line x1="3" y1="18" x2="21" y2="18" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+          <button onClick={() => setMenuOpen(true)} className="md:hidden p-2 text-slate-800">
+            <Menu className="w-6 h-6" />
           </button>
-        </nav>
-
-        {/* Mobile Menu */}
-        {menuOpen && (
-          <div className="fixed inset-0 bg-[var(--c-bank)] text-white flex flex-col items-center justify-center gap-6 text-lg font-medium">
-            <button
-              onClick={() => setMenuOpen(false)}
-              className="absolute top-5 right-5 rounded-full bg-white/10 p-2"
-            >
-              <X className="h-6 w-6 text-white" />
-            </button>
-            <a href="#how" onClick={() => setMenuOpen(false)}>Fonctionnement</a>
-            <Link
-              href="/auth/signup"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-md border border-white text-white px-6 py-3 font-semibold hover:bg-white hover:text-[var(--c-primary)] transition"
-            >
-              S'inscrire
-            </Link>
-            <Link
-              href="/auth/login"
-              onClick={() => setMenuOpen(false)}
-              className="rounded-md bg-white text-[var(--c-primary)] px-6 py-3 font-semibold hover:bg-[var(--c-accent)] hover:text-white transition"
-            >
-              Se connecter
-            </Link>
-          </div>
-        )}
+        </div>
       </header>
 
-      {/* ===== MAIN ===== */}
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Mobile Menu Overlay */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-[60] bg-[#020035] text-white flex flex-col items-center justify-center gap-8 text-xl font-medium animate-fade-in">
+          <button onClick={() => setMenuOpen(false)} className="absolute top-6 right-6 p-2 bg-white/10 rounded-full">
+            <X className="w-6 h-6" />
+          </button>
+          <a href="#features" onClick={() => setMenuOpen(false)}>Fonctionnalités</a>
+          <a href="#pricing" onClick={() => setMenuOpen(false)}>Tarifs</a>
+          <div className="flex flex-col gap-4 mt-8 w-full px-12">
+            <Link href="/auth/signup" onClick={() => setMenuOpen(false)} className="w-full bg-white text-[#020035] py-4 rounded-xl text-center font-bold">Inscrivez-vous</Link>
+            <Link href="/auth/login" onClick={() => setMenuOpen(false)} className="w-full border border-white/20 py-4 rounded-xl text-center">Connexion</Link>
+          </div>
+        </div>
+      )}
+
+      <main className="pt-24">
         {/* ===== HERO ===== */}
-        <section className="py-24 text-center flex flex-col items-center gap-6">
-          <motion.h1
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-4xl sm:text-5xl md:text-6xl font-bold text-[var(--c-primary)]"
-          >
-            Bons d'achat intelligents pour les magasins modernes
-          </motion.h1>
+        <section className="relative pt-10 pb-20 overflow-hidden">
+          {/* Background Gradients */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[140%] h-[1000px] -z-10 rounded-[100%] bg-gradient-to-b from-indigo-50/80 via-white to-white blur-3xl opacity-60" />
+          <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-orange-100/40 rounded-full blur-[100px] -z-10" />
+          <div className="absolute top-40 left-0 w-[400px] h-[400px] bg-blue-100/40 rounded-full blur-[100px] -z-10" />
 
-          <p className="text-base sm:text-lg text-[var(--c-text)]/80 max-w-[45ch]">
-            Créez, offrez et utilisez des bons Tayseer en quelques secondes — approuvé par les commerçants et adoré par les clients.
-          </p>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center md:text-left"
+            >
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-[#020035] text-xs font-bold uppercase tracking-wider mb-6">
+                <Star className="w-3 h-3 text-[#ED4B00] fill-[#ED4B00]" />
+                La Solution #1 en Algérie
+              </div>
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-[#020035] leading-[1.1] mb-6">
+                Gérez vos <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#020035] to-[#ED4B00]">Vouchers</span> & <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ED4B00] to-[#E52E2E]">Fidélité</span>
+              </h1>
+              <p className="text-lg text-slate-600 mb-8 max-w-lg mx-auto md:mx-0 leading-relaxed">
+                Tayseer aide les commerçants à créer, distribuer et scanner des bons d'achat en quelques secondes. Une solution tout-en-un pour votre croissance.
+              </p>
 
-          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              href="/auth/signup"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--c-primary)] text-white px-6 py-3 font-semibold hover:bg-[var(--c-secondary)] transition"
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center md:justify-start">
+                <Link
+                  href="/auth/signup"
+                  className="bg-[#020035] text-white h-14 px-8 rounded-2xl flex items-center gap-3 font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-[#020035]/20"
+                >
+                  Commencer
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+                <Link
+                  href="#how"
+                  className="h-14 px-8 rounded-2xl flex items-center gap-3 font-bold text-slate-600 hover:bg-slate-50 transition border border-slate-200"
+                >
+                  En savoir plus
+                </Link>
+              </div>
+
+              <div className="mt-10 flex items-center justify-center md:justify-start gap-6 opacity-80 grayscale hover:grayscale-0 transition-all duration-500">
+                <p className="text-sm font-semibold text-slate-400">Ils nous font confiance</p>
+                <div className="h-8 w-24 bg-slate-200/50 rounded animate-pulse" />
+                <div className="h-8 w-24 bg-slate-200/50 rounded animate-pulse" />
+              </div>
+            </motion.div>
+
+            {/* Right Content (Phone Mockup) */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative flex justify-center"
             >
-              Lancez votre boutique <ArrowRight size={18} />
-            </Link>
-            <Link
-              href="/auth/login"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-[var(--c-accent)] text-white px-6 py-3 font-semibold hover:bg-[#c53e00] transition"
-            >
-              Se connecter
-            </Link>
+              {/* Floating Element 1 - Top Left */}
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute top-10 left-0 md:-left-10 bg-white p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100 flex items-center gap-3 z-20"
+              >
+                <div className="bg-emerald-100 p-2 rounded-full text-emerald-600">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-bold uppercase">Succès</p>
+                  <p className="text-sm font-bold text-slate-800">QR Code Validé</p>
+                </div>
+              </motion.div>
+
+              {/* Floating Element 2 - Bottom Right */}
+              <motion.div
+                animate={{ y: [0, 10, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                className="absolute bottom-20 right-0 md:-right-4 bg-white p-4 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-100 flex items-center gap-3 z-20"
+              >
+                <div className="bg-orange-100 p-2 rounded-full text-[#ED4B00]">
+                  <TrendingUp className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-bold uppercase">Revenus</p>
+                  <p className="text-sm font-bold text-slate-800">+ 125,000 DA</p>
+                </div>
+              </motion.div>
+
+              {/* Phone Container */}
+              <div className="relative w-[300px] h-[600px] border-8 border-slate-900 rounded-[50px] overflow-hidden shadow-2xl bg-[#020035]">
+                {/* Notch */}
+                <div className="absolute top-0 inset-x-0 h-6 bg-slate-900 rounded-b-2xl w-40 mx-auto z-10" />
+
+                {/* App UI Mockup Inside Phone */}
+                <div className="w-full h-full bg-slate-50 flex flex-col pt-10 px-4 relative">
+                  {/* Header */}
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="text-lg font-black text-[#020035]">Dashboard</div>
+                    <div className="w-8 h-8 rounded-full bg-slate-200" />
+                  </div>
+
+                  {/* Stats Card */}
+                  <div className="bg-gradient-to-br from-[#020035] to-[#0a0555] rounded-2xl p-4 text-white shadow-lg shadow-indigo-900/30 mb-6 relative overflow-hidden">
+                    <div className="absolute -right-4 -top-4 w-20 h-20 bg-white/10 rounded-full blur-xl" />
+                    <div className="text-white/60 text-xs mb-1">Total Ventes</div>
+                    <div className="text-3xl font-bold">45,200 DA</div>
+                    <div className="mt-4 flex gap-2">
+                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs">QR</div>
+                      <div className="flex-1" />
+                      <div className="text-xs bg-white/20 px-2 py-1 rounded-lg">+12%</div>
+                    </div>
+                  </div>
+
+                  {/* Filter Tabs */}
+                  <div className="flex gap-2 mb-4 overflow-hidden">
+                    <div className="px-4 py-1.5 rounded-full bg-[#ED4B00] text-white text-xs font-bold shadow-md shadow-orange-500/20">Tous</div>
+                    <div className="px-4 py-1.5 rounded-full bg-white text-slate-500 text-xs font-bold border border-slate-100">Actifs</div>
+                    <div className="px-4 py-1.5 rounded-full bg-white text-slate-500 text-xs font-bold border border-slate-100">Consommés</div>
+                  </div>
+
+                  {/* List */}
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-lg">🛍️</div>
+                          <div>
+                            <div className="h-3 w-24 bg-slate-200 rounded mb-1.5" />
+                            <div className="h-2 w-16 bg-slate-100 rounded" />
+                          </div>
+                        </div>
+                        <div className="font-bold text-[#020035]">500 DA</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Bottom Nav */}
+                  <div className="absolute bottom-4 inset-x-4 bg-white/90 backdrop-blur rounded-2xl p-4 flex justify-around shadow-lg border border-slate-100/50">
+                    <div className="w-6 h-6 rounded bg-[#ED4B00]/20" />
+                    <div className="w-6 h-6 rounded bg-slate-100" />
+                    <div className="w-6 h-6 rounded bg-slate-100" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* ===== HOW ===== */}
-        <section id="how" className="py-20 border-t border-[var(--c-secondary)]/10">
-          <h2 className="text-2xl md:text-3xl font-semibold text-[var(--c-primary)] text-center mb-10">
-            Comment fonctionne Tayseer
-          </h2>
+        {/* ===== FEATURES ("Everything You Need") ===== */}
+        <section id="features" className="py-24 bg-slate-50/50 relative overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+              <h2 className="text-3xl md:text-5xl font-black text-[#020035] mb-6">
+                Tout ce dont vous avez besoin. <br />
+                <span className="text-slate-400">Rien de superflu.</span>
+              </h2>
+              <p className="text-lg text-slate-600">
+                Une plateforme pensée pour l'efficacité. Gérez vos campagnes promotionnelles sans complexité technique.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Step icon={<Sparkles className="text-[var(--c-secondary)]" />} title="1. Créer" text="Ajoutez le nom de l'acheteur, le montant et l'expiration. Tayseer génère un QR code instantanément." />
-            <Step icon={<QrCode className="text-[var(--c-bank)]" />} title="2. Utiliser" text="Les clients présentent le QR code à la caisse. Le solde est mis à jour automatiquement." />
-            <Step icon={<ShieldCheck className="text-[var(--c-accent)]" />} title="3. Suivre" text="Consultez tous les bons, les utilisations et les rapports dans votre tableau de bord commerçant." />
+            <div className="grid md:grid-cols-3 gap-8 items-center">
+              {/* Left Column */}
+              <div className="space-y-8">
+                <FeatureCard
+                  icon={<Zap className="text-[#ED4B00]" />}
+                  title="Génération Instantanée"
+                  desc="Créez des milliers de QR codes uniques en quelques clics. Prêts à être imprimés ou partagés."
+                />
+                <FeatureCard
+                  icon={<CreditCard className="text-blue-600" />}
+                  title="Paiement Flexible"
+                  desc="Modifiez les soldes en temps réel. Acceptez des paiements partiels sur les vouchers."
+                />
+              </div>
+
+              {/* Center Phone */}
+              <div className="relative mx-auto flex justify-center py-10 md:py-0">
+                <div className="absolute inset-0 bg-gradient-to-b from-indigo-100/50 to-orange-50/50 rounded-full blur-[80px] -z-10" />
+                {/* Simplified Center Image */}
+                <div className="relative w-[280px] h-[550px] bg-white rounded-[40px] shadow-2xl border-4 border-white overflow-hidden flex flex-col">
+                  <div className="bg-[#020035] p-8 text-white h-2/5 flex flex-col justify-center items-center text-center">
+                    <QrCode className="w-20 h-20 mb-4 opacity-90" />
+                    <h3 className="font-bold text-xl">Scan & Go</h3>
+                    <p className="text-sm opacity-70">Validation ultra-rapide</p>
+                  </div>
+                  <div className="h-3/5 bg-slate-50 p-6 space-y-4">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                      <div className="flex justify-between mb-2">
+                        <span className="font-bold text-slate-800">Coupon #883</span>
+                        <span className="text-emerald-600 font-bold bg-emerald-50 px-2 rounded">Valide</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-2 rounded-full mb-2">
+                        <div className="w-3/4 bg-[#020035] h-2 rounded-full" />
+                      </div>
+                      <div className="text-xs text-slate-400">Reste: 2500 DA</div>
+                    </div>
+                    <button className="w-full bg-[#ED4B00] text-white py-3 rounded-xl font-bold shadow-lg shadow-orange-500/20">
+                      Scanner un autre
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column */}
+              <div className="space-y-8">
+                <FeatureCard
+                  icon={<TrendingUp className="text-emerald-600" />}
+                  title="Suivi & Analytics"
+                  desc="Visualisez vos ventes et l'utilisation des bons en temps réel via un tableau de bord intuitif."
+                />
+                <FeatureCard
+                  icon={<ShieldCheck className="text-indigo-600" />}
+                  title="100% Sécurisé"
+                  desc="Chaque QR code est unique et infalsifiable. Protégez votre chiffre d'affaires."
+                />
+              </div>
+            </div>
           </div>
         </section>
 
         {/* ===== PRICING ===== */}
-        <section id="pricing" className="py-20 border-t border-[var(--c-secondary)]/10">
-          <h2 className="text-2xl md:text-3xl font-semibold text-[var(--c-primary)] text-center mb-4">
-            Nos Packs QR Codes
-          </h2>
-          <p className="text-center text-[var(--c-text)]/70 mb-10 max-w-2xl mx-auto">
-            Des tarifs dégressifs adaptés à vos besoins. Plus vous achetez, moins vous payez.
-          </p>
+        <section id="pricing" className="py-24 bg-white relative">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-5xl font-black text-[#020035] mb-4">Nos Packs</h2>
+              <p className="text-slate-500 max-w-lg mx-auto">Choisissez la quantité qui correspond à votre volume de vente.</p>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
-            {loading ? (
-              <div className="col-span-full py-12 text-center text-[var(--c-text)]/60">
-                Chargement des plans...
-              </div>
-            ) : (
-              (plans.length > 0 ? plans : defaultPlans).map((plan) => (
-                <PricingCard
-                  key={plan.id}
-                  quantity={plan.quantity}
-                  name={plan.name}
-                  pricePerUnit={plan.price_per_unit}
-                  isPopular={plan.is_popular}
-                  features={typeof plan.features === 'string' ? JSON.parse(plan.features) : (plan.features || [])}
-                />
-              ))
-            )}
+            <div className="grid md:grid-cols-3 gap-8">
+              {loading ? (
+                <div className="col-span-full py-20 text-center text-slate-400">Chargement des tarifs...</div>
+              ) : (
+                (plans.length > 0 ? plans : defaultPlans).map(plan => (
+                  <div key={plan.id} className={`group relative p-8 rounded-3xl transition-all duration-300 ${plan.is_popular ? 'bg-[#020035] text-white shadow-2xl scale-105 z-10' : 'bg-slate-50 text-slate-800 hover:bg-white hover:shadow-xl border border-slate-100'}`}>
+                    {plan.is_popular && (
+                      <div className="absolute top-0 right-0 bg-[#ED4B00] text-white text-xs font-bold px-4 py-2 rounded-bl-2xl rounded-tr-2xl uppercase tracking-wider">
+                        Populaire
+                      </div>
+                    )}
+
+                    <h3 className={`text-xl font-bold mb-2 ${plan.is_popular ? 'text-white' : 'text-[#020035]'}`}>{plan.name}</h3>
+                    <div className="flex items-baseline gap-1 mb-6">
+                      <span className="text-4xl font-black">{plan.quantity * plan.price_per_unit} <span className="text-lg">DA</span></span>
+                    </div>
+
+                    <div className={`h-px w-full mb-6 ${plan.is_popular ? 'bg-white/10' : 'bg-slate-200'}`} />
+
+                    <ul className="space-y-4 mb-8">
+                      {(typeof plan.features === 'string' ? JSON.parse(plan.features) : (plan.features || [])).map((f: string, i: number) => (
+                        <li key={i} className="flex items-start gap-3 text-sm font-medium opacity-80">
+                          <CheckCircle2 className={`w-5 h-5 shrink-0 ${plan.is_popular ? 'text-[#ED4B00]' : 'text-emerald-500'}`} />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Link
+                      href="/auth/signup"
+                      className={`block w-full py-4 rounded-xl text-center font-bold transition-all ${plan.is_popular
+                          ? 'bg-white text-[#020035] hover:bg-slate-100'
+                          : 'bg-[#020035] text-white hover:bg-[#ED4B00]'
+                        }`}
+                    >
+                      Choisir ce pack
+                    </Link>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </section>
 
-        {/* ===== CTA ===== */}
-        <section className="py-20 text-center">
-          <div className="bg-[var(--c-primary)] text-white rounded-3xl py-12 px-6 md:px-12 shadow-md">
-            <h3 className="text-2xl font-semibold mb-3">Commencez à émettre des bons dès aujourd'hui</h3>
-            <p className="text-white/80 mb-8">Rejoignez Tayseer et développez la fidélité de vos clients sans effort.</p>
-            <Link
-              href="/auth/signup"
-              className="inline-flex items-center justify-center gap-2 bg-[var(--c-accent)] text-white px-6 py-3 rounded-md font-semibold hover:bg-[#c53e00] transition"
-            >
-              Créer votre compte boutique <ArrowRight size={18} />
-            </Link>
+        {/* ===== CTA CARD ===== */}
+        <section className="py-24 px-4">
+          <div className="max-w-6xl mx-auto rounded-[3rem] bg-gradient-to-r from-[#020035] to-[#1a1566] p-12 md:p-24 text-center relative overflow-hidden shadow-2xl shadow-indigo-900/30">
+            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#ED4B00] rounded-full blur-[150px] opacity-20 -mr-20 -mt-20 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500 rounded-full blur-[150px] opacity-20 -ml-20 -mb-20 pointer-events-none" />
+
+            <h2 className="relative text-3xl md:text-5xl font-black text-white mb-6">Prêt à transformer votre business ?</h2>
+            <p className="relative text-lg text-indigo-100 mb-10 max-w-2xl mx-auto">
+              Rejoignez des centaines de commerçants qui utilisent Tayseer pour fidéliser leurs clients. Inscription gratuite et rapide.
+            </p>
+
+            <div className="relative flex flex-col sm:flex-row justify-center gap-4">
+              <Link href="/auth/signup" className="bg-white text-[#020035] px-8 py-4 rounded-full font-bold text-lg hover:shadow-lg hover:shadow-white/20 transition-all flex items-center justify-center gap-2">
+                Créer mon compte
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
           </div>
         </section>
 
         {/* ===== FOOTER ===== */}
-        <footer className="py-16 bg-[#020035] text-white/80 text-sm border-t border-[var(--c-secondary)]/10 text-center md:text-left">
-          <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-            {/* Brand column */}
-            <div className="flex flex-col items-center md:items-start">
-              <span className="text-xl font-bold text-white block mb-4">tayseer</span>
-              <p className="mb-6 max-w-xs text-white/60">La solution de fidélité simplifiée pour les commerces modernes.</p>
-              <div className="flex gap-3">
-                <a href="#" className="p-2.5 bg-white/5 border border-white/10 rounded-full hover:bg-[#1877F2] hover:border-[#1877F2] hover:text-white transition group">
-                  <Facebook size={18} />
-                </a>
-                <a href="#" className="p-2.5 bg-white/5 border border-white/10 rounded-full hover:bg-[#E4405F] hover:border-[#E4405F] hover:text-white transition group">
-                  <Instagram size={18} />
-                </a>
+        <footer className="bg-[#0b0a1f] text-slate-400 py-16 border-t border-white/5">
+          <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-4 gap-12">
+            <div className="col-span-1 md:col-span-1">
+              <Link href="/" className="flex items-center gap-2 mb-6 text-white">
+                <span className="text-2xl font-bold">tayseer</span>
+              </Link>
+              <p className="text-sm leading-relaxed mb-6">
+                La plateforme de gestion de vouchers nouvelle génération. Simple, puissante et conçue pour l'Algérie.
+              </p>
+              <div className="flex gap-4">
+                <SocialIcon icon={<Facebook className="w-5 h-5" />} />
+                <SocialIcon icon={<Instagram className="w-5 h-5" />} />
+                <SocialIcon icon={<Mail className="w-5 h-5" />} />
               </div>
             </div>
 
-            {/* Links */}
             <div>
-              <h4 className="font-bold text-white mb-4 uppercase text-xs tracking-wider">Société</h4>
-              <ul className="space-y-3">
-                <li><a href="#" className="hover:text-[var(--c-accent)] transition">À propos</a></li>
-                <li><a href="#" className="hover:text-[var(--c-accent)] transition">Carrières</a></li>
-                <li><a href="#" className="hover:text-[var(--c-accent)] transition">Blog</a></li>
+              <h4 className="text-white font-bold mb-6">Liens Rapides</h4>
+              <ul className="space-y-4 text-sm">
+                <li><a href="#" className="hover:text-white transition">Accueil</a></li>
+                <li><a href="#features" className="hover:text-white transition">Fonctionnalités</a></li>
+                <li><a href="#pricing" className="hover:text-white transition">Tarifs</a></li>
               </ul>
             </div>
 
-            {/* Legal */}
             <div>
-              <h4 className="font-bold text-white mb-4 uppercase text-xs tracking-wider">Légal</h4>
-              <ul className="space-y-3">
-                <li><a href="#" className="hover:text-[var(--c-accent)] transition">Confidentialité</a></li>
-                <li><a href="#" className="hover:text-[var(--c-accent)] transition">Conditions</a></li>
+              <h4 className="text-white font-bold mb-6">Ressources</h4>
+              <ul className="space-y-4 text-sm">
+                <li><a href="#" className="hover:text-white transition">Centre d'aide</a></li>
+                <li><a href="#" className="hover:text-white transition">Documentation API</a></li>
+                <li><a href="#" className="hover:text-white transition">Conditions d'utilisation</a></li>
+                <li><a href="#" className="hover:text-white transition">Confidentialité</a></li>
               </ul>
             </div>
 
-            {/* Contact */}
-            <div className="flex flex-col items-center md:items-start">
-              <h4 className="font-bold text-white mb-4 uppercase text-xs tracking-wider">Contact</h4>
-              <ul className="space-y-3">
-                <li className="flex items-center gap-2">
-                  <Mail size={16} className="text-[var(--c-accent)]" />
-                  <a href="mailto:tayseercard@gmail.com" className="hover:text-[var(--c-accent)] transition font-medium">contact@tayseer.dz</a>
-                </li>
-              </ul>
+            <div>
+              <h4 className="text-white font-bold mb-6">Newsletter</h4>
+              <p className="text-xs mb-4">Restez informé de nos nouveautés.</p>
+              <div className="flex gap-2">
+                <input type="email" placeholder="Email" className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm w-full focus:outline-none focus:border-white/30" />
+                <button className="bg-[#ED4B00] text-white p-2 rounded-lg hover:bg-orange-600 transition">
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
-
-          <div className="border-t border-white/10 pt-8 max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-white/40">
-            <p>© {new Date().getFullYear()} Tayseercard. Tous droits réservés.</p>
-            <p>Fait avec ❤️ en Algérie</p>
+          <div className="max-w-7xl mx-auto px-4 pt-8 mt-12 border-t border-white/5 text-center text-xs">
+            &copy; {new Date().getFullYear()} Tayseer Card. Made with ❤️ in Algeria.
           </div>
         </footer>
+
       </main>
     </div>
   )
 }
 
-/* ===== Components ===== */
-function Step({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+// --- Subcomponents ---
+
+function FeatureCard({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) {
   return (
-    <div className="p-6 rounded-xl border border-[var(--c-secondary)]/10 bg-white text-center shadow-sm hover:shadow-md transition">
-      <div className="flex justify-center mb-4">{icon}</div>
-      <h3 className="font-semibold text-[var(--c-primary)] mb-2">{title}</h3>
-      <p className="text-sm text-[var(--c-text)]/70">{text}</p>
+    <div className="flex gap-4">
+      <div className="w-12 h-12 rounded-2xl bg-white shadow-md border border-slate-100 flex items-center justify-center shrink-0">
+        {icon}
+      </div>
+      <div>
+        <h3 className="font-bold text-[#020035] text-lg mb-2">{title}</h3>
+        <p className="text-slate-500 text-sm leading-relaxed">{desc}</p>
+      </div>
     </div>
   )
 }
 
-function PricingCard({
-  quantity,
-  name,
-  pricePerUnit,
-  isPopular,
-  features,
-}: {
-  quantity: number
-  name?: string
-  pricePerUnit: number
-  isPopular: boolean
-  features: string[]
-}) {
-  const totalPrice = quantity * pricePerUnit
-
+function SocialIcon({ icon }: { icon: React.ReactNode }) {
   return (
-    <div className={`relative p-6 rounded-2xl border ${isPopular ? 'border-[var(--c-accent)] shadow-lg scale-105 bg-white' : 'border-[var(--c-secondary)]/10 bg-white/50 shadow-sm'} flex flex-col items-center text-center transition hover:shadow-md`}>
-      {isPopular && (
-        <span className="absolute -top-3 bg-[var(--c-accent)] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-          Populaire
-        </span>
-      )}
-
-      <div className="mb-4 p-3 rounded-full bg-[var(--c-primary)]/5">
-        <Package className={`h-8 w-8 ${isPopular ? 'text-[var(--c-accent)]' : 'text-[var(--c-primary)]'}`} />
-      </div>
-
-      <h3 className="text-xl font-bold text-[var(--c-primary)] mb-1">{name || `Pack ${quantity} QR`}</h3>
-      <p className="text-sm font-semibold text-[var(--c-accent)] mb-2 flex items-center justify-center gap-1">
-        <Package className="h-4 w-4" />
-        {quantity} QR
-      </p>
-      <div className="flex items-baseline gap-1 mb-1">
-        <span className="text-3xl font-bold text-[var(--c-primary)]">{totalPrice.toLocaleString()} DA</span>
-      </div>
-      <p className="text-sm text-[var(--c-text)]/60 mb-6 font-medium">soit {pricePerUnit} DA / QR code</p>
-
-      <ul className="space-y-3 mb-8 text-sm text-[var(--c-text)]/80 w-full">
-        {features.map((feat, i) => (
-          <li key={i} className="flex items-center gap-2 justify-center">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--c-secondary)]" />
-            {feat}
-          </li>
-        ))}
-      </ul>
-
-      <Link
-        href="/auth/signup"
-        className={`w-full py-2.5 rounded-xl font-semibold transition ${isPopular
-          ? 'bg-[var(--c-accent)] text-white hover:bg-[#c53e00]'
-          : 'bg-[var(--c-primary)] text-white hover:bg-[var(--c-secondary)]'
-          }`}
-      >
-        Choisir ce pack
-      </Link>
-    </div>
+    <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/20 hover:text-white transition">
+      {icon}
+    </a>
   )
-}
-
-
-
-/* ===== 🎨 Optimized Palette Usage ===== */
-const paletteVars: React.CSSProperties = {
-  ['--bg' as any]: '#F2F3F4',
-  ['--section-bg' as any]: '#EBEAED',
-  ['--c-primary' as any]: '#020035',
-  ['--c-secondary' as any]: '#02066F',
-  ['--c-bank' as any]: '#2000B1',
-  ['--c-accent' as any]: '#ED4B00',
-  ['--c-text' as any]: '#1A1A1A',
 }
