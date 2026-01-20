@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { motion } from 'framer-motion'
-import { Lock, Mail, Loader2, ArrowRight, Store } from 'lucide-react'
+import { Lock, Mail, Loader2, ArrowRight, Store, Home } from 'lucide-react'
 
 export default function LoginPage() {
   return (
@@ -137,7 +137,19 @@ function LoginInner() {
   const iconClasses = "absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400"
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg)] px-4" style={paletteVars}>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#020035] to-[#1a1566] px-4 relative overflow-hidden" style={paletteVars}>
+      {/* Background Blobs */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#ED4B00] rounded-full blur-[150px] opacity-20 -mr-20 -mt-20 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500 rounded-full blur-[150px] opacity-20 -ml-20 -mb-20 pointer-events-none" />
+
+      {/* Home Button */}
+      <Link
+        href="/"
+        className="absolute top-6 left-6 p-2.5 rounded-xl bg-transparent text-white border border-white/20 hover:bg-white/10 transition-all duration-300 group"
+      >
+        <Home size={20} className="group-hover:scale-110 transition-transform" />
+      </Link>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -146,10 +158,8 @@ function LoginInner() {
         <div className="bg-white p-8 rounded-3xl shadow-xl shadow-[var(--c-primary)]/5 border border-[var(--c-primary)]/5">
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
-              <div className="h-10 w-10 rounded-xl bg-[var(--c-primary)] flex items-center justify-center text-white group-hover:scale-110 transition-transform">
-                <Store size={24} />
-              </div>
-              <span className="text-2xl font-bold tracking-tight text-[var(--c-primary)]">tayseer</span>
+
+              <span className="text-2xl font-bold tracking-tight text-[var(--c-primary)]">tayseercard</span>
             </Link>
             <h1 className="text-xl font-semibold text-gray-800">Bon retour parmi nous</h1>
             <p className="text-gray-500 text-sm mt-1">Connectez-vous à votre espace</p>

@@ -152,7 +152,17 @@ function AdminVouchersInner() {
       })
     }
 
-    return data
+    return data.sort((a, b) => {
+      // Priority: Active & Redeemed keys first (0), others (1)
+      const getPriority = (status: string) => (['active', 'redeemed'].includes(status) ? 0 : 1)
+      const pA = getPriority(a.status)
+      const pB = getPriority(b.status)
+
+      if (pA !== pB) return pA - pB
+
+      // Secondary: Latest updated_at
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    })
   }, [rows, q, selectedStore, selectedStatus, selectedDate])
 
 
@@ -338,8 +348,22 @@ function AdminVouchersInner() {
                     <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
                     <Td><StatusPill status={v.status} /></Td>
                     <Td>{fmtDZD(v.balance, lang)}</Td>
-                    <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
-                    <Td>{new Date(v.activated_at).toLocaleDateString()}</Td>
+                    <Td>
+                      <div className="flex flex-col text-xs">
+                        <span>{new Date(v.created_at).toLocaleDateString()}</span>
+                        <span className="text-gray-400">{new Date(v.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    </Td>
+                    <Td>
+                      {v.activated_at ? (
+                        <div className="flex flex-col text-xs">
+                          <span>{new Date(v.activated_at).toLocaleDateString()}</span>
+                          <span className="text-gray-400">{new Date(v.activated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </Td>
 
                   </tr>
                 ))}
