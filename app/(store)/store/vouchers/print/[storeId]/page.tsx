@@ -25,23 +25,23 @@ export default function PrintVouchersPage() {
   /* Load vouchers */
   useEffect(() => {
     if (!storeId) return
-    ;(async () => {
-      setLoading(true)
-      let query = supabase
-        .from('vouchers')
-        .select('id, code, status, created_at')
-        .eq('store_id', storeId)
-        .eq('status', 'blank')
-        .order('created_at', { ascending: true })
+      ; (async () => {
+        setLoading(true)
+        let query = supabase
+          .from('vouchers')
+          .select('id, code, status, created_at')
+          .eq('store_id', storeId)
+          .eq('status', 'blank')
+          .order('created_at', { ascending: true })
 
-      if (from) query = query.gte('created_at', from)
-      if (to) query = query.lte('created_at', to + 'T23:59:59')
+        if (from) query = query.gte('created_at', from)
+        if (to) query = query.lte('created_at', to + 'T23:59:59')
 
-      const { data, error } = await query
-      if (error) console.error('Supabase error:', error)
-      setVouchers(data || [])
-      setLoading(false)
-    })()
+        const { data, error } = await query
+        if (error) console.error('Supabase error:', error)
+        setVouchers(data || [])
+        setLoading(false)
+      })()
   }, [storeId, from, to, supabase])
 
   // Auto print
@@ -107,11 +107,11 @@ export default function PrintVouchersPage() {
               page-block 
               grid 
               grid-cols-5
-              grid-rows-[repeat(6,38mm)]
-              gap-[6mm]
+              grid-rows-[repeat(6,34mm)]
+              gap-[4mm]
               p-[10mm]
               w-[210mm]
-              h-[270mm]
+              min-h-[297mm]
               bg-white
               ${pageIndex < pages.length - 1 ? 'print:page-break-after' : ''}
             `}
@@ -195,26 +195,26 @@ function VoucherCard({ code }: { code: string }) {
       width: 100,
       height: 100,
       data: `https://tayseercard.vercel.app/v/${encodeURIComponent(code)}`,
-      margin: 1,
-      dotsOptions: { color: '#00B686', type: 'rounded' },
+      margin: 0,
+      dotsOptions: { color: '#000000', type: 'rounded' },
       backgroundOptions: { color: '#ffffff' },
-      image: '/icon-192.png',
-      imageOptions: { crossOrigin: 'anonymous', margin: 1 },
+      // image: '/icon-192.png',
+      // imageOptions: { crossOrigin: 'anonymous', margin: 1 },
     })
     qrRef.current.innerHTML = ''
     qr.append(qrRef.current)
   }, [code])
 
   return (
-    <div className="relative flex flex-col items-center justify-center w-[38mm] h-[38mm] border border-gray-300 p-2 bg-white break-inside-avoid">
+    <div className="relative flex flex-col items-center justify-center w-[34mm] h-[34mm] border border-gray-300 p-1 bg-white break-inside-avoid shadow-sm rounded-sm">
 
       {/* Cut Marks */}
-      <div className="absolute -top-[2mm] left-1/2 w-[10mm] h-[0.2mm] bg-black"></div>
-      <div className="absolute -bottom-[2mm] left-1/2 w-[10mm] h-[0.2mm] bg-black"></div>
-      <div className="absolute top-1/2 -left-[2mm] h-[10mm] w-[0.2mm] bg-black"></div>
-      <div className="absolute top-1/2 -right-[2mm] h-[10mm] w-[0.2mm] bg-black"></div>
+      <div className="absolute -top-[1mm] left-1/2 w-[4mm] h-[0.2mm] bg-gray-400"></div>
+      <div className="absolute -bottom-[1mm] left-1/2 w-[4mm] h-[0.2mm] bg-gray-400"></div>
+      <div className="absolute top-1/2 -left-[1mm] h-[4mm] w-[0.2mm] bg-gray-400"></div>
+      <div className="absolute top-1/2 -right-[1mm] h-[4mm] w-[0.2mm] bg-gray-400"></div>
 
-      <div ref={qrRef} className="flex items-center justify-center h-full w-full" />
+      <div ref={qrRef} className="flex items-center justify-center scale-90" />
     </div>
   )
 }

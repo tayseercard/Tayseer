@@ -439,9 +439,16 @@ function StatusPill({ status }: { status: string }) {
     void: 'bg-rose-50 text-rose-700 ring-rose-200',
     blank: 'bg-gray-50 text-gray-700 ring-gray-200',
   }
+  const labels: Record<string, string> = {
+    active: 'Actif',
+    redeemed: 'Consommé',
+    expired: 'Expiré',
+    void: 'Annulé',
+    blank: 'Vierge'
+  }
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ring-1 ${map[status] ?? map.blank}`}>
-      {status}
+      {labels[status] || status}
     </span>
   )
 }

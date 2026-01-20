@@ -5,6 +5,7 @@ import { Store, X } from 'lucide-react'
 import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode'
 import { useLanguage } from '@/lib/useLanguage'
 import QRCodeStyling from 'qr-code-styling'
+import { toast } from 'sonner'
 
 
 type Voucher = {
@@ -18,6 +19,7 @@ type Voucher = {
   balance: number
   status: 'blank' | 'active' | 'redeemed' | 'expired' | 'void'
   activated_at?: string | null
+  security_pin?: string | null
   created_at: string
 }
 
@@ -38,8 +40,10 @@ export default function VoucherModal({
   const [recipientName, setRecipientName] = useState(voucher.recipient_name ?? '')
   const [buyerPhone, setBuyerPhone] = useState(voucher.buyer_phone ? formatPhone(voucher.buyer_phone) : '')
   const [amount, setAmount] = useState(voucher.initial_amount && voucher.initial_amount > 0 ? voucher.initial_amount : '')
+  const [securityPin, setSecurityPin] = useState(voucher.security_pin ?? '')
   const [autoFilled, setAutoFilled] = useState(false)
   const [consumeAmount, setConsumeAmount] = useState('')
+  const [consumePin, setConsumePin] = useState('')
   const [saving, setSaving] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
@@ -208,11 +212,11 @@ export default function VoucherModal({
 
   /* 🟢 Activate voucher */
   async function handleActivate() {
-    if (!buyerName || !amount)
-      return alert('Please enter buyer name and amount.')
+    if (!buyerName || !amount || !securityPin)
+      return toast.error('Please enter buyer name, amount, and security PIN.')
 
     if (!isValidPhone(buyerPhone))
-      return alert('Invalid phone number format.')
+      return toast.error('Invalid phone number format.')
 
     setSaving(true)
 
@@ -282,18 +286,19 @@ export default function VoucherModal({
           buyer_phone: phoneClean,
           initial_amount: Number(amount),
           balance: Number(amount),
+          security_pin: securityPin,
           status: 'active',
           activated_at: new Date().toISOString(),
         })
         .eq('id', voucher.id)
       if (voucherError) throw voucherError
 
-      alert('✅ Voucher activated successfully!')
+      toast.success('✅ Voucher activated successfully!')
       onRefresh()
       onClose()
     } catch (err: any) {
       console.error(err)
-      alert('❌ ' + (err.message || 'Activation failed'))
+      toast.error('❌ ' + (err.message || 'Activation failed'))
     } finally {
       setSaving(false)
     }
@@ -303,9 +308,16 @@ export default function VoucherModal({
   /* 🔵 Consume voucher */
   async function handleConsume(partial = true) {
     const consumeValue = partial ? Number(consumeAmount) : voucher.balance
-    if (!consumeValue || consumeValue <= 0) return alert('Enter a valid amount.')
+    if (!consumeValue || consumeValue <= 0) return toast.error('Enter a valid amount.')
+
+    // 🔒 Security PIN check
+    if (voucher.security_pin) {
+      if (!consumePin) return toast.error('Please enter the Security PIN to consume.')
+      if (consumePin !== voucher.security_pin) return toast.error('❌ Incorrect Security PIN.')
+    }
+
     if (consumeValue > voucher.balance)
-      return alert('Amount exceeds current balance.')
+      return toast.error('Amount exceeds current balance.')
     if (!confirm(`Confirm consuming ${fmtDZD(consumeValue)} ?`)) return
 
     const newBalance = voucher.balance - consumeValue
@@ -315,9 +327,9 @@ export default function VoucherModal({
       .update({ balance: newBalance, status: newStatus })
       .eq('id', voucher.id)
 
-    if (error) return alert('❌ ' + error.message)
+    if (error) return toast.error('❌ ' + error.message)
 
-    alert(
+    toast.success(
       newStatus === 'redeemed'
         ? '✅ Voucher fully consumed.'
         : `✅ ${fmtDZD(consumeValue)} consumed. Remaining ${fmtDZD(newBalance)}.`
@@ -329,9 +341,9 @@ export default function VoucherModal({
   /* ✏️ Edit Active Voucher (admin only) */
   async function handleEditSave() {
     if (!['admin', 'superadmin', 'store_owner'].includes(userRole || ''))
-      return alert('Only admin can edit active vouchers.')
+      return toast.error('Only admin can edit active vouchers.')
     const a = Number(amount)
-    if (!a || a <= 0) return alert('Invalid amount.')
+    if (!a || a <= 0) return toast.error('Invalid amount.')
 
     setSaving(true)
     const { error } = await supabase
@@ -341,13 +353,14 @@ export default function VoucherModal({
         buyer_phone: cleanPhone(buyerPhone),
         initial_amount: a,
         balance: a,
+        security_pin: securityPin,
       })
       .eq('id', voucher.id)
       .eq('status', 'active')
 
     setSaving(false)
-    if (error) return alert('❌ ' + error.message)
-    alert('✅ Voucher updated successfully.')
+    if (error) return toast.error('❌ ' + error.message)
+    toast.success('✅ Voucher updated successfully.')
     setEditMode(false)
     onRefresh()
   }
@@ -458,6 +471,13 @@ export default function VoucherModal({
                 onChange={setAmount}
               />
 
+              <Input
+                label="Security PIN (Code Secret)"
+                value={securityPin}
+                onChange={setSecurityPin}
+                placeholder="****"
+              />
+
             </div>
 
             <button
@@ -486,6 +506,7 @@ export default function VoucherModal({
                     <Info label={t.phone} value={voucher.buyer_phone ?? '—'} />
                     <Info label={t.toWhom} value={voucher.recipient_name ?? '—'} />
                     <Info label={t.initial} value={fmtDZD(voucher.initial_amount, lang)} />
+                    <Info label="Security PIN" value={voucher.security_pin ?? '—'} />
                     <Info label={t.balance} value={fmtDZD(voucher.balance, lang)} />
                   </div>
 
@@ -536,6 +557,11 @@ export default function VoucherModal({
                           value={amount}
                           onChange={setAmount}
                         />
+                        <Input
+                          label="Security PIN"
+                          value={securityPin}
+                          onChange={setSecurityPin}
+                        />
                         <button
                           onClick={handleEditSave}
                           disabled={saving}
@@ -556,6 +582,16 @@ export default function VoucherModal({
                   onChange={setConsumeAmount}
                   placeholder="e.g. 1000"
                 />
+
+                {/* 🔒 PIN required if set */}
+                {voucher.security_pin && (
+                  <Input
+                    label="Security PIN (Required)"
+                    value={consumePin}
+                    onChange={setConsumePin}
+                    placeholder="****"
+                  />
+                )}
 
                 <div className="mt-2">
                   <button
