@@ -373,6 +373,9 @@ export default function TayseerLanding() {
                     )}
 
                     <h3 className={`text-xl font-bold mb-2 ${plan.is_popular ? 'text-white' : 'text-[#020035]'}`}>{plan.name}</h3>
+                    <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${plan.is_popular ? 'text-[#ED4B00]' : 'text-slate-400'}`}>
+                      {plan.quantity} Vouchers
+                    </div>
                     <div className="flex items-baseline gap-1 mb-6">
                       <span className="text-4xl font-black">{plan.quantity * plan.price_per_unit} <span className="text-lg">DA</span></span>
                     </div>
@@ -380,6 +383,10 @@ export default function TayseerLanding() {
                     <div className={`h-px w-full mb-6 ${plan.is_popular ? 'bg-white/10' : 'bg-slate-200'}`} />
 
                     <ul className="space-y-4 mb-8">
+                      <li className={`flex items-start gap-3 text-sm font-black ${plan.is_popular ? 'text-white' : 'text-[#020035]'}`}>
+                        <CheckCircle2 className={`w-5 h-5 shrink-0 ${plan.is_popular ? 'text-[#ED4B00]' : 'text-emerald-500'}`} />
+                        {plan.quantity} Vouchers (QR Codes)
+                      </li>
                       {(typeof plan.features === 'string' ? JSON.parse(plan.features) : (plan.features || [])).map((f: string, i: number) => (
                         <li key={i} className="flex items-start gap-3 text-sm font-medium opacity-80">
                           <CheckCircle2 className={`w-5 h-5 shrink-0 ${plan.is_popular ? 'text-[#ED4B00]' : 'text-emerald-500'}`} />
@@ -391,8 +398,8 @@ export default function TayseerLanding() {
                     <Link
                       href="/auth/signup"
                       className={`block w-full py-4 rounded-xl text-center font-bold transition-all ${plan.is_popular
-                          ? 'bg-white text-[#020035] hover:bg-slate-100'
-                          : 'bg-[#020035] text-white hover:bg-[#ED4B00]'
+                        ? 'bg-white text-[#020035] hover:bg-slate-100'
+                        : 'bg-[#020035] text-white hover:bg-[#ED4B00]'
                         }`}
                     >
                       Choisir ce pack

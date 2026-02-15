@@ -278,7 +278,7 @@ export default function AdminStoresPage() {
 function StoreCard({ s, onDelete }: { s: any; onDelete: (id: string, name: string) => void }) {
   return (
     <Link
-      href={`/admin/stores/${s.id}`}
+      href={`/admin/stores/${encodeURIComponent(s.name)}`}
       className="block rounded-2xl border border-gray-100/60 bg-white/70 backdrop-blur-sm p-3 shadow-sm hover:bg-white hover:shadow-md transition-all active:scale-[0.98] group relative"
     >
       <div className="flex items-start justify-between gap-4">

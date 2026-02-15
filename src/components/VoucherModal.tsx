@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Store, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode'
 import { useLanguage } from '@/lib/useLanguage'
 import QRCodeStyling from 'qr-code-styling'
 import { toast } from 'sonner'
-
+import { motion, AnimatePresence } from 'framer-motion'
 
 type Voucher = {
   recipient_name: string | null
@@ -34,8 +34,7 @@ export default function VoucherModal({
   onClose: () => void
   onRefresh: () => void
 }) {
-  const { t, lang } = useLanguage() // ✅ get translations + current language
-  const [url, setUrl] = useState<string | null>(null)
+  const { t, lang } = useLanguage()
   const [buyerName, setBuyerName] = useState(voucher.buyer_name ?? '')
   const [recipientName, setRecipientName] = useState(voucher.recipient_name ?? '')
   const [buyerPhone, setBuyerPhone] = useState(voucher.buyer_phone ? formatPhone(voucher.buyer_phone) : '')
@@ -51,11 +50,8 @@ export default function VoucherModal({
   const qrRefBlank = useRef<HTMLDivElement>(null)
   const qrRefRedeemed = useRef<HTMLDivElement>(null)
   const [qrPng, setQrPng] = useState<string | null>(null)
-  const [storeName, setStoreName] = useState<string>("Store");
 
-  // used for debounce
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
-  // Phone number validation
   const [phoneValid, setPhoneValid] = useState(true)
 
   // ✅ Detect role
@@ -65,7 +61,6 @@ export default function VoucherModal({
       const session = sessionData.session
       let role = session?.user?.user_metadata?.role ?? null
 
-      // 🧠 fallback: query DB if no metadata
       if (!role && session?.user?.id) {
         const { data: roleData, error } = await supabase
           .from('me_effective_role')
@@ -76,44 +71,12 @@ export default function VoucherModal({
         if (error) console.warn('Role lookup failed:', error.message)
         role = roleData?.role ?? null
       }
-
-      console.log('🧩 Effective role:', role)
       setUserRole(role)
     }
-
     fetchRole()
   }, [supabase])
 
-
-  //fetch store name
-  useEffect(() => {
-    async function fetchStore() {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData.session?.user;
-      if (!user) return;
-
-      // Get store_id of logged-in user
-      const { data: roleRow } = await supabase
-        .from("me_effective_role")
-        .select("store_id")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (!roleRow?.store_id) return;
-
-      // Fetch store info
-      const { data: storeRow } = await supabase
-        .from("stores")
-        .select("name")
-        .eq("id", roleRow.store_id)
-        .maybeSingle();
-
-      if (storeRow?.name) setStoreName(storeRow.name);
-    }
-
-    fetchStore();
-  }, [supabase]);
-
+  // ✅ QR Code Rendering
   useEffect(() => {
     const target =
       voucher.status === "blank" ? qrRefBlank.current :
@@ -123,44 +86,30 @@ export default function VoucherModal({
 
     if (!target) return;
 
-    const isMobile = window.innerWidth < 640;
-    const size = isMobile ? 100 : 130;
+    const size = window.innerWidth < 640 ? 100 : 150;
 
     const qr = new QRCodeStyling({
       width: size,
       height: size,
       data: voucherDeepLink(voucher.code),
-      margin: 4,
-      dotsOptions: { color: '#000', type: 'rounded' },
-      backgroundOptions: { color: '#fff' },
+      margin: 8,
+      dotsOptions: { color: '#020035', type: 'rounded' },
+      backgroundOptions: { color: '#ffffff' },
+      cornersSquareOptions: { type: 'extra-rounded', color: '#020035' },
     });
 
     target.innerHTML = "";
     qr.append(target);
 
-    // ⭐ Export PNG
     qr.getRawData("png").then((blob) => {
-      if (!blob || !(blob instanceof Blob)) {
-        console.error("QR export failed, invalid blob:", blob);
-        return;
+      if (blob instanceof Blob) {
+        const url = URL.createObjectURL(blob);
+        setQrPng(url);
       }
-
-      const url = URL.createObjectURL(blob);
-      setQrPng(url);
     });
-
   }, [voucher.code, voucher.status]);
 
-
-
-
-
-  useEffect(() => {
-    voucherToDataUrl(voucher.code).then(setUrl)
-  }, [voucher.code])
-
-
-  // 🧠 Live lookup of client info as the user types phone
+  // ✅ Auto-fill client info
   useEffect(() => {
     if (!buyerPhone || buyerPhone.length < 6) {
       setAutoFilled(false)
@@ -174,7 +123,6 @@ export default function VoucherModal({
         const user = sessionData.session?.user
         if (!user) return
 
-        // get store_id of this user
         const { data: roleRow } = await supabase
           .from('me_effective_role')
           .select('store_id')
@@ -184,7 +132,6 @@ export default function VoucherModal({
         const storeId = roleRow?.store_id
         if (!storeId) return
 
-        // check if client exists
         const { data: existing } = await supabase
           .from('clients')
           .select('full_name')
@@ -201,7 +148,7 @@ export default function VoucherModal({
       } catch (err) {
         console.error('Auto-fill failed:', err)
       }
-    }, 400) // wait 400 ms after typing stops
+    }, 400)
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -211,58 +158,35 @@ export default function VoucherModal({
   /* 🟢 Activate voucher */
   async function handleActivate() {
     if (!buyerName || !amount || !securityPin)
-      return toast.error('Please enter buyer name, amount, and security PIN.')
+      return toast.error('Veuillez remplir tous les champs obligatoires.')
 
     if (!isValidPhone(buyerPhone))
-      return toast.error('Invalid phone number format.')
+      return toast.error('Format de téléphone invalide.')
 
     setSaving(true)
-
     try {
-      // 🧠 1️⃣ Get session user
       const { data: sessionData } = await supabase.auth.getSession()
       const user = sessionData.session?.user
-      if (!user) throw new Error('No session found')
+      if (!user) throw new Error('Session non trouvée')
 
-      // 🏪 2️⃣ Get store_id for this store user
-      const { data: roleRow, error: roleError } = await supabase
+      const { data: roleRow } = await supabase
         .from('me_effective_role')
         .select('store_id')
         .eq('user_id', user.id)
         .maybeSingle()
-      if (roleError) throw roleError
 
-      let storeId = null
-
-      if (['admin', 'superadmin'].includes(userRole || '')) {
-        // ⭐ Admins do not belong to a store
-        storeId = null
-      } else {
-        // ⭐ Store owner or cashier
-        const { data: roleRow } = await supabase
-          .from('me_effective_role')
-          .select('store_id')
-          .eq('user_id', user.id)
-          .maybeSingle()
-
-        storeId = roleRow?.store_id
-        if (!storeId) throw new Error('Missing store_id')
-      }
-
+      const storeId = roleRow?.store_id
       const phoneClean = cleanPhone(buyerPhone)
 
-      // 👥 3️⃣ Check if client exists
-      const { data: existingClient, error: clientError } = await supabase
+      const { data: existingClient } = await supabase
         .from('clients')
         .select('id')
         .eq('store_id', storeId)
         .eq('phone', phoneClean)
         .maybeSingle()
-      if (clientError) console.warn('Client lookup failed:', clientError.message)
 
-      // ➕ 4️⃣ Create client if missing
       if (!existingClient) {
-        const { error: insertError } = await supabase.from('clients').insert([
+        await supabase.from('clients').insert([
           {
             store_id: storeId,
             full_name: buyerName.trim(),
@@ -270,12 +194,8 @@ export default function VoucherModal({
             created_at: new Date().toISOString(),
           },
         ])
-        if (insertError)
-          console.warn('⚠️ Failed to add client:', insertError.message)
-        else console.log('✅ New client added:', buyerName)
       }
 
-      // 💳 5️⃣ Activate the voucher
       const { error: voucherError } = await supabase
         .from('vouchers')
         .update({
@@ -289,34 +209,33 @@ export default function VoucherModal({
           activated_at: new Date().toISOString(),
         })
         .eq('id', voucher.id)
+
       if (voucherError) throw voucherError
 
-      toast.success('✅ Voucher activated successfully!')
+      toast.success('✅ Voucher activé avec succès !')
       onRefresh()
       onClose()
     } catch (err: any) {
-      console.error(err)
-      toast.error('❌ ' + (err.message || 'Activation failed'))
+      toast.error('❌ ' + (err.message || 'Échec de l\'activation'))
     } finally {
       setSaving(false)
     }
   }
 
-
   /* 🔵 Consume voucher */
   async function handleConsume(partial = true) {
     const consumeValue = partial ? Number(consumeAmount) : voucher.balance
-    if (!consumeValue || consumeValue <= 0) return toast.error('Enter a valid amount.')
+    if (!consumeValue || consumeValue <= 0) return toast.error('Montant invalide.')
 
-    // 🔒 Security PIN check
     if (voucher.security_pin) {
-      if (!consumePin) return toast.error('Please enter the Security PIN to consume.')
-      if (consumePin !== voucher.security_pin) return toast.error('❌ Incorrect Security PIN.')
+      if (!consumePin) return toast.error('PIN requis pour la consommation.')
+      if (consumePin !== voucher.security_pin) return toast.error('❌ PIN incorrect.')
     }
 
     if (consumeValue > voucher.balance)
-      return toast.error('Amount exceeds current balance.')
-    if (!confirm(`Confirm consuming ${fmtDZD(consumeValue)} ?`)) return
+      return toast.error('Le montant dépasse le solde disponible.')
+
+    if (!confirm(`Confirmer le débit de ${fmtDZD(consumeValue, lang)} ?`)) return
 
     const newBalance = voucher.balance - consumeValue
     const newStatus = newBalance <= 0 ? 'redeemed' : 'active'
@@ -327,21 +246,15 @@ export default function VoucherModal({
 
     if (error) return toast.error('❌ ' + error.message)
 
-    toast.success(
-      newStatus === 'redeemed'
-        ? '✅ Voucher fully consumed.'
-        : `✅ ${fmtDZD(consumeValue)} consumed. Remaining ${fmtDZD(newBalance)}.`
-    )
+    toast.success('✅ Opération réussie.')
     onRefresh()
     onClose()
   }
 
-  /* ✏️ Edit Active Voucher (admin only) */
+  /* ✏️ Edit Active Voucher */
   async function handleEditSave() {
-    if (!['admin', 'superadmin', 'store_owner'].includes(userRole || ''))
-      return toast.error('Only admin can edit active vouchers.')
     const a = Number(amount)
-    if (!a || a <= 0) return toast.error('Invalid amount.')
+    if (!a || a <= 0) return toast.error('Montant invalide.')
 
     setSaving(true)
     const { error } = await supabase
@@ -358,492 +271,242 @@ export default function VoucherModal({
 
     setSaving(false)
     if (error) return toast.error('❌ ' + error.message)
-    toast.success('✅ Voucher updated successfully.')
+    toast.success('✅ Voucher mis à jour.')
     setEditMode(false)
     onRefresh()
   }
 
-  return (
-    <div dir={lang === 'ar' ? 'rtl' : 'ltr'}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 pb-24">
-      <div
-        className="
-          relative w-full max-w-md rounded-2xl
-          bg-[var(--bg)]/95 backdrop-blur-md
-          border border-[var(--c-bank)]/25
-          shadow-[0_8px_24px_rgba(0,0,0,0.08)]
-          p-5 animate-[fadeIn_0.25s_ease-out]
-        "
-      >
-        {/* === Close === */}
-        <button
-          onClick={onClose}
-          className="absolute right-2 top-2 text-[var(--c-text)]/60 hover:text-[var(--c-text)] transition"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        {/* === Title === */}
-        <div dir={lang === 'ar' ? 'rtl' : 'ltr'} className="flex items-center justify-between mb-3">
-          <h2 className="text-base sm:text-lg font-semibold text-[var(--c-primary)] tracking-tight">
-            {t.voucherDetails}
-          </h2>
-          <span
-            className={`
-    text-xs px-2 py-1 rounded-full font-medium capitalize
-    ${voucher.status === 'active'
-                ? 'bg-[var(--c-accent)]/10 text-[var(--c-accent)]'
-                : voucher.status === 'blank'
-                  ? 'bg-[var(--c-bank)]/10 text-[var(--c-bank)]'
-                  : 'bg-gray-100 text-gray-600'
-              }
-  `}
-          >
-            {voucher.status}
-          </span>
-        </div>
-
-
-        {/* === Blank → Activation form === */}
-        {voucher.status === 'blank' ? (
-          <>
-            <div className="space-y-3 mb-4">
-              <div className="flex flex-col items-center justify-center">
-                <div
-                  ref={qrRefBlank}
-                  className="h-28 w-28 sm:h-36 sm:w-36
-                     rounded-2xl border-2 border-[var(--c-accent)]/20 shadow-md
-                     bg-white p-2 flex items-center justify-center shrink-0"
-                />
-
-
-
-                <button
-                  onClick={handlePrintQROnly}
-                  className="mt-3 px-3 py-1.5 bg-[var(--c-accent)] text-white rounded-md text-xs"
-                >
-                  🧾 Print Qr Only
-                </button>
-              </div>
-              <Input label="Buyer Name" value={buyerName} onChange={setBuyerName} />
-              <Input label="To Whom?" value={recipientName} onChange={setRecipientName} />
-
-              <div className="relative">
-                <label className="text-sm text-gray-600">Buyer Phone</label>
-                <input
-                  value={buyerPhone}
-                  onChange={(e) => {
-                    const formatted = formatPhone(e.target.value)
-                    setBuyerPhone(formatted)
-                    setPhoneValid(isValidPhone(formatted))
-                  }}
-                  placeholder="0x xx xx xx xx"
-                  maxLength={14}
-                  inputMode="numeric"
-                  pattern="[0-9 ]*"
-                  className={`w-full border rounded-md p-2 text-sm focus:outline-none transition
-      ${phoneValid
-                      ? 'border-[var(--c-bank)]/30 focus:border-[var(--c-accent)]'
-                      : 'border-rose-400 focus:border-rose-500 bg-rose-50/20'
-                    } tracking-widest font-medium`}
-                />
-
-                {autoFilled && phoneValid && (
-                  <p className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-[var(--c-accent)] font-medium">
-                    {t.existingClient} ✓
-                  </p>
-                )}
-                {!phoneValid && (
-                  <p className="text-[11px] text-rose-600 mt-1">{t.invalidPhone}</p>
-                )}
-
-              </div>
-
-
-
-              <Input
-                label="Amount (DZD)"
-                type="number"
-                value={amount}
-                onChange={setAmount}
-              />
-
-              <Input
-                label="Security PIN (Code Secret)"
-                value={securityPin}
-                onChange={setSecurityPin}
-                placeholder="****"
-              />
-
-            </div>
-
-            <button
-              onClick={handleActivate}
-              disabled={saving}
-              className="
-                w-full rounded-lg bg-[var(--c-accent)]
-                px-4 py-2 text-sm font-medium text-white
-                hover:bg-[var(--c-accent)]/90
-                active:scale-[0.97] transition disabled:opacity-50
-              "
-            >
-              {saving ? 'Saving…' : 'Activate Voucher'}
-            </button>
-          </>
-        ) : (
-          <>
-
-            {/* === Active voucher details === */}
-            {voucher.status === 'active' && (
-              <div className="space-y-3 mt-2">
-                {/* === Voucher Info === */}
-                <div className="grid grid-cols-2 gap-3 items-center mb-3">
-                  <div className="space-y-1 text-xs sm:text-sm">
-                    <Info label={t.buyer} value={voucher.buyer_name ?? '—'} />
-                    <Info label={t.phone} value={voucher.buyer_phone ?? '—'} />
-                    <Info label={t.toWhom} value={voucher.recipient_name ?? '—'} />
-                    <Info label={t.initial} value={fmtDZD(voucher.initial_amount, lang)} />
-                    <Info label="Security PIN" value={voucher.security_pin ?? '—'} />
-                    <Info label={t.balance} value={fmtDZD(voucher.balance, lang)} />
-                  </div>
-
-                  <div className="flex flex-col items-center space-y-4 justify-center">
-                    <div
-
-
-                      ref={qrRefActive}
-                      className="h-28 w-28 sm:h-36 sm:w-36
-                     rounded-2xl border-2 border-[var(--c-accent)]/20 shadow-md
-                     bg-white p-2 flex items-center justify-center shrink-0"
-                    />
-                    {/* === Button Print === */}
-
-                    <button
-                      onClick={handlePrintQROnly}
-                      className=" px-3 py-1 bg-[var(--c-accent)] text-white rounded-md text-xs"
-                    >
-                      🧾 Print Qr Only
-                    </button>
-
-
-                  </div>
-
-                </div>
-
-                {/* === Edit Active Voucher (admin/superadmin only) === */}
-                {['admin', 'superadmin', 'store_owner'].includes(userRole || '') && (
-                  <div className="mb-2   ">
-                    <div className="flex justify-between items-center ">
-
-                      <button
-                        onClick={() => setEditMode(!editMode)}
-                        className="text-xs bg-[var(--c-accent)] text-white px-3 py-1 rounded-md hover:bg-[var(--c-accent)]/90"
-                      >
-                        {editMode ? 'Cancel' : '✏️ Edit'}
-                      </button>
-                    </div>
-
-                    {editMode && (
-                      <div className="space-y-2">
-                        <Input label="Buyer Name" value={buyerName} onChange={setBuyerName} />
-                        <Input label="Buyer Phone" value={buyerPhone} onChange={setBuyerPhone} />
-                        <Input
-                          label="Amount (DZD)"
-                          type="number"
-                          value={amount}
-                          onChange={setAmount}
-                        />
-                        <Input
-                          label="Security PIN"
-                          value={securityPin}
-                          onChange={setSecurityPin}
-                        />
-                        <button
-                          onClick={handleEditSave}
-                          disabled={saving}
-                          className="w-full bg-[var(--c-accent)] text-white rounded-md py-2 text-sm hover:bg-[var(--c-accent)]/90"
-                        >
-                          {saving ? 'Saving…' : 'Save Changes'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* === Consume voucher === */}
-                <Input
-                  label="Consume Amount (DZD)"
-                  type="number"
-                  value={consumeAmount}
-                  onChange={setConsumeAmount}
-                  placeholder="e.g. 1000"
-                />
-
-                {/* 🔒 PIN required if set */}
-                {voucher.security_pin && (
-                  <Input
-                    label="Security PIN (Required)"
-                    value={consumePin}
-                    onChange={setConsumePin}
-                    placeholder="****"
-                  />
-                )}
-
-                <div className="mt-2">
-                  <button
-                    onClick={() => handleConsume(true)}
-                    className="w-full rounded-md bg-[var(--c-accent)] text-white px-3 py-2 text-sm font-medium hover:bg-[var(--c-accent)]/90 active:scale-[0.97] transition"
-                  >
-                    {t.consume || 'Consume'}
-                  </button>
-                </div>
-
-                <p className="text-[11px] text-[var(--c-text)]/60 text-center">
-                  💡 Enter an amount or consume the full voucher.
-                </p>
-              </div>
-            )}
-          </>
-
-        )}
-
-        {/* === Redeemed voucher details === */}
-        {voucher.status === 'redeemed' && (
-          <div className="space-y-3 mt-2">
-            <div className="grid grid-cols-2 gap-3 items-center mb-3">
-              <div className="space-y-1 text-xs sm:text-sm">
-                <Info label={t.buyer} value={voucher.buyer_name ?? '—'} />
-                <Info label={t.phone} value={voucher.buyer_phone ?? '—'} />
-                <Info label={t.toWhom} value={voucher.recipient_name ?? '—'} />
-                <Info label={t.initial} value={fmtDZD(voucher.initial_amount, lang)} />
-                <Info label={t.balance} value="0 DZD" />
-              </div>
-
-              <div className="flex flex-col items-center justify-center">
-                <div
-                  ref={qrRefRedeemed}
-                  className="h-28 w-28 sm:h-36 sm:w-36
-                     rounded-2xl border-2 border-[var(--c-accent)]/20 shadow-md
-                     bg-white p-2 flex items-center justify-center shrink-0"
-                />
-              </div>
-            </div>
-
-
-
-            <div className="rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 p-3 text-sm font-medium text-center">
-              ✅ {t.voucherRedeemed || 'This voucher has been fully redeemed.'}
-            </div>
-
-            <p className="text-[11px] text-[var(--c-text)]/60 text-center mt-1">
-              {t.redeemedAt || 'Redeemed on'}{' '}
-              <b>
-                {voucher.activated_at
-                  ? new Date(voucher.activated_at).toLocaleString()
-                  : '—'}
-              </b>
-            </p>
-          </div>
-        )}
-
-        <button
-          onClick={onClose}
-          className="
-            w-full mt-5 rounded-lg border border-[var(--c-bank)]/30
-            px-4 py-2 text-sm text-[var(--c-text)]/80
-            hover:bg-white/60 active:scale-[0.97] transition
-          "
-        >
-          {t.close}
-        </button>
-      </div>
-    </div>
-  )
-
-
-
-  function handlePrintReceipt(size: "30mm" | "35mm") {
-    if (!qrPng) {
-      alert("QR loading… please wait 1s");
-      return;
-    }
-
-    const width = size === "30mm" ? "30mm" : "35mm";
-
-    const win = window.open("", "_blank", "width=350,height=600");
-    if (!win) return;
-
-    win.document.write(`
-    <html>
-      <head>
-        <title>Voucher Receipt</title>
-        <style>
-          @page { size: ${width}; margin: 0; }
-
-          body {
-            width: ${width};
-            margin: 0;
-            padding: 10px;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            font-size: 11px;
-          }
-
-          img.qr {
-            width: 100px;
-            height: 100px;
-            margin-bottom: 10px;
-          }
-
-          .line {
-            border-top: 1px dashed #999;
-            margin: 8px 0;
-          }
-
-          .row {
-            display: flex;
-            justify-content: space-between;
-          }
-        </style>
-      </head>
-
-      <body>
-
-
-        <img class="qr" src="${qrPng}" />
-
-       
-
-        
-
-        <script>
-          window.onload = () => { window.print(); window.onafterprint = window.close; }
-        </script>
-
-      </body>
-    </html>
-  `);
-
-    win.document.close();
-  }
-
   function handlePrintQROnly() {
-    if (!qrPng) {
-      alert("QR code is still loading…");
-      return;
-    }
-
+    if (!qrPng) return toast.error("Le code QR est en cours de génération...");
     const win = window.open("", "_blank", "width=400,height=500");
-
     win!.document.write(`
-    <html>
-      <head>
-        <title>Print QR</title>
-        <style>
-          @page { 
-            margin: 0; 
-          }
-
-          body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-          }
-
-          img {
-  margin: auto;
-  display: block;
-  width: 260px;
-  height: 260px;
-}
-        </style>
-      </head>
-
-      <body>
-        <img src="${qrPng}" />
-        <script>
-          window.onload = () => {
-            window.print();
-            window.onafterprint = window.close;
-          }
-        </script>
-      </body>
-    </html>
-  `);
-
+      <html>
+        <head>
+          <title>Imprimer QR</title>
+          <style>
+            @page { margin: 0; }
+            body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+            img { width: 300px; height: 300px; }
+          </style>
+        </head>
+        <body>
+          <img src="${qrPng}" />
+          <script>
+            window.onload = () => { window.print(); window.onafterprint = window.close; }
+          </script>
+        </body>
+      </html>
+    `);
     win!.document.close();
   }
 
-
-
-}
-
-
-
-
-
-/* --- Small Components --- */
-function Info({ label, value }: { label: string; value: any }) {
   return (
-    <div className="flex justify-between border-b border-[var(--c-bank)]/10 py-1">
-      <span className="text-[var(--c-text)]/60">{label}</span>
-      <span className="font-medium text-[var(--c-text)]">{value}</span>
+    <div dir={lang === 'ar' ? 'rtl' : 'ltr'}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md p-4 pb-24 md:pb-4">
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="
+          relative w-full max-w-2xl max-h-[90vh] overflow-y-auto
+          bg-white/95 backdrop-blur-xl border border-white/50
+          shadow-[0_20px_50px_rgba(0,0,0,0.15)]
+          rounded-[2.5rem] p-6 md:p-8
+        "
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-6 top-6 h-10 w-10 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:text-[#020035] transition-all hover:bg-gray-100 active:scale-95 z-10"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+
+          {/* LEFT: QR & Status */}
+          <div className="md:col-span-5 flex flex-col items-center space-y-6">
+            <div className="text-center">
+              <h2 className="text-xl font-black text-[#020035] mb-1">{t.voucherDetails}</h2>
+              <StatusBadge status={voucher.status} />
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-4 bg-gradient-to-tr from-[#ED4B00]/10 to-[#020035]/5 rounded-[2rem] blur-2xl group-hover:opacity-100 opacity-50 transition duration-500" />
+              <div
+                ref={voucher.status === 'blank' ? qrRefBlank : voucher.status === 'active' ? qrRefActive : qrRefRedeemed}
+                className="relative h-28 w-28 md:h-40 md:w-40 rounded-2xl border-4 border-white shadow-2xl bg-white p-2 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 duration-500"
+              />
+            </div>
+
+            <div className="w-full space-y-2">
+              <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest text-center">Code du Voucher</p>
+              <p className="text-lg font-black text-[#020035] text-center font-mono bg-gray-50 py-2 rounded-xl border border-gray-100">
+                {voucher.code}
+              </p>
+            </div>
+
+            <button
+              onClick={handlePrintQROnly}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-[#020035] text-white rounded-2xl text-xs font-bold hover:bg-black transition-all active:scale-95 shadow-lg shadow-indigo-900/10"
+            >
+              <span className="text-lg">🧾</span> Imprimer le QR Code
+            </button>
+          </div>
+
+          {/* RIGHT: Form / Details */}
+          <div className="md:col-span-7 flex flex-col gap-6">
+            {voucher.status === 'blank' ? (
+              <div className="space-y-4 animate-in slide-in-from-right-4 duration-500">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-black text-[#020035] uppercase tracking-wider opacity-80">Activation</h3>
+                  <p className="text-xs text-gray-400 font-medium italic">Activez ce voucher pour commencer.</p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  <Input label="Nom de l'acheteur" value={buyerName} onChange={setBuyerName} placeholder="Nom complet" />
+                  <Input label="Bénéficiaire" value={recipientName} onChange={setRecipientName} placeholder="Optionnel" />
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Téléphone</label>
+                    <div className="relative">
+                      <input
+                        value={buyerPhone}
+                        onChange={(e) => {
+                          const formatted = formatPhone(e.target.value)
+                          setBuyerPhone(formatted)
+                          setPhoneValid(isValidPhone(formatted))
+                        }}
+                        placeholder="0x xx xx xx xx"
+                        maxLength={14}
+                        className={`w-full rounded-2xl border-2 px-4 py-3 text-sm font-bold transition-all outline-none ${phoneValid ? 'border-gray-100 bg-gray-50/50 focus:border-[#ED4B00] focus:bg-white' : 'border-rose-100 bg-rose-50/50 text-rose-500 focus:border-rose-300'}`}
+                      />
+                      {autoFilled && phoneValid && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
+                          EXISTANT ✓
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input label="Montant (DA)" type="number" value={amount} onChange={setAmount} placeholder="0" />
+                    <Input label="PIN (4 chiffres)" value={securityPin} onChange={setSecurityPin} placeholder="****" />
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleActivate}
+                  disabled={saving}
+                  className="w-full mt-4 bg-gradient-to-r from-[#ED4B00] to-[#FF6B21] text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {saving ? 'CHARGEMENT...' : 'Activer maintenant'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-black text-[#020035] uppercase tracking-wider opacity-80">Détails</h3>
+                  <p className="text-xs text-gray-400 font-medium italic">Informations du compte.</p>
+                </div>
+
+                <div className="bg-gray-50/50 rounded-3xl p-5 border border-gray-100 space-y-3">
+                  <DetailItem label="Acheteur" value={voucher.buyer_name} />
+                  <DetailItem label="Téléphone" value={voucher.buyer_phone} />
+                  <DetailItem label="Solde" value={fmtDZD(voucher.balance, lang)} bold color="text-emerald-600" />
+                  {voucher.security_pin && <DetailItem label="PIN" value={voucher.security_pin} color="text-amber-500" />}
+                </div>
+
+                {voucher.status === 'active' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Paiement</h4>
+                      {['admin', 'superadmin', 'store_owner'].includes(userRole || '') && (
+                        <button onClick={() => setEditMode(!editMode)} className="text-[10px] font-black text-[#ED4B00] uppercase underline underline-offset-4 hover:opacity-70 transition">
+                          {editMode ? 'Annuler' : 'Modifier'}
+                        </button>
+                      )}
+                    </div>
+
+                    <AnimatePresence>
+                      {editMode ? (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3 pt-2">
+                          <Input label="Nom" value={buyerName} onChange={setBuyerName} />
+                          <div className="grid grid-cols-2 gap-3">
+                            <Input label="Solde" value={amount} onChange={setAmount} />
+                            <Input label="PIN" value={securityPin} onChange={setSecurityPin} />
+                          </div>
+                          <button onClick={handleEditSave} className="w-full bg-emerald-600 text-white rounded-xl py-2 text-xs font-black uppercase tracking-wider">Enregistrer</button>
+                        </motion.div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input label="Montant" value={consumeAmount} onChange={setConsumeAmount} placeholder="DA" />
+                            {voucher.security_pin && <Input label="PIN" value={consumePin} onChange={setConsumePin} placeholder="****" />}
+                          </div>
+                          <button onClick={() => handleConsume(true)} className="w-full bg-[#020035] text-white rounded-2xl py-4 text-xs font-black uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-indigo-900/10">Valider l'achat</button>
+                        </div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {voucher.status === 'redeemed' && (
+                  <div className="bg-emerald-50 rounded-2xl p-4 flex items-center gap-3 border border-emerald-100">
+                    <p className="text-xs font-bold text-emerald-800">✅ Utilisé totalement.</p>
+                  </div>
+                )}
+              </div>
+            )}
+            <button onClick={onClose} className="mt-2 w-full text-center text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-[#020035] transition">Fermer</button>
+          </div>
+        </div>
+      </motion.div>
     </div>
   )
 }
 
-function Input({
-  label,
-  value,
-  onChange,
-  type = 'text',
-  placeholder,
-}: {
-  label: string
-  value: any
-  onChange: (val: any) => void
-  type?: string
-  placeholder?: string
-}) {
+function StatusBadge({ status }: { status: string }) {
+  const configs: any = {
+    active: { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', label: 'ACTIF' },
+    blank: { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-100', label: 'VIERGE' },
+    redeemed: { bg: 'bg-gray-50', text: 'text-gray-500', border: 'border-gray-100', label: 'CONSOMMÉ' },
+  }
+  const config = configs[status] || configs.blank
+  return <span className={`px-3 py-1 rounded-full text-[10px] font-black border ${config.bg} ${config.text} ${config.border}`}>{config.label}</span>
+}
+
+function DetailItem({ label, value, bold = false, color = "text-gray-700" }: { label: string, value: any, bold?: boolean, color?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest shrink-0">{label}</span>
+      <span className={`text-xs ${bold ? 'font-black' : 'font-bold'} ${color} truncate`}>{value || '—'}</span>
+    </div>
+  )
+}
+
+function Input({ label, value, onChange, type = 'text', placeholder }: { label: string, value: any, onChange: (val: any) => void, type?: string, placeholder?: string }) {
   return (
     <div>
-      <label className="text-sm text-[var(--c-text)]/70 mb-1 block">{label}</label>
+      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full border border-[var(--c-bank)]/30 rounded-md p-2 text-sm bg-white/90 backdrop-blur-sm focus:ring-2 focus:ring-[var(--c-accent)]/40 outline-none"
+        className="w-full border-2 border-gray-100 bg-gray-50/50 rounded-2xl p-3 text-sm font-bold focus:border-[#ED4B00] focus:bg-white outline-none transition-all"
       />
     </div>
   )
 }
 
-function fmtDZD(n: number, lang: 'fr' | 'en' | 'ar' = 'fr') {
-  const locale = lang === 'ar' ? 'ar-DZ' : lang === 'en' ? 'en-DZ' : 'fr-DZ'
-  try {
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: 'DZD',
-      maximumFractionDigits: 0,
-    }).format(n)
-  } catch {
-    return `${n} DZD`
-  }
+function fmtDZD(n: number, lang: any) {
+  return new Intl.NumberFormat('fr-DZ', { style: 'currency', currency: 'DZD', maximumFractionDigits: 0 }).format(n)
 }
 
-function cleanPhone(input: string) {
-  return input.replace(/\D/g, '')
-}
-function isValidPhone(input: string) {
-  const clean = cleanPhone(input)
-  return /^0[5-7]\d{8}$/.test(clean)
-}
+function cleanPhone(input: string) { return input.replace(/\D/g, '') }
+function isValidPhone(input: string) { return /^0[5-7]\d{8}$/.test(cleanPhone(input)) }
 function formatPhone(input: string): string {
   const digits = input.replace(/\D/g, '')
   const groups = digits.match(/.{1,2}/g) || []
   return groups.join(' ').trim().slice(0, 14)
 }
-

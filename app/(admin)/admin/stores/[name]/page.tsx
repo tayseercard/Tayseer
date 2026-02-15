@@ -28,6 +28,7 @@ import PrintVouchersModal from '@/components/PrintVouchersModal'
 import { Badge } from '@/components/ui/badge'
 import { useLanguage } from '@/lib/useLanguage'
 import { wilayaLabel } from '@/lib/algeria'
+import { usePageTitle } from '@/lib/PageTitleContext'
 
 type StoreRow = {
   id: string
@@ -65,8 +66,9 @@ type VoucherRow = {
 export default function AdminStoreDetailPage() {
   const supabase = createClientComponentClient()
   const router = useRouter()
-  const { id: storeId } = useParams<{ id: string }>()
+  const { name } = useParams<{ name: string }>()
   const { t } = useLanguage()
+  const { setTitle } = usePageTitle()
 
   const [store, setStore] = useState<StoreRow | null>(null)
   const [payments, setPayments] = useState<any[]>([])
@@ -80,17 +82,25 @@ export default function AdminStoreDetailPage() {
   const [addingLoading, setAddingLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 8
+  const [storeId, setStoreId] = useState<string | null>(null)
   const [activeInfoTab, setActiveInfoTab] = useState<'contact' | 'location'>('contact')
 
   const loadStore = useCallback(async () => {
-    if (!storeId) return
+    if (!name) return
     setLoadingStore(true)
     try {
-      const { data, error } = await supabase
-        .from('stores')
-        .select('*, plans(*)')
-        .eq('id', storeId)
-        .maybeSingle()
+      const decodedParam = decodeURIComponent(name)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(decodedParam)
+
+      let query = supabase.from('stores').select('*, plans(*)')
+
+      if (isUUID) {
+        query = query.or(`id.eq.${decodedParam},name.eq.${decodedParam}`)
+      } else {
+        query = query.eq('name', decodedParam)
+      }
+
+      const { data, error } = await query.maybeSingle()
 
       if (error || !data) {
         router.replace('/admin/stores')
@@ -101,11 +111,13 @@ export default function AdminStoreDetailPage() {
         data.plans = data.plans[0] || null
       }
       setStore(data)
+      setStoreId(data.id)
+      setTitle(data.name)
 
       const { data: payData } = await supabase
         .from('payments')
         .select('*, plans(name)')
-        .eq('store_id', storeId)
+        .eq('store_id', data.id)
         .order('created_at', { ascending: false })
 
       if (payData) setPayments(payData)
@@ -115,7 +127,7 @@ export default function AdminStoreDetailPage() {
     } finally {
       setLoadingStore(false)
     }
-  }, [storeId, supabase, router])
+  }, [name, supabase, router, setTitle])
 
   const loadVouchers = useCallback(async () => {
     if (!storeId) return

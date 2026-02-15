@@ -21,9 +21,20 @@ import {
   QrCodeIcon,
   Gift,
 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster } from 'react-hot-toast'
 
+import { PageTitleProvider, usePageTitle } from '@/lib/PageTitleContext'
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <PageTitleProvider>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </PageTitleProvider>
+  )
+}
+
+function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const supabase = createClientComponentClient()
   const router = useRouter()
   const pathname = usePathname()
@@ -31,11 +42,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { t, lang } = useLanguage()
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifRefresh, setNotifRefresh] = useState(0)
+  const { title, setTitle } = usePageTitle()
 
   useEffect(() => {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
     document.body.classList.toggle('rtl', lang === 'ar')
   }, [lang])
+
+  // Reset title on path change to avoid showing previous page's title
+  useEffect(() => {
+    setTitle(null)
+  }, [pathname, setTitle])
 
   async function handleLogout() {
     try {
@@ -46,67 +63,98 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }
 
-  const breadcrumbTitle = pathname?.split('/').filter(Boolean).slice(1).pop()?.replace(/-/g, ' ') || t.dashboard
+  const breadcrumbTitle = title || pathname?.split('/').filter(Boolean).slice(1).pop()?.replace(/-/g, ' ') || t.dashboard
 
   return (
     <div className={`flex flex-col min-h-screen bg-gray-50 text-gray-900 transition-all duration-300 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
 
-      {/* 🖥️ Desktop Navbar (iOS Light Mode) */}
-      <header className="hidden md:block sticky top-0 z-[60] bg-white/70 backdrop-blur-xl border-b border-gray-200/50 shadow-sm">
-        <div className="max-w-[1440px] mx-auto px-6">
-          <div className="h-14 flex items-center justify-between relative z-10">
+      {/* 🖥️ Desktop Navbar (Premium Glassmorphism) */}
+      <header className="hidden md:block sticky top-0 z-[60] bg-white/80 backdrop-blur-xl border-b border-gray-200/40 select-none">
+        <div className="max-w-[1440px] mx-auto px-8">
+          <div className="h-16 flex items-center justify-between relative">
+            <Link href="/admin/dashboard" className="flex items-center gap-2 group">
+              <div className="relative h-8 w-8 bg-[#020035] rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-900/10 group-hover:scale-105 transition-transform duration-300">
+                T
+              </div>
+              <span className="text-base font-bold text-[#020035] tracking-tight group-hover:text-[#ED4B00] transition-colors">tayseer admin</span>
+            </Link>
+
+            <nav className="absolute left-1/2 -translate-x-1/2 flex items-center p-1 bg-gray-100/50 rounded-2xl border border-gray-100 h-11">
+              {[
+                { href: '/admin/dashboard', label: t.dashboard, icon: LayoutDashboard },
+                { href: '/admin/stores', label: t.stores, icon: Package },
+                { href: '/admin/vouchers', label: t.vouchers, icon: QrCodeIcon },
+                { href: '/admin/users', label: t.users, icon: Users },
+                { href: '/admin/settings', label: t.settings, icon: Settings },
+              ].map(({ href, label, icon: Icon }) => {
+                const active = pathname?.startsWith(href)
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold transition-all duration-300 overflow-hidden group h-9 ${active
+                      ? 'bg-white text-[#020035] shadow-sm'
+                      : 'text-gray-500 hover:text-gray-900'
+                      }`}
+                  >
+                    <Icon className={`h-4 w-4 transition-colors ${active ? 'text-[#ED4B00]' : 'group-hover:text-gray-800'}`} />
+                    <span className="whitespace-nowrap">{label}</span>
+                    {active && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#ED4B00] opacity-80"
+                      />
+                    )}
+                  </Link>
+                )
+              })}
+            </nav>
+
             <div className="flex items-center gap-4">
-              <Link href="/admin/dashboard" className="relative h-5 w-20 brightness-100 opacity-90 hover:opacity-100 transition">
-                <Image alt="tayseer" src="/icon-192.png" fill className="object-contain" />
-              </Link>
+              <div className="flex items-center gap-2 pr-4 border-r border-gray-100">
+                <NotificationBell onOpen={() => setNotifOpen(true)} refreshSignal={notifRefresh} light />
+              </div>
 
-              <nav className="flex items-center gap-1">
-                {[
-                  { href: '/admin/dashboard', label: t.dashboard, icon: LayoutDashboard },
-                  { href: '/admin/stores', label: t.stores, icon: Package },
-                  { href: '/admin/vouchers', label: t.vouchers, icon: QrCodeIcon },
-                  { href: '/admin/users', label: t.users, icon: Users },
-                  { href: '/admin/settings', label: t.settings, icon: Settings },
-                ].map(({ href, label, icon: Icon }) => {
-                  const active = pathname?.startsWith(href)
-                  return (
-                    <Link
-                      key={href}
-                      href={href}
-                      className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-[11px] font-bold transition-all duration-300 ${active
-                        ? 'bg-[#020035] text-white shadow-lg'
-                        : 'text-gray-500 hover:text-gray-900 hover:bg-black/5'
-                        }`}
-                    >
-                      <Icon className={`h-3.5 w-3.5 ${active ? 'text-[var(--c-accent)]' : ''}`} />
-                      {label}
-                    </Link>
-                  )
-                })}
-              </nav>
-            </div>
-
-            <div className="flex items-center gap-6">
-              <NotificationBell onOpen={() => setNotifOpen(true)} refreshSignal={notifRefresh} light />
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-rose-500 transition-colors"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                {t.logout}
-              </button>
+              <div className="flex items-center gap-3 pl-2">
+                <div className="flex flex-col items-end">
+                  <span className="text-xs font-bold text-gray-900 leading-none">Admin</span>
+                  <span className="text-[10px] text-gray-400 font-medium">Platform Manager</span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center justify-center h-9 w-9 rounded-xl bg-gray-50 text-gray-400 hover:bg-rose-50 hover:text-rose-600 transition-all duration-300 border border-transparent hover:border-rose-100 shadow-sm"
+                  title={t.logout}
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Minimal Breadcrumb */}
-        <div className="bg-gray-50/50 border-t border-gray-100 relative z-10">
-          <div className="max-w-[1440px] mx-auto px-6 h-7 flex items-center gap-2 text-[9px] uppercase font-black tracking-widest text-gray-400">
-            <button onClick={() => router.back()} className="hover:text-gray-900 transition flex items-center gap-1">
-              <ArrowLeft className="h-3 w-3" /> {t.back}
-            </button>
-            <span className="opacity-20">/</span>
-            <span className="text-gray-500">{breadcrumbTitle}</span>
+        {/* Enhanced Breadcrumb / Context Bar */}
+        <div className="bg-gray-50/40 border-t border-gray-100/60">
+          <div className="max-w-[1440px] mx-auto px-10 h-8 flex items-center justify-between">
+            <div className="flex items-center gap-3 text-[10px] uppercase font-black tracking-widest text-gray-400">
+              <button
+                onClick={() => router.back()}
+                className="hover:text-[#020035] transition-colors flex items-center gap-1.5 group"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                {t.back}
+              </button>
+              <div className="h-3 w-[1px] bg-gray-200" />
+              <div className="flex items-center gap-1 text-gray-400">
+                <span className="hover:text-gray-600 cursor-default transition-colors">Admin</span>
+                <span className="opacity-30">/</span>
+                <span className="text-[#020035]">{breadcrumbTitle}</span>
+              </div>
+            </div>
+
+            <div className="text-[9px] text-gray-300 font-bold uppercase tracking-widest flex items-center gap-2">
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              System Active
+            </div>
           </div>
         </div>
       </header>
