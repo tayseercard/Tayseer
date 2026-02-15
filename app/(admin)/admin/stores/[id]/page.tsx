@@ -20,7 +20,8 @@ import {
   Calendar,
   MoreHorizontal,
   Plus,
-  Power
+  Power,
+  Trash2
 } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
 import PrintVouchersModal from '@/components/PrintVouchersModal'
@@ -270,6 +271,30 @@ export default function AdminStoreDetailPage() {
     }
   }
 
+  async function handleDeleteStore() {
+    if (!store) return
+    if (!confirm("⚠️ Êtes-vous sûr de vouloir supprimer définitivement cette boutique ? Cette action est irréversible.")) return
+
+    const confirm2 = confirm("Confirmez-vous la suppression de TOUTES les données liées à cette boutique ?")
+    if (!confirm2) return
+
+    try {
+      const res = await fetch('/api/admin/delete-store', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ store_id: storeId })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de la suppression')
+
+      alert("✅ Boutique supprimée avec succès")
+      router.replace('/admin/stores')
+    } catch (err: any) {
+      alert("❌ Erreur: " + err.message)
+    }
+  }
+
   if (loadingStore) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -356,6 +381,20 @@ export default function AdminStoreDetailPage() {
                               Activer la Boutique
                             </>
                           )}
+                        </button>
+                      )}
+                    </Menu.Item>
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={handleDeleteStore}
+                          className={`
+                            ${active ? 'bg-rose-50 text-rose-700' : 'text-rose-500'}
+                            group flex w-full items-center rounded-lg px-3 py-2 text-[11px] font-bold transition
+                          `}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Supprimer le Compte
                         </button>
                       )}
                     </Menu.Item>
@@ -593,6 +632,25 @@ export default function AdminStoreDetailPage() {
             </div>
           </div>
         )}
+
+        {/* 5. Danger Zone */}
+        <div className="mt-12 pt-8 border-t border-gray-100">
+          <div className="bg-white rounded-2xl border border-rose-100 p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-black text-rose-600 uppercase tracking-widest mb-1">Zone de Danger</h3>
+                <p className="text-xs text-gray-400 font-medium">Une fois supprimée, cette boutique et ses données ne pourront plus être récupérées.</p>
+              </div>
+              <button
+                onClick={handleDeleteStore}
+                className="h-10 px-6 flex items-center justify-center gap-2 bg-white text-rose-600 border border-rose-200 rounded-xl text-[11px] font-bold hover:bg-rose-50 transition active:scale-95"
+              >
+                <Trash2 className="w-4 h-4" />
+                Supprimer Définitivement
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -6,7 +6,8 @@ import { cookies } from "next/headers";
  * Admin-only endpoint: send store owner password setup link
  */
 export async function POST(req: Request) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const cookieStore = await cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
   const { email } = await req.json();
 
   if (!email) {

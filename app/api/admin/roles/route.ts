@@ -20,7 +20,8 @@ const supabaseAdmin = createClient(
 
 /* ========= Helper: Check Superadmin ========= */
 async function assertSuperAdmin() {
-  const supabase = createRouteHandlerClient({ cookies });
+  const cookieStore = await cookies();
+  const supabase = createRouteHandlerClient({ cookies: () => cookieStore as any });
   const {
     data: { user },
   } = await supabase.auth.getUser();
