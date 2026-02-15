@@ -9,52 +9,52 @@ export default function AdminUsersPage() {
   const [rows, setRows] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
-const [groups, setGroups] = useState({
+  const [groups, setGroups] = useState({
     admins: [] as any[],
     managers: [] as any[],
     cashiers: [] as any[],
   })
 
-  
+
   /* ---------- Load users & roles ---------- */
- async function loadUsers() {
-  setLoading(true)
-  try {
-    const res = await fetch('/api/admin/users')
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Failed to load users')
+  async function loadUsers() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/admin/users')
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to load users')
 
-    let admins: any[] = []
-    let managers: any[] = []
-    let cashiers: any[] = []
-    let flat: any[] = []
+      let admins: any[] = []
+      let managers: any[] = []
+      let cashiers: any[] = []
+      let flat: any[] = []
 
-    // 🔹 CASE 1: old API → { users: [...] }
-    if (Array.isArray(data.users)) {
-      flat = data.users
+      // 🔹 CASE 1: old API → { users: [...] }
+      if (Array.isArray(data.users)) {
+        flat = data.users
 
-      admins = flat.filter((u) => u.role === 'admin')
-      managers = flat.filter(
-        (u) => u.role === 'manager' || u.role === 'store_owner'
-      )
-      cashiers = flat.filter((u) => u.role === 'cashier')
+        admins = flat.filter((u) => u.role === 'admin')
+        managers = flat.filter(
+          (u) => u.role === 'manager' || u.role === 'store_owner'
+        )
+        cashiers = flat.filter((u) => u.role === 'cashier')
+      }
+      // 🔹 CASE 2: new API → { admins: [], managers: [], cashiers: [] }
+      else {
+        admins = data.admins || []
+        managers = data.managers || []
+        cashiers = data.cashiers || []
+        flat = [...admins, ...managers, ...cashiers]
+      }
+
+      setGroups({ admins, managers, cashiers })
+      setRows(flat)
+    } catch (err: any) {
+      console.error('Load users failed:', err)
+    } finally {
+      setLoading(false)
     }
-    // 🔹 CASE 2: new API → { admins: [], managers: [], cashiers: [] }
-    else {
-      admins = data.admins || []
-      managers = data.managers || []
-      cashiers = data.cashiers || []
-      flat = [...admins, ...managers, ...cashiers]
-    }
-
-    setGroups({ admins, managers, cashiers })
-    setRows(flat)
-  } catch (err: any) {
-    console.error('Load users failed:', err)
-  } finally {
-    setLoading(false)
   }
-}
 
 
 
@@ -67,19 +67,23 @@ const [groups, setGroups] = useState({
     (u) =>
       (u.email ?? '').toLowerCase().includes(q.trim().toLowerCase()) ||
       (u.role ?? '').toLowerCase().includes(q.trim().toLowerCase()) ||
-      (u.store_name ?? '').toLowerCase().includes(q.trim().toLowerCase())||
-        (u.store_temp_password?? '').toLowerCase().includes(q.trim().toLowerCase())
+      (u.store_name ?? '').toLowerCase().includes(q.trim().toLowerCase()) ||
+      (u.store_temp_password ?? '').toLowerCase().includes(q.trim().toLowerCase())
   )
 
   /* ---------- Delete User ---------- */
   async function handleDelete(userId: string, email: string) {
-    if (!confirm(`Delete ${email}? This will remove the role and user.`)) return
+    if (!confirm(`Delete ${email}? This will remove the role and the authentication account.`)) return
     try {
-      const { error } = await supabase
-        .from('me_effective_role')
-        .delete()
-        .eq('user_id', userId)
-      if (error) throw error
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de la suppression')
+
       alert(`✅ Deleted ${email}`)
       await loadUsers()
     } catch (err: any) {
@@ -88,7 +92,7 @@ const [groups, setGroups] = useState({
   }
 
   /* ---------- Render ---------- */
-/* ---------- Render ---------- */
+  /* ---------- Render ---------- */
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 px-4 py-6 space-y-6">
       {/* Header */}
@@ -225,7 +229,7 @@ const [groups, setGroups] = useState({
                   {u.role === 'cashier' && (
                     <p><b>Cashier Name:</b> {u.cashier_full_name ?? '—'}</p>
                   )}
-                  <p><b>Created:</b> 
+                  <p><b>Created:</b>
                     {u.auth_created_at
                       ? new Date(u.auth_created_at).toLocaleDateString()
                       : '—'}

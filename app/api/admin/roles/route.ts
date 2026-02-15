@@ -172,7 +172,7 @@ export async function PUT(req: Request) {
   }
 }
 
-/* ========= DELETE (remove role) ========= */
+/* ========= DELETE (remove role & user) ========= */
 export async function DELETE(req: Request) {
   try {
     await assertSuperAdmin();
@@ -182,12 +182,24 @@ export async function DELETE(req: Request) {
     if (!id)
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-    const { error } = await supabaseAdmin
+    // 1. Get the user_id from the role record before deleting
+    const { data: roleData, error: fetchError } = await supabaseAdmin
       .from("me_effective_role")
-      .delete()
-      .eq("id", id);
+      .select("user_id")
+      .eq("id", id)
+      .single();
 
-    if (error) throw error;
+    if (fetchError) throw fetchError;
+
+    // 2. Delete the user from Supabase Auth.
+    // This will automatically delete the record from 'me_effective_role' due to ON DELETE CASCADE.
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(roleData.user_id);
+
+    if (authError) {
+      // Fallback: if user is already gone from Auth, just delete the role record
+      await supabaseAdmin.from("me_effective_role").delete().eq("id", id);
+    }
+
     return NextResponse.json({ success: true });
   } catch (e: any) {
     return NextResponse.json(

@@ -24,6 +24,15 @@ export async function POST(req: Request) {
       )
     }
 
+    // Get store owner before deleting the store
+    const { data: store, error: fetchError } = await supabaseAdmin
+      .from('stores')
+      .select('owner_user_id')
+      .eq('id', store_id)
+      .single()
+
+    if (fetchError) throw fetchError
+
     // Delete the store (cascading delete should handle related payments/etc if configured in DB)
     const { error: deleteError } = await supabaseAdmin
       .from('stores')
@@ -31,6 +40,15 @@ export async function POST(req: Request) {
       .eq('id', store_id)
 
     if (deleteError) throw deleteError
+
+    // Delete the owner from Supabase Auth
+    if (store?.owner_user_id) {
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(store.owner_user_id)
+      if (authError) {
+        console.warn('⚠️ Could not delete auth user:', authError.message)
+        // We don't throw here to avoid failing the whole request if the user was already gone
+      }
+    }
 
     return NextResponse.json({ success: true })
   } catch (err: any) {

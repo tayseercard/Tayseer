@@ -12,18 +12,18 @@ export default function SuperadminUsersPage() {
 
   /* ---------- Load users & roles ---------- */
   async function loadUsers() {
-  setLoading(true)
-  try {
-    const res = await fetch('/api/superadmin/users')
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || 'Failed to load users')
-    setRows(data.users || [])
-  } catch (err: any) {
-    console.error('Load users failed:', err)
-  } finally {
-    setLoading(false)
+    setLoading(true)
+    try {
+      const res = await fetch('/api/superadmin/users')
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to load users')
+      setRows(data.users || [])
+    } catch (err: any) {
+      console.error('Load users failed:', err)
+    } finally {
+      setLoading(false)
+    }
   }
-}
 
 
   useEffect(() => {
@@ -40,13 +40,17 @@ export default function SuperadminUsersPage() {
 
   /* ---------- Delete User ---------- */
   async function handleDelete(userId: string, email: string) {
-    if (!confirm(`Delete ${email}? This will remove the role and user.`)) return
+    if (!confirm(`Delete ${email}? This will remove the role and the authentication account.`)) return
     try {
-      const { error } = await supabase
-        .from('me_effective_role')
-        .delete()
-        .eq('user_id', userId)
-      if (error) throw error
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de la suppression')
+
       alert(`✅ Deleted ${email}`)
       await loadUsers()
     } catch (err: any) {
@@ -132,8 +136,8 @@ export default function SuperadminUsersPage() {
                     )}
                   </Td>
                   <Td>
-  <span className="text-xs text-gray-700">{u.app_role ?? '—'}</span>
-</Td>
+                    <span className="text-xs text-gray-700">{u.app_role ?? '—'}</span>
+                  </Td>
                   <Td>
                     <button
                       onClick={() => handleDelete(u.user_id, u.email)}
