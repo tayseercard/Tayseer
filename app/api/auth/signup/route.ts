@@ -13,7 +13,6 @@ export async function POST(req: Request) {
         }
 
         // 1️⃣  Create User in Supabase Auth
-        // Use user_metadata to pass role and full_name which might be expected by database triggers
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
@@ -25,11 +24,19 @@ export async function POST(req: Request) {
         });
 
         if (authError) {
-            console.error("❌ Auth Creation Error:", authError);
-            return NextResponse.json({ error: "Erreur lors de la création du compte : " + authError.message }, { status: 400 });
+            console.error("❌ Auth Creation Error:", {
+                message: authError.message,
+                status: authError.status,
+                code: authError.code
+            });
+            return NextResponse.json(
+                { error: "Erreur lors de la création du compte : " + authError.message },
+                { status: authError.status || 400 }
+            );
         }
 
         const userId = authData.user.id;
+        console.log("✅ User created:", userId);
 
         // 2️⃣  Create Store record
         // This will trigger 'trg_link_store_owner' which automatically handles roles (me_effective_role)
@@ -50,24 +57,31 @@ export async function POST(req: Request) {
             .select()
             .single();
 
-        // Fallback: If migration hasn't been run and plan_id column is missing
-        if (storeError && storeError.message?.includes('column "plan_id" of relation "stores" does not exist')) {
-            console.warn("⚠️ 'plan_id' column missing in DB. Retrying insert without it. Please run migration 030.");
-            delete storeData.plan_id;
-            const retry = await supabaseAdmin
-                .from("stores")
-                .insert([storeData])
-                .select()
-                .single();
-            store = retry.data;
-            storeError = retry.error;
-        }
-
         if (storeError) {
             console.error("❌ Store Creation Error:", storeError);
-            // Cleanup the user if store creation fails to allow future retries
-            await supabaseAdmin.auth.admin.deleteUser(userId);
-            return NextResponse.json({ error: "Erreur lors de la configuration de la boutique : " + storeError.message }, { status: 400 });
+
+            // If the error is about plan_id column, it's a known migration issue
+            if (storeError.message?.includes('column "plan_id" of relation "stores" does not exist')) {
+                console.warn("⚠️ 'plan_id' column missing. Retrying insert without it.");
+                delete storeData.plan_id;
+                const retry = await supabaseAdmin
+                    .from("stores")
+                    .insert([storeData])
+                    .select()
+                    .single();
+                store = retry.data;
+                storeError = retry.error;
+            }
+
+            if (storeError) {
+                // Cleanup the user if store creation fails
+                console.log("🧹 Cleaning up user:", userId);
+                await supabaseAdmin.auth.admin.deleteUser(userId);
+                return NextResponse.json(
+                    { error: "Erreur lors de la configuration de la boutique : " + storeError.message },
+                    { status: 400 }
+                );
+            }
         }
 
         // Result: Triggers will automatically link 'store_owner' role and sync metadata.

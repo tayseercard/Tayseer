@@ -24,7 +24,6 @@ export async function POST(request: Request) {
         }
 
         const adminDb = createClient(supabaseUrl, supabaseServiceKey, {
-            db: { schema: 'auth' },
             auth: {
                 autoRefreshToken: false,
                 persistSession: false

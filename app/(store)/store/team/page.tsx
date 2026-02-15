@@ -35,7 +35,7 @@ export default function StoreTeamPage() {
    *  LOAD LOGGED USER ROLE + STORE
    * ============================= */
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       const { data: sessionData } = await supabase.auth.getSession()
       const user = sessionData.session?.user
       if (!user) return
@@ -65,36 +65,18 @@ export default function StoreTeamPage() {
     if (!storeId) return
     setLoading(true)
 
-    // 1️⃣ Load team from me_effective_role
-    const { data: teamRows } = await supabase
-      .from('me_effective_role')
-      .select('id, user_id, role, created_at')
-      .eq('store_id', storeId)
-      .order('created_at', { ascending: false })
-
-    if (!teamRows || teamRows.length === 0) {
+    try {
+      const res = await fetch('/api/store/team')
+      if (!res.ok) throw new Error('Failed to fetch team')
+      const data = await res.json()
+      setTeam(data.team || [])
+    } catch (err: any) {
+      console.error('Error loading team:', err)
+      // Fallback or empty state
       setTeam([])
+    } finally {
       setLoading(false)
-      return
     }
-
-    // 2️⃣ Extract user_ids
-    const userIds = teamRows.map((t) => t.user_id)
-
-    // 3️⃣ Load from cashiers table
-    const { data: cashierRows } = await supabase
-      .from('cashiers')
-      .select('*')
-      .in('user_id', userIds)
-
-    // 4️⃣ Merge results
-    const merged = teamRows.map((t) => ({
-      ...t,
-      profile: cashierRows?.find((c) => c.user_id === t.user_id) || null,
-    }))
-
-    setTeam(merged)
-    setLoading(false)
   }
 
   useEffect(() => {
@@ -207,9 +189,7 @@ export default function StoreTeamPage() {
               {/* Name */}
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-semibold text-gray-800 truncate">
-                  {m.profile?.full_name ||
-                    m.profile?.email ||
-                    `${m.user_id.slice(0, 6)}…${m.user_id.slice(-4)}`}
+                  {m.full_name || m.email}
                 </h3>
 
                 <Badge>
@@ -219,7 +199,7 @@ export default function StoreTeamPage() {
 
               {/* Email */}
               <p className="text-xs text-gray-600 mb-1">
-                {m.profile?.email || 'No email'}
+                {m.email}
               </p>
 
               {/* Joined date */}
