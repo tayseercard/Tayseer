@@ -104,9 +104,9 @@ export default function PublicVoucherPage() {
               <Store className="h-8 w-8 text-gray-400" />
             )}
           </div>
-          <h1 className="text-xl font-bold text-gray-900">{voucher.store_name}</h1>
+          <h1 className="text-xl font-bold text-gray-900 px-4">{voucher.store_name}</h1>
           {voucher.store_address && (
-            <p className="text-sm text-gray-500 mt-1 max-w-[200px] leading-tight">
+            <p className="text-sm text-gray-500 mt-1 px-4 leading-tight">
               {voucher.store_address}
             </p>
           )}
@@ -116,7 +116,7 @@ export default function PublicVoucherPage() {
         {/* Amount */}
         <div className="mt-4 text-center">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Solde Actuel</p>
-          <p className="text-5xl font-extrabold text-[#020035]">
+          <p className="text-4xl sm:text-5xl font-extrabold text-[#020035]">
             {voucher.balance.toLocaleString()} <span className="text-2xl text-gray-400 font-bold">{voucher.currency}</span>
           </p>
 
@@ -139,30 +139,30 @@ export default function PublicVoucherPage() {
         <hr className="my-6 border-gray-200" />
 
         {/* Details */}
-        <div className="space-y-2 text-sm text-gray-700">
-          <div className="flex items-center gap-2">
-            <Store className="h-4 w-4 text-emerald-600" />
+        <div className="space-y-3 text-sm text-gray-700 mt-6">
+          <div className="flex items-start gap-3">
+            <Store className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
             <span className="font-medium">{voucher.store_name}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-emerald-600" />
-            <span className="font-medium">Acheteur: {clientName}</span>
+          <div className="flex items-start gap-3">
+            <User className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+            <span className="font-medium break-words">Acheteur: {clientName}</span>
           </div>
           {voucher.recipient_name && (
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-emerald-600" />
-              <span className="font-medium">Bénéficiaire: {voucher.recipient_name}</span>
+            <div className="flex items-start gap-3">
+              <User className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+              <span className="font-medium break-words">Bénéficiaire: {voucher.recipient_name}</span>
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-emerald-600" />
+          <div className="flex items-start gap-3">
+            <Calendar className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
             <span>
               Émis le {new Date(voucher.created_at).toLocaleDateString('fr-FR')}
             </span>
           </div>
           {voucher.expires_at && (
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-rose-500" />
+            <div className="flex items-start gap-3">
+              <Calendar className="h-4 w-4 text-rose-500 mt-0.5 shrink-0" />
               <span>
                 Expire le{' '}
                 {new Date(voucher.expires_at).toLocaleDateString('fr-FR')}
