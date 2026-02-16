@@ -5,9 +5,16 @@ import type { NextRequest } from 'next/server'
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
   const supabase = createMiddlewareClient({ req, res })
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
+
+  // Try to get session, handle refresh token errors gracefully
+  let session = null
+  try {
+    const { data } = await supabase.auth.getSession()
+    session = data.session
+  } catch (error) {
+    // Silently handle refresh token errors (happens after logout)
+    console.log('Session refresh failed (likely after logout):', error)
+  }
 
   const url = req.nextUrl.clone()
   const pathname = url.pathname
@@ -31,7 +38,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // 🧩 Try getting role from JWT
-let role = session.user.app_metadata?.role;
+  let role = session.user.app_metadata?.role;
 
   // 🧠 Fallback: query from me_effective_role
   if (!role) {

@@ -53,18 +53,21 @@ export default function SettingsPage() {
 
 
 
-  async function handleLogout() {
+  async function handleLogout(e?: React.MouseEvent) {
+    e?.preventDefault();
     try {
-      await supabase.auth.signOut()
+      // Use local scope to avoid 403 error
+      await supabase.auth.signOut({ scope: 'local' });
 
-      // 🧹 Clear Supabase cookies manually
-      document.cookie = 'sb-access-token=; Max-Age=0; path=/;'
-      document.cookie = 'sb-refresh-token=; Max-Age=0; path=/;'
+      // Refresh router to clear cached data
+      router.refresh();
 
-      // ✅ Redirect safely to login
-      router.replace('/auth/login')
+      // Redirect to login
+      router.replace('/auth/login');
     } catch (err) {
-      console.error('Logout failed:', err)
+      console.error('Logout failed:', err);
+      // Force redirect even if signOut fails
+      router.replace('/auth/login');
     }
   }
 

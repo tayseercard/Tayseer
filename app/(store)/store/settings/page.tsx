@@ -79,8 +79,14 @@ export default function SettingsPage() {
   }, [lang, router])
 
   async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
+    try {
+      await supabase.auth.signOut({ scope: 'local' })
+      router.refresh()
+      router.replace('/auth/login')
+    } catch (err) {
+      console.error('Logout failed:', err)
+      router.replace('/auth/login')
+    }
   }
 
   return (

@@ -535,7 +535,7 @@ export default function VoucherModal({
                   <div className="space-y-2 pt-2 border-t border-gray-100/50">
                     <div className="flex items-center justify-between">
                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Paiement</h4>
-                      {['admin', 'superadmin', 'store_owner'].includes(userRole || '') && (
+                      {['admin', 'superadmin', 'store_owner'].includes(userRole || '') && voucher.balance === voucher.initial_amount && (
                         <button onClick={() => setEditMode(!editMode)} className="text-[10px] font-black text-[#ED4B00] uppercase underline underline-offset-4 hover:opacity-70 transition">
                           {editMode ? 'Annuler' : 'Modifier'}
                         </button>

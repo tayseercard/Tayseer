@@ -187,25 +187,31 @@ function StoreRequestsInner() {
             <div
               key={req.id}
               id={`request-${req.id}`}
-              className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm hover:shadow-md transition"
+              className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm hover:shadow-md transition"
             >
-              <div className="flex justify-between items-start gap-4 mb-3">
-                <div className="flex flex-col gap-1">
-                  <h3 className="font-bold text-gray-900 leading-tight">Demande</h3>
-                  <code className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px] w-fit font-mono">#{req.id.slice(0, 6)}</code>
+              <div className="flex justify-between items-start gap-2 mb-2">
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-gray-900 text-sm">Demande</h3>
+                    <code className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[9px] font-mono">#{req.id.slice(0, 6)}</code>
+                  </div>
+                  <span className="text-[10px] text-gray-400">{new Date(req.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                 </div>
                 <StatusBadge status={req.status} />
               </div>
 
-              <div className="mt-4 flex justify-between items-end text-sm border-t border-gray-50 pt-3">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[10px] uppercase font-bold text-gray-400">Quantité</span>
-                  <span className="font-black text-gray-900 text-xl">{req.count}</span>
+              <div className="flex items-center justify-between bg-gray-50/50 rounded-lg p-2 border border-gray-100">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-[10px] uppercase font-bold text-gray-400">Quantité:</span>
+                  <span className="font-black text-gray-900 text-lg">{req.count}</span>
+                  <span className="text-[10px] text-gray-400">vouchers</span>
                 </div>
-                <div className="flex flex-col gap-0.5 items-end">
-                  <span className="text-[10px] uppercase font-bold text-gray-400">Date</span>
-                  <span className="font-medium text-gray-600 text-xs">{new Date(req.created_at).toLocaleDateString()}</span>
-                </div>
+                {req.processed_at && (
+                  <div className="flex flex-col items-end">
+                    <span className="text-[9px] uppercase font-bold text-gray-400">Traitée</span>
+                    <span className="text-[10px] text-gray-600">{new Date(req.processed_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))

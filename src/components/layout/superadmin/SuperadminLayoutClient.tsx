@@ -45,10 +45,12 @@ export default function SuperadminLayoutClient({
   // ✅ Clean logout flow
   async function handleLogout() {
     try {
-      await supabase.auth.signOut()
+      await supabase.auth.signOut({ scope: 'local' })
+      router.refresh()
       router.replace('/auth/login')
     } catch (err) {
       console.error('Logout failed:', err)
+      router.replace('/auth/login')
     }
   }
 
@@ -56,9 +58,8 @@ export default function SuperadminLayoutClient({
     <div className="min-h-screen flex bg-gray-50 text-gray-800">
       {/* Sidebar */}
       <aside
-        className={`${
-          open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        } fixed md:static z-20 w-64 bg-white border-r border-gray-200 h-full transition-transform duration-200 ease-in-out`}
+        className={`${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+          } fixed md:static z-20 w-64 bg-white border-r border-gray-200 h-full transition-transform duration-200 ease-in-out`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
@@ -76,11 +77,10 @@ export default function SuperadminLayoutClient({
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-colors ${
-                  active
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-md transition-colors ${active
                     ? 'bg-indigo-600 text-white'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
+                  }`}
                 onClick={() => setOpen(false)}
               >
                 <Icon size={16} />
