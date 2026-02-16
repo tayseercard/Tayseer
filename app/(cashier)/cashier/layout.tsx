@@ -34,6 +34,8 @@ export default function CachierLayout({ children }: { children: React.ReactNode 
     setIsLoggingOut(true)
     try {
       await supabase.auth.signOut()
+      await fetch('/api/auth/logout', { method: 'POST' })
+      localStorage.clear()
     } catch (err) {
       console.error('Logout warning:', err)
     } finally {

@@ -72,9 +72,11 @@ export default function SettingsPage() {
   }, []);
 
   async function handleLogout(e?: React.MouseEvent) {
-    e?.preventDefault();
+    if (e) e.preventDefault();
     try {
       await supabase.auth.signOut();
+      await fetch('/api/auth/logout', { method: 'POST' });
+      localStorage.clear();
     } catch (err) {
       console.warn('Logout error ignored:', err);
     } finally {
