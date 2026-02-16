@@ -78,8 +78,7 @@ export default function SettingsPage() {
     } catch (err) {
       console.warn('Logout error ignored:', err);
     } finally {
-      router.refresh();
-      router.replace('/auth/login');
+      window.location.href = '/auth/login';
     }
   }
 

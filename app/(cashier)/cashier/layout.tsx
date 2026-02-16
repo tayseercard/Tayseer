@@ -17,6 +17,7 @@ import {
   QrCode,
   ArrowLeft,
   Package,
+  Loader2,
 } from 'lucide-react'
 
 export default function CachierLayout({ children }: { children: React.ReactNode }) {
@@ -25,16 +26,18 @@ export default function CachierLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname()
   const [scannerOpen, setScannerOpen] = useState(false)
   const [cachierName, setCashierName] = useState<string | null>(null)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const { t, lang } = useLanguage()
 
   async function handleLogout() {
+    if (isLoggingOut) return
+    setIsLoggingOut(true)
     try {
       await supabase.auth.signOut()
     } catch (err) {
       console.error('Logout warning:', err)
     } finally {
-      router.refresh()
-      router.replace('/auth/login')
+      window.location.href = '/auth/login'
     }
   }
 
@@ -102,10 +105,11 @@ export default function CachierLayout({ children }: { children: React.ReactNode 
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="text-xs text-[var(--c-text)] hover:text-[var(--c-accent)] flex items-center gap-1"
+            disabled={isLoggingOut}
+            className="text-xs text-[var(--c-text)] hover:text-[var(--c-accent)] flex items-center gap-1 disabled:opacity-50"
           >
-            <LogOut className="h-4 w-4" />
-            Logout
+            {isLoggingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogOut className="h-4 w-4" />}
+            {isLoggingOut ? '...' : 'Logout'}
           </button>
         </div>
 
