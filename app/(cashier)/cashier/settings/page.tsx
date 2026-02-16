@@ -71,9 +71,11 @@ export default function SettingsPage() {
     })();
   }, []);
 
-  async function handleLogout() {
+  async function handleLogout(e?: React.MouseEvent) {
+    e?.preventDefault();
     await supabase.auth.signOut();
-    router.push('/auth/login');
+    router.refresh();
+    router.replace('/auth/login');
   }
 
   return (
