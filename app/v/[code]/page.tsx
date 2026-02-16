@@ -36,11 +36,17 @@ export default function PublicVoucherPage() {
           // Fetch store name & logo (optional)
           const { data: store } = await supabase
             .from('stores')
-            .select('name, logo_url')
+            .select('name, logo_url, address, phone')
             .eq('id', data.store_id)
             .maybeSingle()
 
-          setVoucher({ ...data, store_name: store?.name || 'Magasin inconnu', store_logo_url: store?.logo_url })
+          setVoucher({
+            ...data,
+            store_name: store?.name || 'Magasin inconnu',
+            store_logo_url: store?.logo_url,
+            store_address: store?.address,
+            store_phone: store?.phone
+          })
         } catch (err: any) {
           setError(err.message)
         } finally {
@@ -100,6 +106,11 @@ export default function PublicVoucherPage() {
             )}
           </div>
           <h1 className="text-xl font-bold text-gray-900">{voucher.store_name}</h1>
+          {voucher.store_address && (
+            <p className="text-sm text-gray-500 mt-1 max-w-[200px] leading-tight">
+              {voucher.store_address}
+            </p>
+          )}
         </div>
 
         {/* Amount */}
