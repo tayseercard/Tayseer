@@ -175,11 +175,22 @@ export default function VoucherModal({
 
   /* 🟢 Activate voucher */
   async function handleActivate() {
-    if (!buyerName || !amount || !securityPin)
-      return toast.error('Veuillez remplir tous les champs obligatoires.')
+    // Step 1: Validate basic fields
+    if (!buyerName || !amount)
+      return toast.error('Veuillez remplir le nom et le montant.')
 
     if (!isValidPhone(buyerPhone))
       return toast.error('Format de téléphone invalide.')
+
+    // Go to PIN step if not already there
+    if (!isPinStep) {
+      setIsPinStep(true)
+      return
+    }
+
+    // Step 2: Validate PIN
+    if (!securityPin || securityPin.length < 4)
+      return toast.error('Veuillez définir un code PIN de 4 chiffres.')
 
     setSaving(true)
     try {
@@ -329,7 +340,7 @@ export default function VoucherModal({
 
   return (
     <div dir={lang === 'ar' ? 'rtl' : 'ltr'}
-      className="fixed inset-0 z-[100] flex items-start justify-center bg-black/60 backdrop-blur-xl p-4 pt-20 md:pt-10 pb-24 md:pb-4 overflow-y-auto">
+      className="fixed inset-0 z-[100] flex items-start justify-center bg-black/60 backdrop-blur-xl p-4 pt-10 md:pt-10 pb-10 md:pb-4 overflow-y-auto">
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -352,8 +363,12 @@ export default function VoucherModal({
           <div className="flex flex-col gap-6 md:gap-8 h-full animate-in fade-in slide-in-from-right-8 duration-300">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
               <div>
-                <h2 className="text-lg md:text-xl font-black text-[#020035] leading-tight">Confirmer le débit</h2>
-                <p className="text-xs text-gray-400 mt-1">Veuillez autoriser cette transaction par PIN</p>
+                <h2 className="text-lg md:text-xl font-black text-[#020035] leading-tight">
+                  {voucher.status === 'blank' ? 'Définir le PIN' : 'Confirmer le débit'}
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">
+                  {voucher.status === 'blank' ? 'Sécurisez ce voucher avec un code PIN' : 'Veuillez autoriser cette transaction par PIN'}
+                </p>
               </div>
             </div>
 
@@ -361,8 +376,8 @@ export default function VoucherModal({
               <div className="w-full max-w-[200px]">
                 <input
                   type="password"
-                  value={consumePin}
-                  onChange={handlePinChange}
+                  value={voucher.status === 'blank' ? securityPin : consumePin}
+                  onChange={voucher.status === 'blank' ? (e) => handleSecurityPinChange(e.target.value) : handlePinChange}
                   placeholder="****"
                   maxLength={4}
                   className="w-full text-center text-4xl font-black bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 focus:border-[#ED4B00] focus:bg-white outline-none transition-all tracking-[0.5em] placeholder:tracking-normal text-[#020035]"
@@ -384,20 +399,20 @@ export default function VoucherModal({
                 Retour
               </button>
               <button
-                onClick={() => handleConsume(true)}
+                onClick={voucher.status === 'blank' ? handleActivate : () => handleConsume(true)}
                 className="w-full bg-[#020035] text-white rounded-xl py-4 text-xs font-black uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-indigo-900/10"
               >
-                Confirmer
+                {voucher.status === 'blank' ? 'Activer' : 'Confirmer'}
               </button>
             </div>
           </div>
         ) : (
           <div className="flex flex-col gap-6 md:gap-8">
             {/* Header Area */}
-            <div className="flex items-center justify-between border-b border-gray-100 pb-4 pr-10 md:pr-0">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-2 pr-10 md:pr-0">
               <div className="flex flex-col">
                 <h2 className="text-lg md:text-xl font-black text-[#020035] leading-tight">{t.voucherDetails}</h2>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-0.5">
                   <StatusBadge status={voucher.status} />
                   <span className="text-[10px] font-mono text-gray-400 font-bold bg-gray-50 px-2 py-0.5 rounded border border-gray-100">{voucher.code}</span>
                 </div>
@@ -406,11 +421,11 @@ export default function VoucherModal({
             </div>
 
             {voucher.status === 'blank' ? (
-              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* Desktop: Side-by-side | Mobile: Stacked */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-6 items-center">
                   {/* Left Column: Essential Info */}
-                  <div className="order-2 md:order-1 md:col-span-8 space-y-3">
+                  <div className="order-2 md:order-1 md:col-span-8 space-y-1">
                     <Input label="Nom de l'acheteur" value={buyerName} onChange={setBuyerName} placeholder="Nom complet" />
                     <Input label="Bénéficiaire" value={recipientName} onChange={setRecipientName} placeholder="Optionnel" />
                     <div className="space-y-1">
@@ -460,9 +475,8 @@ export default function VoucherModal({
                 </div>
 
                 {/* Economic Section */}
-                <div className="grid grid-cols-2 gap-3 md:gap-4 border-t border-gray-100 pt-5">
+                <div className="grid grid-cols-1 gap-2 md:gap-4 border-t border-gray-100 pt-3">
                   <Input label="Montant (DA)" type="tel" value={amount} onChange={handleAmountEditChange} placeholder="0" />
-                  <Input label="PIN" type="password" value={securityPin} onChange={handleSecurityPinChange} placeholder="****" maxLength={4} />
                 </div>
 
                 <button
@@ -470,7 +484,7 @@ export default function VoucherModal({
                   disabled={saving}
                   className="w-full bg-gradient-to-r from-[#ED4B00] to-[#FF6B21] text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                 >
-                  {saving ? 'CHARGEMENT...' : 'Activer maintenant'}
+                  {saving ? 'CHARGEMENT...' : 'Suivant'}
                 </button>
               </div>
             ) : (
@@ -591,7 +605,7 @@ function Input({ label, value, onChange, type = 'text', placeholder, maxLength }
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         maxLength={maxLength}
-        className="w-full border-2 border-gray-100 bg-gray-50/50 rounded-xl px-3 py-1.5 md:py-2 text-sm font-bold focus:border-[#ED4B00] focus:bg-white outline-none transition-all"
+        className="w-full border-2 border-gray-100 bg-gray-50/50 rounded-xl px-2 py-1 md:py-2 text-sm font-bold focus:border-[#ED4B00] focus:bg-white outline-none transition-all"
       />
     </div>
   )
