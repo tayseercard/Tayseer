@@ -30,9 +30,11 @@ export default function CachierLayout({ children }: { children: React.ReactNode 
   async function handleLogout() {
     try {
       await supabase.auth.signOut()
-      router.replace('/auth/login')
     } catch (err) {
-      console.error('Logout failed:', err)
+      console.error('Logout warning:', err)
+    } finally {
+      router.refresh()
+      router.replace('/auth/login')
     }
   }
 

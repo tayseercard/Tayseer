@@ -73,9 +73,14 @@ export default function SettingsPage() {
 
   async function handleLogout(e?: React.MouseEvent) {
     e?.preventDefault();
-    await supabase.auth.signOut();
-    router.refresh();
-    router.replace('/auth/login');
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('Logout error ignored:', err);
+    } finally {
+      router.refresh();
+      router.replace('/auth/login');
+    }
   }
 
   return (

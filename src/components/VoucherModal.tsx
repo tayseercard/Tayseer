@@ -499,7 +499,9 @@ export default function VoucherModal({
                     <div className="pb-2 border-b border-gray-100/50 mb-1">
                       <div className="grid grid-cols-2 gap-4">
                         <DetailItem label="Solde" value={fmtDZD(voucher.balance, lang)} bold color="text-emerald-700" />
-                        {voucher.security_pin && <DetailItem label="PIN" value={voucher.security_pin} color="text-amber-500" />}
+                        {['admin', 'superadmin', 'store_owner'].includes(userRole || '') && voucher.security_pin && (
+                          <DetailItem label="PIN" value={voucher.security_pin} color="text-amber-500" />
+                        )}
                       </div>
                     </div>
 
