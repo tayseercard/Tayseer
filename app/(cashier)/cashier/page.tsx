@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/lib/useLanguage'
 import {
   Gift,
@@ -19,6 +20,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 export default function CashierDashboardPage() {
   const { t } = useLanguage()
   const supabase = createClientComponentClient()
+  const router = useRouter()
 
   const [loading, setLoading] = useState(true)
   const [store, setStore] = useState<{ name: string; store_id: string | null }>({
@@ -123,7 +125,12 @@ export default function CashierDashboardPage() {
             />
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <DashboardStatCard title="Total Activated" value={voucherStats.total} />
+              <DashboardStatCard
+                title="Total Activated"
+                value={voucherStats.total}
+                onClick={() => router.push('/cashier/history')}
+                clickable
+              />
 
               <DashboardStatCard
                 title="Still Active"
@@ -181,7 +188,6 @@ export default function CashierDashboardPage() {
               </div>
             </div>
 
-
           </motion.div>
         </AnimatePresence>
       )}
@@ -230,16 +236,22 @@ function DashboardStatCard({
   value,
   suffix,
   highlight = false,
+  onClick,
+  clickable = false,
 }: {
   title: string
   value: number
   suffix?: string
   highlight?: boolean
+  onClick?: () => void
+  clickable?: boolean
 }) {
   return (
     <div
+      onClick={clickable ? onClick : undefined}
       className={`rounded-2xl border p-4 flex flex-col justify-between shadow-sm transition-all bg-white
-        ${highlight ? 'border-[var(--c-accent)]/30 bg-[var(--c-accent)]/10' : 'border-gray-100'}`}
+        ${highlight ? 'border-[var(--c-accent)]/30 bg-[var(--c-accent)]/10' : 'border-gray-100'}
+        ${clickable ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:border-[#ED4B00]/40 active:scale-95' : ''}`}
     >
       <p className="text-sm text-[var(--c-text)]/70">{title}</p>
       <p className="text-2xl font-semibold mt-1 text-[var(--c-secondary)]">
