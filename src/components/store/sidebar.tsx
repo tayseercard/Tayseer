@@ -29,10 +29,12 @@ export default function Sidebar({ storeName, email }: { storeName?: string | nul
     { href: '/store/settings', label: 'Settings', icon: Settings },
   ];
 
-  async function logout() {
+  const logout = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
     await supabase.auth.signOut();
+    router.refresh();
     router.replace('/auth/login?for=store');
-  }
+  };
 
   return (
     <>
@@ -71,9 +73,8 @@ export default function Sidebar({ storeName, email }: { storeName?: string | nul
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
-                  active ? 'bg-emerald-600 text-white shadow' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                }`}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-emerald-600 text-white shadow' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 {open && <span>{label}</span>}
