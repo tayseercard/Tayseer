@@ -340,17 +340,20 @@ export default function VoucherModal({
 
   return (
     <div dir={lang === 'ar' ? 'rtl' : 'ltr'}
-      className="fixed inset-0 z-[100] flex items-start justify-center bg-black/60 backdrop-blur-xl p-4 pt-10 md:pt-10 pb-10 md:pb-4 overflow-y-auto">
+      className={`fixed inset-0 z-[9999] flex justify-center bg-black/60 backdrop-blur-xl p-4 pb-10 md:pb-4 overflow-y-auto ${isPinStep ? 'items-center' : 'items-start pt-10 md:pt-10'
+        }`}>
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="
-          relative w-full max-w-2xl max-h-[90vh] overflow-y-auto
+        className={`
+          relative w-full max-w-2xl overflow-y-auto
           bg-white/95 backdrop-blur-xl border border-white/50
           shadow-[0_20px_50px_rgba(0,0,0,0.15)]
           rounded-[2.5rem] p-5 md:p-8
-        "
+          ${isPinStep ? 'max-h-[500px]' : 'max-h-[90vh]'
+          }
+        `}
       >
         <button
           onClick={onClose}
@@ -360,7 +363,7 @@ export default function VoucherModal({
         </button>
 
         {isPinStep ? (
-          <div className="flex flex-col gap-6 md:gap-8 h-full animate-in fade-in slide-in-from-right-8 duration-300">
+          <div className="flex flex-col gap-6 md:gap-8 animate-in fade-in slide-in-from-right-8 duration-300">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4">
               <div>
                 <h2 className="text-lg md:text-xl font-black text-[#020035] leading-tight">
