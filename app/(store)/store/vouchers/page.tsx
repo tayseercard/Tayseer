@@ -67,6 +67,7 @@ function StoreVouchersInner() {
   const [printOpen, setPrintOpen] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [buyOpen, setBuyOpen] = useState(false)
+  const [cashiersMap, setCashiersMap] = useState<Record<string, string>>({})
 
   //Pagination
   const ITEMS_PER_PAGE = 10
@@ -186,6 +187,33 @@ function StoreVouchersInner() {
       setRows(data || [])
       setLoading(false)
     })()
+  }, [storeId, supabase])
+
+  // ✅ Fetch Cashiers Map
+  useEffect(() => {
+    if (!storeId) return
+      ; (async () => {
+        // 1. Fetch cashiers linked to this store
+        const { data: cashiers } = await supabase
+          .from('cashiers')
+          .select('user_id, full_name')
+          .eq('store_id', storeId)
+
+        const map: Record<string, string> = {}
+        if (cashiers) {
+          cashiers.forEach((c: any) => {
+            if (c.user_id) map[c.user_id] = c.full_name || 'Cashier'
+          })
+        }
+
+        // 2. Add current owner (me)
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          map[session.user.id] = 'Moi (Owner)'
+        }
+
+        setCashiersMap(map)
+      })()
   }, [storeId, supabase])
 
   //Load data 
@@ -423,6 +451,11 @@ function StoreVouchersInner() {
 
               <div className="mt-2 flex justify-between text-[10px] text-gray-400 font-medium">
                 <span>Recu: {new Date(v.created_at).toLocaleDateString()}</span>
+                {v.activated_by && (
+                  <span className="text-emerald-600">
+                    Activé par: <b>{cashiersMap[v.activated_by] || 'Inconnu'}</b>
+                  </span>
+                )}
               </div>
 
             </div>
@@ -448,6 +481,7 @@ function StoreVouchersInner() {
                   <Th rtl={lang === 'ar'}>{t.store}</Th>
                   <Th rtl={lang === 'ar'}>{t.code}</Th>
                   <Th rtl={lang === 'ar'}>{t.Status}</Th>
+                  <Th rtl={lang === 'ar'}>Activé par</Th>
                   <Th rtl={lang === 'ar'}>{t.balance}</Th>
                   <Th rtl={lang === 'ar'}>{t.initial || 'Initial'}</Th>
                   <Th rtl={lang === 'ar'}>{t.created}</Th>
@@ -464,6 +498,13 @@ function StoreVouchersInner() {
                     <Td>{getStoreName(v.store_id)}</Td>
                     <Td><code className="rounded bg-gray-100 px-1.5 py-0.5">{v.code}</code></Td>
                     <Td><StatusPill status={v.status} /></Td>
+                    <Td>
+                      {v.activated_by ? (
+                        <span className="text-xs font-medium text-gray-700">
+                          {cashiersMap[v.activated_by] || '—'}
+                        </span>
+                      ) : '—'}
+                    </Td>
                     <Td>{fmtDZD(v.balance, lang)}</Td>
                     <Td>{fmtDZD(v.initial_amount, lang)}</Td>
                     <Td>{new Date(v.created_at).toLocaleDateString()}</Td>
