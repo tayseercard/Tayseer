@@ -79,7 +79,7 @@ export default function CachierLayout({ children }: { children: React.ReactNode 
           {/* Desktop Nav */}
           <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             {[
-              { href: '/cashier/dashboard', label: t.dashboard, icon: LayoutDashboard },
+              { href: '/cashier', label: t.dashboard, icon: LayoutDashboard },
               { href: '/cashier/settings', label: t.settings, icon: Settings },
             ].map(({ href, label, icon: Icon }) => {
               const active = pathname?.startsWith(href)
@@ -149,7 +149,7 @@ export default function CachierLayout({ children }: { children: React.ReactNode 
       >
         {/* Buttons container (lifted upward) */}
         <div className="flex flex-1 justify-around items-end pb-4">
-          <NavLink href="/cashier/dashboard" icon={LayoutDashboard} label={t.home} />
+          <NavLink href="/cashier" icon={LayoutDashboard} label={t.home} />
 
           {/* Floating Scan Button */}
           <div className="relative flex items-center justify-center -mt-10">
