@@ -25,7 +25,7 @@ export default function CachierLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname()
   const [scannerOpen, setScannerOpen] = useState(false)
   const [cachierName, setCashierName] = useState<string | null>(null)
-const { t, lang } = useLanguage()
+  const { t, lang } = useLanguage()
 
   async function handleLogout() {
     try {
@@ -37,7 +37,7 @@ const { t, lang } = useLanguage()
   }
 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         router.replace('/auth/login?redirectTo=/cashier')
@@ -78,8 +78,6 @@ const { t, lang } = useLanguage()
           <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             {[
               { href: '/cashier/dashboard', label: t.dashboard, icon: LayoutDashboard },
-              { href: '/cashier/vouchers', label: t.vouchers, icon: QrCode },
-              { href: '/cashier/clients', label: t.clients, icon: Users },
               { href: '/cashier/settings', label: t.settings, icon: Settings },
             ].map(({ href, label, icon: Icon }) => {
               const active = pathname?.startsWith(href)
@@ -87,11 +85,10 @@ const { t, lang } = useLanguage()
                 <Link
                   key={href}
                   href={href}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all whitespace-nowrap ${
-                    active
-                      ? 'bg-[var(--c-accent)] text-white shadow-sm'
-                      : 'bg-white/10 text-[var(--c-text)] hover:bg-[var(--c-accent)]/20'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all whitespace-nowrap ${active
+                    ? 'bg-[var(--c-accent)] text-white shadow-sm'
+                    : 'bg-white/10 text-[var(--c-text)] hover:bg-[var(--c-accent)]/20'
+                    }`}
                 >
                   <Icon className="h-4 w-4" />
                   {label}
@@ -151,7 +148,6 @@ const { t, lang } = useLanguage()
         {/* Buttons container (lifted upward) */}
         <div className="flex flex-1 justify-around items-end pb-4">
           <NavLink href="/cashier/dashboard" icon={LayoutDashboard} label={t.home} />
-          <NavLink href="/cashier/clients" icon={Users} label={t.clients} />
 
           {/* Floating Scan Button */}
           <div className="relative flex items-center justify-center -mt-10">
@@ -168,7 +164,6 @@ const { t, lang } = useLanguage()
             </button>
           </div>
 
-          <NavLink href="/cashier/vouchers" icon={Gift} label={t.vouchers} />
           <NavLink href="/cashier/settings" icon={Settings} label={t.settings} />
         </div>
       </nav>
@@ -196,11 +191,10 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`flex flex-col items-center text-[11px] ${
-        active
-          ? 'text-[--c-accent] font-medium'
-          : 'text-white/70 hover:text-[var(--c-accent)]'
-      }`}
+      className={`flex flex-col items-center text-[11px] ${active
+        ? 'text-[--c-accent] font-medium'
+        : 'text-white/70 hover:text-[var(--c-accent)]'
+        }`}
     >
       <Icon className="h-5 w-5 mb-0.5" />
       {label}

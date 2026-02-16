@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { X, Printer } from 'lucide-react'
 import { voucherToDataUrl, voucherDeepLink } from '@/lib/qrcode'
 import { useLanguage } from '@/lib/useLanguage'
 import QRCodeStyling from 'qr-code-styling'
@@ -45,6 +45,7 @@ export default function VoucherModal({
   const [consumePin, setConsumePin] = useState('')
   const [saving, setSaving] = useState(false)
   const [editMode, setEditMode] = useState(false)
+  const [isPinStep, setIsPinStep] = useState(false)
   const [userRole, setUserRole] = useState<string | null>(null)
   const qrRefActive = useRef<HTMLDivElement>(null)
   const qrRefBlank = useRef<HTMLDivElement>(null)
@@ -86,7 +87,7 @@ export default function VoucherModal({
 
     if (!target) return;
 
-    const size = window.innerWidth < 640 ? 100 : 150;
+    const size = window.innerWidth < 640 ? 110 : 140;
 
     const qr = new QRCodeStyling({
       width: size,
@@ -207,6 +208,7 @@ export default function VoucherModal({
           security_pin: securityPin,
           status: 'active',
           activated_at: new Date().toISOString(),
+          activated_by: user.id,
         })
         .eq('id', voucher.id)
 
@@ -223,17 +225,25 @@ export default function VoucherModal({
   }
 
   /* 🔵 Consume voucher */
+  /* 🔵 Consume voucher */
   async function handleConsume(partial = true) {
     const consumeValue = partial ? Number(consumeAmount) : voucher.balance
     if (!consumeValue || consumeValue <= 0) return toast.error('Montant invalide.')
 
-    if (voucher.security_pin) {
+    if (consumeValue > voucher.balance)
+      return toast.error('Le montant dépasse le solde disponible.')
+
+    // Step 1: Check for PIN requirement
+    if (voucher.security_pin && !isPinStep) {
+      setIsPinStep(true)
+      return
+    }
+
+    // Step 2: Validate PIN if required
+    if (voucher.security_pin && isPinStep) {
       if (!consumePin) return toast.error('PIN requis pour la consommation.')
       if (consumePin !== voucher.security_pin) return toast.error('❌ PIN incorrect.')
     }
-
-    if (consumeValue > voucher.balance)
-      return toast.error('Le montant dépasse le solde disponible.')
 
     if (!confirm(`Confirmer le débit de ${fmtDZD(consumeValue, lang)} ?`)) return
 
@@ -311,113 +321,184 @@ export default function VoucherModal({
           relative w-full max-w-2xl max-h-[90vh] overflow-y-auto
           bg-white/95 backdrop-blur-xl border border-white/50
           shadow-[0_20px_50px_rgba(0,0,0,0.15)]
-          rounded-[2.5rem] p-6 md:p-8
+          rounded-[2.5rem] p-5 md:p-8
         "
       >
         <button
           onClick={onClose}
-          className="absolute right-6 top-6 h-10 w-10 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:text-[#020035] transition-all hover:bg-gray-100 active:scale-95 z-10"
+          className="absolute right-4 top-4 md:right-6 md:top-6 h-10 w-10 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:text-[#020035] transition-all hover:bg-gray-100 active:scale-95 z-10"
         >
           <X className="h-5 w-5" />
         </button>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-
-          {/* LEFT: QR & Status */}
-          <div className="md:col-span-5 flex flex-col items-center space-y-6">
-            <div className="text-center">
-              <h2 className="text-xl font-black text-[#020035] mb-1">{t.voucherDetails}</h2>
-              <StatusBadge status={voucher.status} />
+        {isPinStep ? (
+          <div className="flex flex-col gap-6 md:gap-8 h-full animate-in fade-in slide-in-from-right-8 duration-300">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div>
+                <h2 className="text-lg md:text-xl font-black text-[#020035] leading-tight">Confirmer le débit</h2>
+                <p className="text-xs text-gray-400 mt-1">Veuillez autoriser cette transaction par PIN</p>
+              </div>
             </div>
 
-            <div className="relative group">
-              <div className="absolute -inset-4 bg-gradient-to-tr from-[#ED4B00]/10 to-[#020035]/5 rounded-[2rem] blur-2xl group-hover:opacity-100 opacity-50 transition duration-500" />
-              <div
-                ref={voucher.status === 'blank' ? qrRefBlank : voucher.status === 'active' ? qrRefActive : qrRefRedeemed}
-                className="relative h-28 w-28 md:h-40 md:w-40 rounded-2xl border-4 border-white shadow-2xl bg-white p-2 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 duration-500"
-              />
+            <div className="flex-1 flex flex-col justify-center items-center space-y-8">
+              <div className="w-full max-w-[200px]">
+                <input
+                  type="password"
+                  value={consumePin}
+                  onChange={(e) => setConsumePin(e.target.value)}
+                  placeholder="****"
+                  maxLength={4}
+                  className="w-full text-center text-4xl font-black bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 focus:border-[#ED4B00] focus:bg-white outline-none transition-all tracking-[0.5em] placeholder:tracking-normal text-[#020035]"
+                />
+              </div>
+              <div className="w-full max-w-sm flex flex-col items-center gap-2 p-3 bg-amber-50/50 rounded-xl border border-amber-100/50 text-center">
+                <span className="text-amber-500 text-xs">★</span>
+                <p className="text-[10px] font-bold text-amber-600/80 leading-relaxed uppercase">
+                  Code PIN confidentiel, à ne pas partager qu'avec la personne bénéficiaire.
+                </p>
+              </div>
             </div>
 
-            <div className="w-full space-y-2">
-              <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest text-center">Code du Voucher</p>
-              <p className="text-lg font-black text-[#020035] text-center font-mono bg-gray-50 py-2 rounded-xl border border-gray-100">
-                {voucher.code}
-              </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setIsPinStep(false)}
+                className="w-full text-center text-xs font-black text-gray-400 uppercase tracking-widest hover:text-[#020035] transition py-4 border border-gray-100 rounded-xl hover:bg-gray-50 bg-white"
+              >
+                Retour
+              </button>
+              <button
+                onClick={() => handleConsume(true)}
+                className="w-full bg-[#020035] text-white rounded-xl py-4 text-xs font-black uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-indigo-900/10"
+              >
+                Confirmer
+              </button>
             </div>
-
-            <button
-              onClick={handlePrintQROnly}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-[#020035] text-white rounded-2xl text-xs font-bold hover:bg-black transition-all active:scale-95 shadow-lg shadow-indigo-900/10"
-            >
-              <span className="text-lg">🧾</span> Imprimer le QR Code
-            </button>
           </div>
-
-          {/* RIGHT: Form / Details */}
-          <div className="md:col-span-7 flex flex-col gap-6">
-            {voucher.status === 'blank' ? (
-              <div className="space-y-4 animate-in slide-in-from-right-4 duration-500">
-                <div className="space-y-1">
-                  <h3 className="text-sm font-black text-[#020035] uppercase tracking-wider opacity-80">Activation</h3>
-                  <p className="text-xs text-gray-400 font-medium italic">Activez ce voucher pour commencer.</p>
+        ) : (
+          <div className="flex flex-col gap-6 md:gap-8">
+            {/* Header Area */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4 pr-10 md:pr-0">
+              <div className="flex flex-col">
+                <h2 className="text-lg md:text-xl font-black text-[#020035] leading-tight">{t.voucherDetails}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <StatusBadge status={voucher.status} />
+                  <span className="text-[10px] font-mono text-gray-400 font-bold bg-gray-50 px-2 py-0.5 rounded border border-gray-100">{voucher.code}</span>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 gap-4">
-                  <Input label="Nom de l'acheteur" value={buyerName} onChange={setBuyerName} placeholder="Nom complet" />
-                  <Input label="Bénéficiaire" value={recipientName} onChange={setRecipientName} placeholder="Optionnel" />
+            </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Téléphone</label>
-                    <div className="relative">
-                      <input
-                        value={buyerPhone}
-                        onChange={(e) => {
-                          const formatted = formatPhone(e.target.value)
-                          setBuyerPhone(formatted)
-                          setPhoneValid(isValidPhone(formatted))
-                        }}
-                        placeholder="0x xx xx xx xx"
-                        maxLength={14}
-                        className={`w-full rounded-2xl border-2 px-4 py-3 text-sm font-bold transition-all outline-none ${phoneValid ? 'border-gray-100 bg-gray-50/50 focus:border-[#ED4B00] focus:bg-white' : 'border-rose-100 bg-rose-50/50 text-rose-500 focus:border-rose-300'}`}
-                      />
-                      {autoFilled && phoneValid && (
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
-                          EXISTANT ✓
-                        </div>
-                      )}
+            {voucher.status === 'blank' ? (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Desktop: Side-by-side | Mobile: Stacked */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                  {/* Left Column: Essential Info */}
+                  <div className="order-2 md:order-1 md:col-span-8 space-y-3">
+                    <Input label="Nom de l'acheteur" value={buyerName} onChange={setBuyerName} placeholder="Nom complet" />
+                    <Input label="Bénéficiaire" value={recipientName} onChange={setRecipientName} placeholder="Optionnel" />
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1">Téléphone</label>
+                      <div className="relative">
+                        <input
+                          value={buyerPhone}
+                          onChange={(e) => {
+                            const formatted = formatPhone(e.target.value)
+                            setBuyerPhone(formatted)
+                            setPhoneValid(isValidPhone(formatted))
+                          }}
+                          placeholder="0x xx xx xx xx"
+                          maxLength={14}
+                          className={`w-full rounded-xl border-2 px-3 py-1.5 md:py-2 text-sm font-bold transition-all outline-none ${phoneValid ? 'border-gray-100 bg-gray-50/50 focus:border-[#ED4B00] focus:bg-white' : 'border-rose-100 bg-rose-50/50 text-rose-500 focus:border-rose-300'}`}
+                        />
+                        {autoFilled && phoneValid && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[9px] font-black text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-lg border border-emerald-100">
+                            EXISTANT ✓
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input label="Montant (DA)" type="number" value={amount} onChange={setAmount} placeholder="0" />
-                    <Input label="PIN (4 chiffres)" value={securityPin} onChange={setSecurityPin} placeholder="****" />
+                  {/* Right Column: QR Code */}
+                  <div className="order-1 md:order-2 md:col-span-4 flex flex-col items-center justify-center pb-1 md:pb-0">
+                    <div className="relative group">
+                      <div className="absolute -inset-4 bg-gradient-to-tr from-[#ED4B00]/10 to-[#020035]/5 rounded-[2rem] blur-2xl opacity-50 transition duration-500" />
+                      <div
+                        ref={qrRefBlank}
+                        className="relative h-24 w-24 md:h-36 md:w-36 rounded-2xl md:rounded-3xl border-2 md:border-4 border-white shadow-xl bg-white p-2 md:p-3 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 duration-500"
+                      />
+                    </div>
+
+                    <div className="mt-1 flex items-center gap-2">
+                      <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest italic">Scanner</p>
+                      <button
+                        onClick={handlePrintQROnly}
+                        className="h-8 w-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-[#020035] hover:text-white transition-all active:scale-95 border border-gray-100"
+                        title="Imprimer"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
+                </div>
+
+                {/* Economic Section */}
+                <div className="grid grid-cols-2 gap-3 md:gap-4 border-t border-gray-100 pt-5">
+                  <Input label="Montant (DA)" type="number" value={amount} onChange={setAmount} placeholder="0" />
+                  <Input label="PIN" value={securityPin} onChange={setSecurityPin} placeholder="****" />
                 </div>
 
                 <button
                   onClick={handleActivate}
                   disabled={saving}
-                  className="w-full mt-4 bg-gradient-to-r from-[#ED4B00] to-[#FF6B21] text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                  className="w-full bg-gradient-to-r from-[#ED4B00] to-[#FF6B21] text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                 >
                   {saving ? 'CHARGEMENT...' : 'Activer maintenant'}
                 </button>
               </div>
             ) : (
-              <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                <div className="space-y-1">
-                  <h3 className="text-sm font-black text-[#020035] uppercase tracking-wider opacity-80">Détails</h3>
-                  <p className="text-xs text-gray-400 font-medium italic">Informations du compte.</p>
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Desktop: Details Side-by-side | Mobile: Stacked */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-1 md:gap-6 items-center">
+                  {/* Details Card (Left) */}
+                  <div className="order-2 md:order-1 md:col-span-8 bg-gray-50/50 rounded-2xl md:rounded-3xl p-4 md:p-6 border border-gray-100 space-y-3 md:space-y-4 w-full">
+                    <div className="pb-2 border-b border-gray-100/50 mb-1">
+                      <div className="grid grid-cols-2 gap-4">
+                        <DetailItem label="Solde" value={fmtDZD(voucher.balance, lang)} bold color="text-emerald-700" />
+                        {voucher.security_pin && <DetailItem label="PIN" value={voucher.security_pin} color="text-amber-500" />}
+                      </div>
+                    </div>
+
+                    <DetailItem label="Acheteur" value={voucher.buyer_name} />
+                    <DetailItem label="Téléphone" value={voucher.buyer_phone} />
+                    <DetailItem label="Bénéficiaire" value={voucher.recipient_name} />
+                  </div>
+
+                  {/* QR Code (Right) */}
+                  <div className="order-1 md:order-2 md:col-span-4 flex flex-col items-center justify-center pb-1 md:pb-0">
+                    <div className="relative group">
+                      <div className="absolute -inset-4 bg-gradient-to-tr from-[#ED4B00]/10 to-[#020035]/5 rounded-[2rem] blur-2xl opacity-50 transition duration-500" />
+                      <div
+                        ref={voucher.status === 'active' ? qrRefActive : qrRefRedeemed}
+                        className="relative h-24 w-24 md:h-36 md:w-36 rounded-xl md:rounded-2xl border-2 md:border-4 border-white shadow-xl bg-white p-1.5 md:p-2 flex items-center justify-center transition-transform group-hover:scale-105 duration-500"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handlePrintQROnly}
+                      className="mt-2 h-8 w-8 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:bg-[#020035] hover:text-white transition-all active:scale-95 border border-gray-100"
+                      title="Imprimer"
+                    >
+                      <Printer className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="bg-gray-50/50 rounded-3xl p-5 border border-gray-100 space-y-3">
-                  <DetailItem label="Acheteur" value={voucher.buyer_name} />
-                  <DetailItem label="Téléphone" value={voucher.buyer_phone} />
-                  <DetailItem label="Solde" value={fmtDZD(voucher.balance, lang)} bold color="text-emerald-600" />
-                  {voucher.security_pin && <DetailItem label="PIN" value={voucher.security_pin} color="text-amber-500" />}
-                </div>
 
+
+                {/* Payment Actions */}
                 {voucher.status === 'active' && (
-                  <div className="space-y-4">
+                  <div className="space-y-2 pt-2 border-t border-gray-100/50">
                     <div className="flex items-center justify-between">
                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Paiement</h4>
                       {['admin', 'superadmin', 'store_owner'].includes(userRole || '') && (
@@ -429,37 +510,36 @@ export default function VoucherModal({
 
                     <AnimatePresence>
                       {editMode ? (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-3 pt-2">
-                          <Input label="Nom" value={buyerName} onChange={setBuyerName} />
-                          <div className="grid grid-cols-2 gap-3">
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="space-y-4 pt-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Input label="Nom" value={buyerName} onChange={setBuyerName} />
+                            <Input label="Téléphone" value={buyerPhone} onChange={setBuyerPhone} />
                             <Input label="Solde" value={amount} onChange={setAmount} />
                             <Input label="PIN" value={securityPin} onChange={setSecurityPin} />
                           </div>
-                          <button onClick={handleEditSave} className="w-full bg-emerald-600 text-white rounded-xl py-2 text-xs font-black uppercase tracking-wider">Enregistrer</button>
+                          <button onClick={handleEditSave} className="w-full bg-emerald-600 text-white rounded-2xl py-4 text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-900/10 hover:bg-emerald-700 transition-all">Enregistrer</button>
                         </motion.div>
                       ) : (
                         <div className="space-y-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <Input label="Montant" value={consumeAmount} onChange={setConsumeAmount} placeholder="DA" />
-                            {voucher.security_pin && <Input label="PIN" value={consumePin} onChange={setConsumePin} placeholder="****" />}
+                          <div className="w-full">
+                            <Input label="Montant à déduire" value={consumeAmount} onChange={setConsumeAmount} placeholder="DA" />
                           </div>
-                          <button onClick={() => handleConsume(true)} className="w-full bg-[#020035] text-white rounded-2xl py-4 text-xs font-black uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-indigo-900/10">Valider l'achat</button>
+                          <button
+                            onClick={() => handleConsume(true)}
+                            className="w-full bg-[#020035] text-white rounded-2xl py-4 text-xs font-black uppercase tracking-widest hover:bg-black transition-all active:scale-95 shadow-xl shadow-indigo-900/10"
+                          >
+                            Valider
+                          </button>
                         </div>
                       )}
                     </AnimatePresence>
                   </div>
                 )}
-
-                {voucher.status === 'redeemed' && (
-                  <div className="bg-emerald-50 rounded-2xl p-4 flex items-center gap-3 border border-emerald-100">
-                    <p className="text-xs font-bold text-emerald-800">✅ Utilisé totalement.</p>
-                  </div>
-                )}
               </div>
             )}
-            <button onClick={onClose} className="mt-2 w-full text-center text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-[#020035] transition">Fermer</button>
+            <button onClick={onClose} className="w-full text-center text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-[#020035] transition py-4 border-t border-gray-50">Fermer</button>
           </div>
-        </div>
+        )}
       </motion.div>
     </div>
   )
@@ -478,7 +558,7 @@ function StatusBadge({ status }: { status: string }) {
 function DetailItem({ label, value, bold = false, color = "text-gray-700" }: { label: string, value: any, bold?: boolean, color?: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest shrink-0">{label}</span>
+      <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest shrink-0">{label}</span>
       <span className={`text-xs ${bold ? 'font-black' : 'font-bold'} ${color} truncate`}>{value || '—'}</span>
     </div>
   )
@@ -487,13 +567,13 @@ function DetailItem({ label, value, bold = false, color = "text-gray-700" }: { l
 function Input({ label, value, onChange, type = 'text', placeholder }: { label: string, value: any, onChange: (val: any) => void, type?: string, placeholder?: string }) {
   return (
     <div>
-      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">{label}</label>
+      <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-0.5 block">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full border-2 border-gray-100 bg-gray-50/50 rounded-2xl p-3 text-sm font-bold focus:border-[#ED4B00] focus:bg-white outline-none transition-all"
+        className="w-full border-2 border-gray-100 bg-gray-50/50 rounded-xl px-3 py-1.5 md:py-2 text-sm font-bold focus:border-[#ED4B00] focus:bg-white outline-none transition-all"
       />
     </div>
   )

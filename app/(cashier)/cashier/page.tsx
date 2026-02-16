@@ -34,7 +34,7 @@ export default function CashierDashboardPage() {
   })
 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       setLoading(true)
       const { data: sessionData } = await supabase.auth.getSession()
       const user = sessionData.session?.user
@@ -54,11 +54,13 @@ export default function CashierDashboardPage() {
 
       setStore({ name: roleRow.store_name, store_id: roleRow.store_id })
 
-      // 💳 Get vouchers for this store
+      // 💳 Get vouchers activated by THIS cashier
       const { data: vouchers } = await supabase
         .from('vouchers')
         .select('*')
         .eq('store_id', roleRow.store_id)
+        .eq('activated_by', user.id)
+        .order('activated_at', { ascending: false })
 
       if (vouchers) {
         const today = new Date().toISOString().slice(0, 10)
@@ -76,14 +78,17 @@ export default function CashierDashboardPage() {
             0
           ),
         })
+        setMyVouchers(vouchers)
       }
 
       setLoading(false)
     })()
   }, [supabase])
 
+  const [myVouchers, setMyVouchers] = useState<any[]>([])
+
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 md:px-10 py-8 space-y-8">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 md:px-10 py-8 space-y-8 pb-20">
       {/* ===== Header ===== */}
       <header className="flex justify-between items-center">
         <div>
@@ -91,7 +96,7 @@ export default function CashierDashboardPage() {
             Cashier Dashboard
           </h1>
           <p className="text-sm text-gray-500">
-            {store.name ? `Store: ${store.name}` : 'Loading store info...'}
+            {store.name ? `${store.name}` : 'Loading store info...'}
           </p>
         </div>
       </header>
@@ -109,28 +114,25 @@ export default function CashierDashboardPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
-            className="space-y-10"
+            className="space-y-8"
           >
             {/* === Voucher Overview === */}
             <SectionTitle
               icon={<Gift />}
-              title="Voucher Overview"
-              href="/cashier/vouchers"
+              title="My Activations"
             />
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              <Link href="/cashier/vouchers" className="block hover:scale-[1.02] transition">
-                <DashboardStatCard title="Total Vouchers" value={voucherStats.total} />
-              </Link>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <DashboardStatCard title="Total Activated" value={voucherStats.total} />
 
               <DashboardStatCard
-                title="Active Vouchers"
+                title="Still Active"
                 value={voucherStats.active}
                 highlight
               />
 
               <DashboardStatCard
-                title="Redeemed"
+                title="Fully Redeemed"
                 value={voucherStats.redeemed}
               />
 
@@ -140,17 +142,46 @@ export default function CashierDashboardPage() {
               />
             </div>
 
-            {/* === Financial Summary === */}
-            <SectionTitle icon={<CreditCard />} title="Financial Summary" />
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <DashboardStatCard
-                title="Total Value"
-                value={voucherStats.totalValue}
-                suffix=" DA"
-              />
+            {/* === Recent List === */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Recent Activations</h3>
+              {myVouchers.length === 0 ? (
+                <p className="text-center py-10 bg-gray-50 rounded-2xl text-gray-400 text-sm italic">
+                  No vouchers activated by you yet.
+                </p>
+              ) : (
+                <div className="grid gap-3">
+                  {myVouchers.slice(0, 5).map((v) => (
+                    <div key={v.id} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm">
+                      <div>
+                        <p className="font-bold text-gray-900">{v.buyer_name || '—'}</p>
+                        <p className="text-[10px] text-gray-400 font-mono mt-0.5">{v.code}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-black text-[var(--c-primary)]">{v.balance} DA</p>
+                        <p className="text-[10px] text-gray-400">
+                          {v.activated_at ? new Date(v.activated_at).toLocaleDateString() : '—'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-          
+            {/* === Financial === */}
+            <div className="pt-4 border-t border-gray-100">
+              <SectionTitle icon={<CreditCard />} title="Financial Summary" />
+              <div className="grid grid-cols-2 gap-3 max-w-sm">
+                <DashboardStatCard
+                  title="Total Group Value"
+                  value={voucherStats.totalValue}
+                  suffix=" DA"
+                />
+              </div>
+            </div>
+
+
           </motion.div>
         </AnimatePresence>
       )}

@@ -20,5 +20,6 @@ export type VoucherRow = {
   status: 'blank' | 'active' | 'redeemed' | 'expired' | 'void';
   expires_at: string | null;
   activated_at?: string | null;
+  activated_by?: string | null;
   created_at: string;
 };
