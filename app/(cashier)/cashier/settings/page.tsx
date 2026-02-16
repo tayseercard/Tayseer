@@ -78,9 +78,8 @@ export default function SettingsPage() {
 
   return (
     <div
-      className={`min-h-screen bg-[var(--bg)] flex flex-col items-center px-4 py-6 transition-all duration-300 ${
-        lang === 'ar' ? 'rtl' : 'ltr'
-      }`}
+      className={`min-h-screen bg-[var(--bg)] flex flex-col items-center px-4 py-6 transition-all duration-300 ${lang === 'ar' ? 'rtl' : 'ltr'
+        }`}
     >
       <div className="w-full max-w-md space-y-6">
         {/* === Header === */}
@@ -115,19 +114,34 @@ export default function SettingsPage() {
               lang === 'fr'
                 ? 'Français'
                 : lang === 'ar'
-                ? 'العربية 🇩🇿'
-                : 'English 🇬🇧'
+                  ? 'العربية 🇩🇿'
+                  : 'English 🇬🇧'
             }
             onClick={() => setActiveModal('language')}
           />
-         
+
         </div>
 
         {/* === App Info === */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
           <SettingRow icon={<Info />} label={t.aboutApp || 'About application'} />
-          <SettingRow icon={<HelpCircle />} label={t.help || 'Help / FAQ'} />
-          
+          <SettingRow icon={<HelpCircle className="w-5 h-5" />} label={t.help || 'Help / FAQ'} />
+        </div>
+
+        {/* === Logout Section === */}
+        <div className="bg-white rounded-2xl shadow-sm border border-red-50 divide-y divide-red-50 overflow-hidden">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-between px-4 py-4 hover:bg-red-50 transition cursor-pointer text-left group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-50 rounded-xl text-red-500 group-hover:bg-red-100 transition-colors">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <span className="text-sm font-bold text-red-600">Se déconnecter</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-red-200 group-hover:text-red-400" />
+          </button>
         </div>
       </div>
 
