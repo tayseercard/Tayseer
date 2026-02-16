@@ -43,6 +43,23 @@ export default function VoucherModal({
   const [autoFilled, setAutoFilled] = useState(false)
   const [consumeAmount, setConsumeAmount] = useState('')
   const [consumePin, setConsumePin] = useState('')
+
+  const handlePinChange = (e: any) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 4)
+    setConsumePin(val)
+  }
+
+  const handleAmountChange = (val: string) => {
+    setConsumeAmount(val.replace(/,/g, '.').replace(/[^0-9.]/g, ''))
+  }
+
+  const handleSecurityPinChange = (val: string) => {
+    setSecurityPin(val.replace(/\D/g, '').slice(0, 4))
+  }
+
+  const handleAmountEditChange = (val: string) => {
+    setAmount(val.replace(/,/g, '.').replace(/[^0-9.]/g, ''))
+  }
   const [saving, setSaving] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [isPinStep, setIsPinStep] = useState(false)
@@ -312,7 +329,7 @@ export default function VoucherModal({
 
   return (
     <div dir={lang === 'ar' ? 'rtl' : 'ltr'}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md p-4 pb-24 md:pb-4">
+      className="fixed inset-0 z-[100] flex items-start justify-center bg-black/60 backdrop-blur-xl p-4 pt-20 md:pt-10 pb-24 md:pb-4 overflow-y-auto">
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -345,7 +362,7 @@ export default function VoucherModal({
                 <input
                   type="password"
                   value={consumePin}
-                  onChange={(e) => setConsumePin(e.target.value)}
+                  onChange={handlePinChange}
                   placeholder="****"
                   maxLength={4}
                   className="w-full text-center text-4xl font-black bg-gray-50 border-2 border-gray-100 rounded-2xl py-4 focus:border-[#ED4B00] focus:bg-white outline-none transition-all tracking-[0.5em] placeholder:tracking-normal text-[#020035]"
@@ -444,8 +461,8 @@ export default function VoucherModal({
 
                 {/* Economic Section */}
                 <div className="grid grid-cols-2 gap-3 md:gap-4 border-t border-gray-100 pt-5">
-                  <Input label="Montant (DA)" type="number" value={amount} onChange={setAmount} placeholder="0" />
-                  <Input label="PIN" value={securityPin} onChange={setSecurityPin} placeholder="****" />
+                  <Input label="Montant (DA)" type="tel" value={amount} onChange={handleAmountEditChange} placeholder="0" />
+                  <Input label="PIN" type="password" value={securityPin} onChange={handleSecurityPinChange} placeholder="****" maxLength={4} />
                 </div>
 
                 <button
@@ -514,15 +531,15 @@ export default function VoucherModal({
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Input label="Nom" value={buyerName} onChange={setBuyerName} />
                             <Input label="Téléphone" value={buyerPhone} onChange={setBuyerPhone} />
-                            <Input label="Solde" value={amount} onChange={setAmount} />
-                            <Input label="PIN" value={securityPin} onChange={setSecurityPin} />
+                            <Input label="Solde" type="tel" value={amount} onChange={handleAmountEditChange} />
+                            <Input label="PIN" type="password" value={securityPin} onChange={handleSecurityPinChange} maxLength={4} />
                           </div>
                           <button onClick={handleEditSave} className="w-full bg-emerald-600 text-white rounded-2xl py-4 text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-900/10 hover:bg-emerald-700 transition-all">Enregistrer</button>
                         </motion.div>
                       ) : (
                         <div className="space-y-4">
                           <div className="w-full">
-                            <Input label="Montant à déduire" value={consumeAmount} onChange={setConsumeAmount} placeholder="DA" />
+                            <Input label="Montant à déduire" type="tel" value={consumeAmount} onChange={(val) => setConsumeAmount(val.replace(/,/g, '.').replace(/[^0-9.]/g, ''))} placeholder="DA" />
                           </div>
                           <button
                             onClick={() => handleConsume(true)}
@@ -564,7 +581,7 @@ function DetailItem({ label, value, bold = false, color = "text-gray-700" }: { l
   )
 }
 
-function Input({ label, value, onChange, type = 'text', placeholder }: { label: string, value: any, onChange: (val: any) => void, type?: string, placeholder?: string }) {
+function Input({ label, value, onChange, type = 'text', placeholder, maxLength }: { label: string, value: any, onChange: (val: any) => void, type?: string, placeholder?: string, maxLength?: number }) {
   return (
     <div>
       <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-0.5 block">{label}</label>
@@ -573,6 +590,7 @@ function Input({ label, value, onChange, type = 'text', placeholder }: { label: 
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        maxLength={maxLength}
         className="w-full border-2 border-gray-100 bg-gray-50/50 rounded-xl px-3 py-1.5 md:py-2 text-sm font-bold focus:border-[#ED4B00] focus:bg-white outline-none transition-all"
       />
     </div>
