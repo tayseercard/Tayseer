@@ -86,6 +86,7 @@ export default function CashierDashboardPage() {
   }, [supabase])
 
   const [myVouchers, setMyVouchers] = useState<any[]>([])
+  const [showAllVouchersModal, setShowAllVouchersModal] = useState(false)
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 md:px-10 py-8 space-y-8 pb-20">
@@ -123,7 +124,12 @@ export default function CashierDashboardPage() {
             />
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <DashboardStatCard title="Total Activated" value={voucherStats.total} />
+              <DashboardStatCard
+                title="Total Activated"
+                value={voucherStats.total}
+                onClick={() => setShowAllVouchersModal(true)}
+                clickable
+              />
 
               <DashboardStatCard
                 title="Still Active"
@@ -181,11 +187,106 @@ export default function CashierDashboardPage() {
               </div>
             </div>
 
-
           </motion.div>
         </AnimatePresence>
       )}
+
+      {/* All Vouchers Modal */}
+      {showAllVouchersModal && (
+        <AllVouchersModal
+          vouchers={myVouchers}
+          onClose={() => setShowAllVouchersModal(false)}
+        />
+      )}
     </div>
+  )
+}
+
+/* ---------- All Vouchers Modal ---------- */
+function AllVouchersModal({ vouchers, onClose }: { vouchers: any[], onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xl flex items-start justify-center p-4 pt-10 overflow-y-auto">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6 my-auto"
+      >
+        <div className="flex items-center justify-between mb-5 border-b border-gray-100 pb-4">
+          <div>
+            <h2 className="text-xl font-black text-[#020035]">My Activated Vouchers</h2>
+            <p className="text-xs text-gray-400 mt-1">{vouchers.length} total activation{vouchers.length !== 1 ? 's' : ''}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="h-10 w-10 flex items-center justify-center rounded-full bg-gray-50 text-gray-400 hover:text-[#020035] hover:bg-gray-100 transition"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+          {vouchers.length === 0 ? (
+            <p className="text-center py-10 text-gray-400">No vouchers activated yet.</p>
+          ) : (
+            vouchers.map((v) => (
+              <div key={v.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100 hover:border-[#ED4B00]/30 transition">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-bold text-gray-900">{v.buyer_name || 'Unknown'}</h3>
+                      <StatusBadge status={v.status} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-gray-400 uppercase font-bold block mb-0.5">Code</span>
+                        <code className="bg-white px-2 py-1 rounded border border-gray-200 font-mono text-[10px]">{v.code}</code>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 uppercase font-bold block mb-0.5">Phone</span>
+                        <span className="text-gray-700">{v.buyer_phone || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 uppercase font-bold block mb-0.5">Balance</span>
+                        <span className="font-black text-emerald-600">{v.balance} DA</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400 uppercase font-bold block mb-0.5">Activated</span>
+                        <span className="text-gray-700">
+                          {v.activated_at ? new Date(v.activated_at).toLocaleDateString('fr-FR', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          }) : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+/* Helper: Status Badge */
+function StatusBadge({ status }: { status: string }) {
+  const styles = {
+    active: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+    redeemed: 'bg-gray-100 text-gray-600 ring-1 ring-gray-200',
+    blank: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200'
+  }
+  const labels = {
+    active: 'Active',
+    redeemed: 'Redeemed',
+    blank: 'Blank'
+  }
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${styles[status as keyof typeof styles] || styles.blank}`}>
+      {labels[status as keyof typeof labels] || status}
+    </span>
   )
 }
 
@@ -230,16 +331,22 @@ function DashboardStatCard({
   value,
   suffix,
   highlight = false,
+  onClick,
+  clickable = false,
 }: {
   title: string
   value: number
   suffix?: string
   highlight?: boolean
+  onClick?: () => void
+  clickable?: boolean
 }) {
   return (
     <div
+      onClick={clickable ? onClick : undefined}
       className={`rounded-2xl border p-4 flex flex-col justify-between shadow-sm transition-all bg-white
-        ${highlight ? 'border-[var(--c-accent)]/30 bg-[var(--c-accent)]/10' : 'border-gray-100'}`}
+        ${highlight ? 'border-[var(--c-accent)]/30 bg-[var(--c-accent)]/10' : 'border-gray-100'}
+        ${clickable ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:border-[#ED4B00]/40 active:scale-95' : ''}`}
     >
       <p className="text-sm text-[var(--c-text)]/70">{title}</p>
       <p className="text-2xl font-semibold mt-1 text-[var(--c-secondary)]">

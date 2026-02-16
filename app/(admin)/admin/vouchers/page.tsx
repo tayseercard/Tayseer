@@ -40,6 +40,7 @@ function AdminVouchersInner() {
 
   const [rows, setRows] = useState<any[]>([])
   const [stores, setStores] = useState<any[]>([])
+  const [usersMap, setUsersMap] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
   const [selectedVoucher, setSelectedVoucher] = useState<any | null>(null)
   const [adding, setAdding] = useState(false)
@@ -114,6 +115,25 @@ function AdminVouchersInner() {
   /* -------- Load data -------- */
   async function loadData() {
     setLoading(true)
+
+    // Fetch users (for activated_by map)
+    let usersData: any[] = []
+    try {
+      const res = await fetch('/api/admin/users')
+      if (res.ok) {
+        const json = await res.json()
+        usersData = json.users || []
+      }
+    } catch (e) {
+      console.error('Failed to fetch users map:', e)
+    }
+    const map = usersData.reduce((acc: any, u: any) => {
+      acc[u.user_id] = u
+      return acc
+    }, {})
+    setUsersMap(map)
+
+
     const [{ data: vouchers }, { data: storesData }] = await Promise.all([
       supabase.from('vouchers').select('*').order('updated_at', { ascending: false })
       ,
@@ -308,6 +328,15 @@ function AdminVouchersInner() {
                   ? new Date(v.activated_at).toLocaleDateString()
                   : 'Not activated yet'}
               </p>
+              {v.activated_by && usersMap[v.activated_by] && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Activated by: <span className="font-medium text-gray-700">
+                    {usersMap[v.activated_by].cashier_full_name ||
+                      usersMap[v.activated_by].email ||
+                      '—'}
+                  </span>
+                </p>
+              )}
 
             </div>
           ))
@@ -335,6 +364,7 @@ function AdminVouchersInner() {
                   <Th rtl={lang === 'ar'}>{t.balance}</Th>
                   <Th rtl={lang === 'ar'}>{t.created}</Th>
                   <Th rtl={lang === 'ar'}>'activated'</Th>
+                  <Th rtl={lang === 'ar'}>Activated By</Th>
                 </tr>
               </thead>
               <tbody>
@@ -360,6 +390,17 @@ function AdminVouchersInner() {
                           <span>{new Date(v.activated_at).toLocaleDateString()}</span>
                           <span className="text-gray-400">{new Date(v.activated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </Td>
+                    <Td>
+                      {v.activated_by && usersMap[v.activated_by] ? (
+                        <span className="text-xs">
+                          {usersMap[v.activated_by].cashier_full_name ||
+                            usersMap[v.activated_by].email ||
+                            '—'}
+                        </span>
                       ) : (
                         <span className="text-gray-400">—</span>
                       )}
