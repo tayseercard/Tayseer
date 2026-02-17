@@ -87,7 +87,7 @@ export default function AdminStoreDetailPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 8
   const [storeId, setStoreId] = useState<string | null>(null)
-  const [activeInfoTab, setActiveInfoTab] = useState<'contact' | 'location'>('contact')
+  const [activeInfoTab, setActiveInfoTab] = useState<'contact' | 'vouchers' | 'payments'>('contact')
 
   const loadStore = useCallback(async () => {
     if (!name) return
@@ -454,7 +454,7 @@ export default function AdminStoreDetailPage() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveInfoTab(tab.id as any)}
+                onClick={() => setActiveInfoTab(tab.id as 'contact' | 'vouchers' | 'payments')}
                 className={`
                   flex items-center gap-2 pb-3 text-xs font-bold transition-all relative
                   ${active ? 'text-[#020035]' : 'text-gray-400 hover:text-gray-600'}
