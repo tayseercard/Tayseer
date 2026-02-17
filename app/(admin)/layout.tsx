@@ -72,7 +72,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
       <header className="hidden md:block sticky top-0 z-[60] bg-white/80 backdrop-blur-xl border-b border-gray-200/40 select-none">
         <div className="max-w-[1440px] mx-auto px-8">
           <div className="h-16 flex items-center justify-between relative">
-            <Link href="/admin/dashboard" className="flex items-center gap-2 group">
+            <Link href="/admin" className="flex items-center gap-2 group">
               <div className="relative h-8 w-8 bg-[#020035] rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-900/10 group-hover:scale-105 transition-transform duration-300">
                 T
               </div>
@@ -81,13 +81,13 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
             <nav className="absolute left-1/2 -translate-x-1/2 flex items-center p-1 bg-gray-100/50 rounded-2xl border border-gray-100 h-11">
               {[
-                { href: '/admin/dashboard', label: t.dashboard, icon: LayoutDashboard },
+                { href: '/admin', label: t.dashboard, icon: LayoutDashboard },
                 { href: '/admin/stores', label: t.stores, icon: Package },
                 { href: '/admin/vouchers', label: t.vouchers, icon: QrCodeIcon },
                 { href: '/admin/users', label: t.users, icon: Users },
                 { href: '/admin/settings', label: t.settings, icon: Settings },
               ].map(({ href, label, icon: Icon }) => {
-                const active = pathname?.startsWith(href)
+                const active = href === '/admin' ? pathname === '/admin' : pathname?.startsWith(href)
                 return (
                   <Link
                     key={href}
@@ -164,7 +164,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="bg-white/80 backdrop-blur-2xl border border-gray-200/50 rounded-[2rem] shadow-[0_10px_40px_rgba(0,0,0,0.08)] px-4 h-[65px] flex items-center relative overflow-visible">
 
           <div className="flex-1 flex justify-around items-center h-full relative z-10 overflow-visible">
-            <MobileNavLink href="/admin/dashboard" icon={LayoutDashboard} label={t.dashboard} />
+            <MobileNavLink href="/admin" icon={LayoutDashboard} label={t.dashboard} />
             <MobileNavLink href="/admin/stores" icon={Package} label={t.stores} />
 
             {/* 📸 iOS QR Button */}

@@ -31,6 +31,7 @@ import { Badge } from '@/components/ui/badge'
 import { useLanguage } from '@/lib/useLanguage'
 import { wilayaLabel } from '@/lib/algeria'
 import { usePageTitle } from '@/lib/PageTitleContext'
+import { motion } from 'framer-motion'
 
 type StoreRow = {
   id: string
@@ -441,190 +442,220 @@ export default function AdminStoreDetailPage() {
           </div>
         </div>
 
-        {/* 2. Coordonnées (Moved under name/status) */}
-        {/* 2. Coordonnées (Left/Right Split) */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+        {/* Tabs Selection */}
+        <div className="flex border-b border-gray-100 mb-6 gap-6">
+          {[
+            { id: 'contact', label: 'Contact', icon: Mail },
+            { id: 'vouchers', label: 'Liste des Vouchers', icon: Printer },
+            { id: 'payments', label: 'Historique des Paiements', icon: CreditCard },
+          ].map((tab) => {
+            const Icon = tab.icon
+            const active = activeInfoTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveInfoTab(tab.id as any)}
+                className={`
+                  flex items-center gap-2 pb-3 text-xs font-bold transition-all relative
+                  ${active ? 'text-[#020035]' : 'text-gray-400 hover:text-gray-600'}
+                `}
+              >
+                <Icon className={`w-4 h-4 ${active ? 'text-[#ed4b00]' : ''}`} />
+                {tab.label}
+                {active && (
+                  <motion.div
+                    layoutId="activeTabUnderline"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#ed4b00]"
+                  />
+                )}
+              </button>
+            )
+          })}
+        </div>
 
-            {/* Left Column: Contact */}
-            <div className="space-y-6">
-              <h3 className="font-black text-gray-900 text-[10px] uppercase tracking-widest mb-2 opacity-50">Contact</h3>
-              <div className="flex items-center gap-4">
-                <Mail className="w-5 h-5 text-[#020035]" />
-                <div className="min-w-0">
-                  <p className="text-[9px] font-black text-gray-300 uppercase">Email</p>
-                  <p className="text-sm font-bold text-gray-700 truncate">{store?.email || '—'}</p>
+        {/* Tab Content */}
+        <div className="animate-in fade-in duration-300">
+          {activeInfoTab === 'contact' && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                {/* Left Column: Contact */}
+                <div className="space-y-6">
+                  <h3 className="font-black text-gray-900 text-[10px] uppercase tracking-widest mb-2 opacity-50">Contact</h3>
+                  <div className="flex items-center gap-4">
+                    <Mail className="w-5 h-5 text-[#020035]" />
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black text-gray-300 uppercase">Email</p>
+                      <p className="text-sm font-bold text-gray-700 truncate">{store?.email || '—'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Phone className="w-5 h-5 text-[#020035]" />
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black text-gray-300 uppercase">Téléphone</p>
+                      <p className="text-sm font-bold text-gray-700">{store?.phone || '—'}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <Phone className="w-5 h-5 text-[#020035]" />
-                <div className="min-w-0">
-                  <p className="text-[9px] font-black text-gray-300 uppercase">Téléphone</p>
-                  <p className="text-sm font-bold text-gray-700">{store?.phone || '—'}</p>
-                </div>
-              </div>
-            </div>
 
-            {/* Right Column: Location/Info */}
-            <div className="space-y-6">
-              <h3 className="font-black text-gray-900 text-[10px] uppercase tracking-widest mb-2 opacity-50">Localisation</h3>
-              <div className="flex items-center gap-4">
-                <MapPin className="w-5 h-5 text-[#020035]" />
-                <div className="min-w-0">
-                  <p className="text-[9px] font-black text-gray-300 uppercase">Wilaya</p>
-                  <p className="text-sm font-bold text-gray-700">{wilayaLabel(store?.wilaya)}</p>
+                {/* Right Column: Location/Info */}
+                <div className="space-y-6">
+                  <h3 className="font-black text-gray-900 text-[10px] uppercase tracking-widest mb-2 opacity-50">Localisation</h3>
+                  <div className="flex items-center gap-4">
+                    <MapPin className="w-5 h-5 text-[#020035]" />
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black text-gray-300 uppercase">Wilaya</p>
+                      <p className="text-sm font-bold text-gray-700">{wilayaLabel(store?.wilaya)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Calendar className="w-5 h-5 text-[#020035]" />
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-black text-gray-300 uppercase">Inscrit le</p>
+                      <p className="text-sm font-bold text-gray-700">
+                        {store?.created_at ? new Date(store.created_at).toLocaleDateString() : '—'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <Calendar className="w-5 h-5 text-[#020035]" />
+
+              <div className="mt-8 pt-4 border-t border-gray-50 flex items-start gap-4">
+                <MapPin className="w-5 h-5 text-[#020035] mt-1 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[9px] font-black text-gray-300 uppercase">Inscrit le</p>
-                  <p className="text-sm font-bold text-gray-700">
-                    {store?.created_at ? new Date(store.created_at).toLocaleDateString() : '—'}
+                  <p className="text-[9px] font-black text-gray-300 uppercase mb-1">Adresse Complète</p>
+                  <p className="text-xs text-gray-500 font-medium italic leading-relaxed">
+                    {store?.address || 'Aucune adresse renseignée.'}
                   </p>
                 </div>
               </div>
             </div>
+          )}
 
-          </div>
-
-          <div className="mt-8 pt-4 border-t border-gray-50 flex items-start gap-4">
-            <MapPin className="w-5 h-5 text-[#020035] mt-1 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-[9px] font-black text-gray-300 uppercase mb-1">Adresse Complète</p>
-              <p className="text-xs text-gray-500 font-medium italic leading-relaxed">
-                {store?.address || 'Aucune adresse renseignée.'}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-
-          {/* LEFT: Liste des Vouchers */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
-            <div className="p-4 border-b border-gray-50 flex items-center justify-between">
-              <h3 className="font-bold text-gray-900 text-xs flex items-center gap-2">
-                <Printer className="w-4 h-4 text-gray-400" />
-                Liste des Vouchers
-              </h3>
-              <div className="relative w-48">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Filtrer..."
-                  className="w-full pl-8 pr-3 py-1.5 bg-gray-50/50 border border-gray-100 rounded-lg text-xs focus:outline-none transition"
-                />
+          {activeInfoTab === 'vouchers' && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
+              <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+                <h3 className="font-bold text-gray-900 text-xs flex items-center gap-2">
+                  <Printer className="w-4 h-4 text-gray-400" />
+                  Liste des Vouchers
+                </h3>
+                <div className="relative w-48">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Filtrer..."
+                    className="w-full pl-8 pr-3 py-1.5 bg-gray-50/50 border border-gray-100 rounded-lg text-xs focus:outline-none transition"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="flex-1 overflow-x-auto">
-              {loadingVouchers ? (
-                <div className="py-20 text-center text-gray-400 text-xs">Chargement...</div>
-              ) : paginated.length === 0 ? (
-                <div className="py-20 text-center text-gray-400 text-xs font-medium">Aucun résultat trouvé.</div>
-              ) : (
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-gray-50/50 text-gray-400 text-[10px] font-black uppercase">
-                      <th className="px-5 py-3 text-left">Bénéficiaire</th>
-                      <th className="px-5 py-3 text-left">Code</th>
-                      <th className="px-5 py-3 text-left">Statut</th>
-                      <th className="px-5 py-3 text-right">Solde</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {paginated.map((v) => (
-                      <tr key={v.id} className="hover:bg-gray-50/30 transition">
-                        <td className="px-5 py-3 font-bold text-gray-700">{v.buyer_name || '—'}</td>
-                        <td className="px-5 py-3"><span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-black">{v.code}</span></td>
-                        <td className="px-5 py-3"><StatusPill status={v.status} /></td>
-                        <td className="px-5 py-3 text-right font-black text-gray-600">{fmtDZD(v.balance)}</td>
+              <div className="flex-1 overflow-x-auto">
+                {loadingVouchers ? (
+                  <div className="py-20 text-center text-gray-400 text-xs">Chargement...</div>
+                ) : paginated.length === 0 ? (
+                  <div className="py-20 text-center text-gray-400 text-xs font-medium">Aucun résultat trouvé.</div>
+                ) : (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-gray-50/50 text-gray-400 text-[10px] font-black uppercase">
+                        <th className="px-5 py-3 text-left">Bénéficiaire</th>
+                        <th className="px-5 py-3 text-left">Code</th>
+                        <th className="px-5 py-3 text-left">Statut</th>
+                        <th className="px-5 py-3 text-right">Solde</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {paginated.map((v) => (
+                        <tr key={v.id} className="hover:bg-gray-50/30 transition">
+                          <td className="px-5 py-3 font-bold text-gray-700">{v.buyer_name || '—'}</td>
+                          <td className="px-5 py-3"><span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-black">{v.code}</span></td>
+                          <td className="px-5 py-3"><StatusPill status={v.status} /></td>
+                          <td className="px-5 py-3 text-right font-black text-gray-600">{fmtDZD(v.balance)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {!loadingVouchers && totalPages > 1 && (
+                <div className="p-4 border-t border-gray-50 flex items-center justify-center gap-3">
+                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1 disabled:opacity-20"><ChevronLeft className="w-4 h-4" /></button>
+                  <span className="text-[10px] font-black text-gray-400">{currentPage} / {totalPages}</span>
+                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-1 disabled:opacity-20"><ChevronRight className="w-4 h-4" /></button>
+                </div>
               )}
             </div>
+          )}
 
-            {!loadingVouchers && totalPages > 1 && (
-              <div className="p-4 border-t border-gray-50 flex items-center justify-center gap-3">
-                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1 disabled:opacity-20"><ChevronLeft className="w-4 h-4" /></button>
-                <span className="text-[10px] font-black text-gray-400">{currentPage} / {totalPages}</span>
-                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-1 disabled:opacity-20"><ChevronRight className="w-4 h-4" /></button>
-              </div>
-            )}
-          </div>
+          {activeInfoTab === 'payments' && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+              <div className="space-y-4">
+                <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Historique des Paiements</h3>
 
-          {/* RIGHT: Historique des Paiements */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-            <div className="space-y-4">
-              <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Historique des Paiements</h3>
-
-              <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50/50">
-                <table className="w-full text-[10px]">
-                  <thead className="bg-gray-100/50 text-gray-400 font-black uppercase tracking-widest border-b border-gray-100">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Plan / Pack</th>
-                      <th className="px-4 py-2 text-center">Montant</th>
-                      <th className="px-4 py-2 text-right">Date de Validation</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 bg-white/40">
-                    {payments.length === 0 ? (
-                      <tr className="text-gray-400 italic">
-                        <td className="px-4 py-3 text-xs font-bold">{store?.plans?.name || 'N/A'}</td>
-                        <td className="px-4 py-3 text-center font-bold">
-                          {store?.plans ? fmtDZD(store.plans.total_price) : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <span className="text-rose-400 font-black italic">En attente</span>
-                        </td>
+                <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50/50">
+                  <table className="w-full text-[10px]">
+                    <thead className="bg-gray-100/50 text-gray-400 font-black uppercase tracking-widest border-b border-gray-100">
+                      <tr>
+                        <th className="px-4 py-2 text-left">Plan / Pack</th>
+                        <th className="px-4 py-2 text-center">Montant</th>
+                        <th className="px-4 py-2 text-right">Date de Validation</th>
                       </tr>
-                    ) : (
-                      payments.map((p, idx) => (
-                        <tr key={idx} className="text-gray-700 font-bold">
-                          <td className="px-4 py-3 text-xs font-black">{p.plans?.name || store?.plans?.name || 'Pack'}</td>
-                          <td className="px-4 py-3 text-center text-[#020035] font-black">
-                            {fmtDZD(p.amount)}
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 bg-white/40">
+                      {payments.length === 0 ? (
+                        <tr className="text-gray-400 italic">
+                          <td className="px-4 py-3 text-xs font-bold">{store?.plans?.name || 'N/A'}</td>
+                          <td className="px-4 py-3 text-center font-bold">
+                            {store?.plans ? fmtDZD(store.plans.total_price) : '—'}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg uppercase font-black text-[9px] whitespace-nowrap">
-                              {new Date(p.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                            <span className="text-rose-400 font-black italic">En attente</span>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      ) : (
+                        payments.map((p, idx) => (
+                          <tr key={idx} className="text-gray-700 font-bold">
+                            <td className="px-4 py-3 text-xs font-black">{p.plans?.name || store?.plans?.name || 'Pack'}</td>
+                            <td className="px-4 py-3 text-center text-[#020035] font-black">
+                              {fmtDZD(p.amount)}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg uppercase font-black text-[9px] whitespace-nowrap">
+                                {new Date(p.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {store?.payment_status !== 'paid' && (
-                  <button
-                    onClick={handleMarkAsPaid}
-                    className="w-full h-11 flex items-center justify-center gap-2 bg-[#020035] text-white rounded-xl text-xs font-bold hover:bg-black transition active:scale-95 shadow-lg shadow-gray-200"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    Valider le Paiement
-                  </button>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {store?.payment_status !== 'paid' && (
+                    <button
+                      onClick={handleMarkAsPaid}
+                      className="w-full h-11 flex items-center justify-center gap-2 bg-[#020035] text-white rounded-xl text-xs font-bold hover:bg-black transition active:scale-95 shadow-lg shadow-gray-200"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      Valider le Paiement
+                    </button>
+                  )}
 
-                {store?.payment_status === 'paid' && store?.status !== 'open' && (
-                  <button
-                    onClick={handleToggleStatus}
-                    className="col-span-full h-11 flex items-center justify-center gap-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 active:scale-95"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Activer la Boutique
-                  </button>
-                )}
+                  {store?.payment_status === 'paid' && store?.status !== 'open' && (
+                    <button
+                      onClick={handleToggleStatus}
+                      className="col-span-full h-11 flex items-center justify-center gap-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 active:scale-95"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      Activer la Boutique
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-
+          )}
         </div>
 
         {store && (
@@ -664,24 +695,6 @@ export default function AdminStoreDetailPage() {
           </div>
         )}
 
-        {/* 5. Danger Zone */}
-        <div className="mt-12 pt-8 border-t border-gray-100">
-          <div className="bg-white rounded-2xl border border-rose-100 p-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-sm font-black text-rose-600 uppercase tracking-widest mb-1">Zone de Danger</h3>
-                <p className="text-xs text-gray-400 font-medium">Une fois supprimée, cette boutique et ses données ne pourront plus être récupérées.</p>
-              </div>
-              <button
-                onClick={handleDeleteStore}
-                className="h-10 px-6 flex items-center justify-center gap-2 bg-white text-rose-600 border border-rose-200 rounded-xl text-[11px] font-bold hover:bg-rose-50 transition active:scale-95"
-              >
-                <Trash2 className="w-4 h-4" />
-                Supprimer Définitivement
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )

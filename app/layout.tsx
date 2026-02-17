@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css'
 import { Toaster } from "sonner"
+import { Inter } from 'next/font/google'
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 
 
@@ -37,7 +44,7 @@ export default function RootLayout({
       }}
     >
       <body
-        className="min-h-[100svh] antialiased selection:bg-[#020035]/20"
+        className={`${inter.className} ${inter.variable} min-h-[100svh] antialiased selection:bg-[#020035]/20`}
         style={{
           // Safe-area insets for iPhones with notches
           paddingTop: 'env(safe-area-inset-top)',

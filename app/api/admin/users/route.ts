@@ -30,7 +30,7 @@ export async function GET() {
     // 4️⃣ Fetch all stores once
     const { data: stores, error: storesErr } = await supabase
       .from('stores')
-      .select('id, temp_password, temp_password_set')
+      .select('id, temp_password, temp_password_set, logo_url')
 
     if (storesErr) throw storesErr
 
@@ -43,7 +43,7 @@ export async function GET() {
         ? cashiers.find((c) => c.user_id === r.user_id)
         : null
 
-      // store temp password for store_owner or manager or cashier
+      // store logo / temp password
       const store = stores.find((s) => s.id === r.store_id) || null
 
       return {
@@ -53,12 +53,14 @@ export async function GET() {
 
         store_id: r.store_id,
         store_name: r.store_name,
+        store_logo_url: store?.logo_url ?? null,
         store_temp_password: store?.temp_password ?? null,
         store_temp_password_set: store?.temp_password_set ?? false,
 
         created_at: r.created_at,
 
         email: authUser?.email ?? '—',
+        avatar_url: authUser?.user_metadata?.avatar_url ?? null,
         auth_created_at: authUser?.created_at ?? null,
         confirmed: !!authUser?.confirmed_at,
 

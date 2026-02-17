@@ -3,12 +3,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import {
-  Shield,
   RefreshCw,
   Search,
   Trash2,
   UserCircle2,
-  Store,
   UserCheck2,
   Mail,
   Clock,
@@ -19,12 +17,17 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'react-hot-toast'
+import Image from 'next/image'
 
 export default function AdminUsersPage() {
   const supabase = createClientComponentClient()
   const [rows, setRows] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
+  const [selectedRole, setSelectedRole] = useState<'all' | string>('all')
+  const [showFilters, setShowFilters] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize] = useState(8)
   const [groups, setGroups] = useState({
     admins: 0,
     managers: 0,
@@ -38,27 +41,17 @@ export default function AdminUsersPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to load users')
 
-      let admins: any[] = []
-      let managers: any[] = []
-      let cashiers: any[] = []
       let flat: any[] = []
-
       if (Array.isArray(data.users)) {
         flat = data.users
-        admins = flat.filter((u) => u.role === 'admin')
-        managers = flat.filter((u) => u.role === 'manager' || u.role === 'store_owner')
-        cashiers = flat.filter((u) => u.role === 'cashier')
       } else {
-        admins = data.admins || []
-        managers = data.managers || []
-        cashiers = data.cashiers || []
-        flat = [...admins, ...managers, ...cashiers]
+        flat = [...(data.admins || []), ...(data.managers || []), ...(data.cashiers || [])]
       }
 
       setGroups({
-        admins: admins.length,
-        managers: managers.length,
-        cashiers: cashiers.length
+        admins: flat.filter((u) => u.role === 'admin').length,
+        managers: flat.filter((u) => u.role === 'manager' || u.role === 'store_owner').length,
+        cashiers: flat.filter((u) => u.role === 'cashier').length
       })
       setRows(flat)
     } catch (err: any) {
@@ -73,17 +66,42 @@ export default function AdminUsersPage() {
   }, [loadUsers])
 
   const filtered = useMemo(() => {
+    let data = [...rows]
+
+    // Role filter
+    if (selectedRole !== 'all') {
+      if (selectedRole === 'managers') {
+        data = data.filter(u => u.role === 'manager' || u.role === 'store_owner')
+      } else {
+        data = data.filter(u => u.role === selectedRole)
+      }
+    }
+
+    // Search term
     const term = q.trim().toLowerCase()
-    if (!term) return rows
-    return rows.filter(
-      (u) =>
-        (u.email ?? '').toLowerCase().includes(term) ||
-        (u.role ?? '').toLowerCase().includes(term) ||
-        (u.store_name ?? '').toLowerCase().includes(term) ||
-        (u.store_temp_password ?? '').toLowerCase().includes(term) ||
-        (u.cashier_full_name ?? '').toLowerCase().includes(term)
-    )
-  }, [rows, q])
+    if (term) {
+      data = data.filter(
+        (u) =>
+          (u.email ?? '').toLowerCase().includes(term) ||
+          (u.role ?? '').toLowerCase().includes(term) ||
+          (u.store_name ?? '').toLowerCase().includes(term) ||
+          (u.store_temp_password ?? '').toLowerCase().includes(term) ||
+          (u.cashier_full_name ?? '').toLowerCase().includes(term)
+      )
+    }
+    return data
+  }, [rows, q, selectedRole])
+
+  // Pagination logic
+  const totalPages = Math.ceil(filtered.length / pageSize)
+  const paginated = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filtered.slice(start, start + pageSize)
+  }, [filtered, currentPage, pageSize])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [q, selectedRole])
 
   async function handleDelete(userId: string, email: string) {
     if (!confirm(`Supprimer ${email} ? Cette action supprimera le rôle et le compte d'authentification.`)) return
@@ -107,65 +125,99 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20 space-y-8 animate-in fade-in duration-500">
+    <div className="min-h-screen pb-20 space-y-4 animate-in fade-in duration-500">
 
-      {/* Header & Stats Section */}
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-[#020035] tracking-tight flex items-center gap-3">
-              <Shield className="h-7 w-7 text-[#ED4B00]" />
-              Gestion des Utilisateurs
-            </h1>
-            <p className="text-gray-400 text-sm font-medium">Administrateurs, Gérants et Caissiers</p>
-          </div>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-[#020035] tracking-tight">
+            Gestion des Utilisateurs
+          </h1>
+          <p className="text-gray-400 text-sm font-medium">Administrateurs, Gérants et Caissiers</p>
+        </div>
+        <button
+          onClick={loadUsers}
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-100 text-gray-400 font-bold text-xs hover:bg-gray-50 hover:text-[#020035] transition-all active:scale-95 disabled:opacity-50 shadow-sm"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Actualiser
+        </button>
+      </div>
+
+      {/* Role Tabs Row */}
+      <div className="flex items-center gap-1 border-b border-gray-100 overflow-x-auto scrollbar-hide shrink-0">
+        {[
+          { key: 'all', label: 'Tous', count: rows.length },
+          { key: 'admin', label: 'Admins', count: groups.admins },
+          { key: 'managers', label: 'Gérants', count: groups.managers },
+          { key: 'cashier', label: 'Caissiers', count: groups.cashiers },
+        ].map((rt) => (
           <button
-            onClick={loadUsers}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-100 text-gray-500 font-bold text-xs hover:bg-gray-50 hover:text-[#020035] transition-all active:scale-95 disabled:opacity-50 shadow-sm"
+            key={rt.key}
+            onClick={() => setSelectedRole(rt.key)}
+            className={`flex items-center gap-1.5 pt-4 pb-2 px-3 text-xs font-bold transition-all relative whitespace-nowrap ${selectedRole === rt.key ? 'text-[#020035]' : 'text-gray-400 hover:text-gray-600'}`}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
+            <span>{rt.label}</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${selectedRole === rt.key ? 'bg-[#020035] text-white' : 'bg-gray-100 text-gray-500'}`}>
+              {rt.count}
+            </span>
+            {selectedRole === rt.key && (
+              <motion.div layoutId="userRoleUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#020035]" />
+            )}
+          </button>
+        ))}
+
+        <div className="ml-auto pr-2 pb-2 pt-2">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`p-1.5 rounded-lg transition-all ${showFilters ? 'bg-[#020035] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+          >
+            <Search className="h-4 w-4" />
           </button>
         </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard label="Administrateurs" count={groups.admins} icon={Shield} color="indigo" />
-          <StatCard label="Gérants" count={groups.managers} icon={Store} color="emerald" />
-          <StatCard label="Caissiers" count={groups.cashiers} icon={UserCircle2} color="rose" />
-        </div>
       </div>
 
-      {/* Control Bar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="relative w-full max-w-md group">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-gray-300 group-focus-within:text-[#ED4B00] transition-colors" />
+      {/* Filter Bar */}
+      {showFilters && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl bg-white border border-gray-100 p-3 shadow-sm shrink-0"
+        >
+          <div className="flex items-center gap-3 bg-gray-50/50 rounded-xl px-4 py-2 border border-gray-100 h-11 transition-all group focus-within:bg-white focus-within:shadow-inner">
+            <Search className="h-4 w-4 text-gray-300 group-focus-within:text-[#020035] transition-colors" />
+            <input
+              value={q}
+              autoFocus
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Rechercher par email, rôle, boutique..."
+              className="flex-1 bg-transparent text-sm font-medium focus:outline-none placeholder:text-gray-300"
+            />
+            {q && (
+              <button onClick={() => setQ('')} className="p-1 rounded-full hover:bg-gray-200 text-gray-400 transition-all">
+                <RefreshCw size={12} className="rotate-45" />
+              </button>
+            )}
           </div>
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Rechercher par email, rôle, boutique..."
-            className="w-full bg-white border border-gray-100 rounded-2xl pl-11 pr-4 py-3 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-black/2 transition-all shadow-sm"
-          />
-        </div>
-      </div>
+        </motion.div>
+      )}
 
       {/* Data Section */}
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-4 text-gray-400">
-          <div className="h-10 w-10 border-4 border-gray-100 border-t-[#ED4B00] rounded-full animate-spin" />
-          <p className="font-bold text-xs uppercase tracking-widest">Chargement des comptes...</p>
+          <div className="h-10 w-10 border-4 border-gray-100 border-t-[#020035] rounded-full animate-spin" />
+          <p className="font-bold text-[10px] uppercase tracking-widest text-[#020035] bg-[#020035]/5 px-4 py-1.5 rounded-full">Chargement en cours...</p>
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="py-20 text-center bg-white rounded-3xl border border-gray-100 shadow-sm">
-          <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Aucun utilisateur trouvé</p>
+      ) : paginated.length === 0 ? (
+        <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-gray-200">
+          <UserCircle2 className="h-10 w-10 text-gray-200 mx-auto mb-3" />
+          <p className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Aucun utilisateur trouvé</p>
         </div>
       ) : (
-        <>
+        <div className="space-y-4">
           {/* Desktop Table */}
-          <div className="hidden lg:block overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-xl shadow-indigo-900/5">
+          <div className="hidden lg:block overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/50 border-b border-gray-50">
@@ -179,19 +231,23 @@ export default function AdminUsersPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 <AnimatePresence mode="popLayout">
-                  {filtered.map((u) => (
+                  {paginated.map((u) => (
                     <motion.tr
                       layout
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       key={u.user_id}
-                      className="group hover:bg-gray-50/50 transition-colors"
+                      className="group hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 flex-shrink-0 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all font-bold text-sm">
-                            {u.email?.[0].toUpperCase()}
+                          <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all font-bold text-sm overflow-hidden relative border border-gray-50">
+                            {u.avatar_url || u.store_logo_url ? (
+                              <Image src={u.avatar_url || u.store_logo_url} alt={u.email} fill className="object-cover" />
+                            ) : (
+                              u.email?.[0].toUpperCase()
+                            )}
                           </div>
                           <div>
                             <p className="text-sm font-bold text-[#020035]">{u.email}</p>
@@ -220,24 +276,24 @@ export default function AdminUsersPage() {
                       <td className="px-6 py-4">
                         {u.store_temp_password ? (
                           <div className="flex items-center gap-2 group/pass">
-                            <div className="px-2 py-1 rounded bg-amber-50 text-amber-700 font-mono text-[10px] font-bold border border-amber-100">
+                            <div className="px-3 py-1 rounded-full bg-amber-50 text-amber-700 font-mono text-[10px] font-bold border border-amber-100">
                               {u.store_temp_password}
                             </div>
                             <KeyRound size={12} className="text-amber-300 opacity-0 group-hover/pass:opacity-100 transition-opacity" />
                           </div>
                         ) : (
-                          <span className="text-[10px] text-gray-300 font-bold uppercase">Auth Standard</span>
+                          <span className="text-[10px] text-gray-300 font-bold uppercase tracking-tight bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">Standard</span>
                         )}
                       </td>
 
                       <td className="px-6 py-4">
                         {u.confirmed ? (
-                          <div className="flex items-center gap-1.5 text-emerald-600 font-black text-[10px] uppercase tracking-tighter">
+                          <div className="flex items-center gap-1.5 text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 font-black text-[10px] uppercase tracking-tighter w-fit">
                             <UserCheck2 size={12} />
                             Confirmé
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1.5 text-amber-500 font-black text-[10px] uppercase tracking-tighter">
+                          <div className="flex items-center gap-1.5 text-amber-500 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 font-black text-[10px] uppercase tracking-tighter w-fit">
                             <Clock size={12} />
                             En attente
                           </div>
@@ -246,7 +302,7 @@ export default function AdminUsersPage() {
 
                       <td className="px-6 py-4 text-right">
                         <button
-                          onClick={() => handleDelete(u.user_id, u.email)}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(u.user_id, u.email); }}
                           className="h-9 w-9 flex items-center justify-center rounded-xl text-gray-300 hover:bg-rose-50 hover:text-rose-600 transition-all opacity-0 group-hover:opacity-100"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -259,17 +315,21 @@ export default function AdminUsersPage() {
             </table>
           </div>
 
-          {/* Mobile/Tablet Cards */}
+          {/* Mobile Cards */}
           <div className="lg:hidden grid gap-4 grid-cols-1 md:grid-cols-2">
-            {filtered.map((u) => (
+            {paginated.map((u) => (
               <div
                 key={u.user_id}
                 className="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm space-y-4"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center text-[#020035] font-black text-sm border border-gray-100">
-                      {u.email?.[0].toUpperCase()}
+                    <div className="h-10 w-10 rounded-full bg-gray-50 flex items-center justify-center text-[#020035] font-black text-sm border border-gray-100 overflow-hidden relative">
+                      {u.avatar_url || u.store_logo_url ? (
+                        <Image src={u.avatar_url || u.store_logo_url} alt={u.email} fill className="object-cover" />
+                      ) : (
+                        u.email?.[0].toUpperCase()
+                      )}
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-[#020035] text-sm truncate max-w-[150px]">{u.email}</p>
@@ -299,27 +359,34 @@ export default function AdminUsersPage() {
               </div>
             ))}
           </div>
-        </>
-      )}
-    </div>
-  )
-}
 
-function StatCard({ label, count, icon: Icon, color }: { label: string; count: number; icon: any; color: 'indigo' | 'emerald' | 'rose' }) {
-  const colors = {
-    indigo: 'bg-indigo-50 text-indigo-600 ring-indigo-100',
-    emerald: 'bg-emerald-50 text-emerald-600 ring-emerald-100',
-    rose: 'bg-rose-50 text-rose-600 ring-rose-100'
-  }
-  return (
-    <div className="bg-white rounded-3xl border border-gray-100 p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ring-1 ${colors[color]}`}>
-        <Icon size={24} />
-      </div>
-      <div>
-        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{label}</p>
-        <p className="text-2xl font-black text-[#020035] leading-none">{count}</p>
-      </div>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 py-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(p => p - 1)}
+                className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-gray-100 text-gray-400 hover:text-[#020035] disabled:opacity-30 transition-all active:scale-95 shadow-sm"
+              >
+                <RefreshCw className="h-3 w-3 rotate-180" />
+              </button>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] font-black text-[#020035] bg-[#020035]/5 px-2.5 py-1 rounded-md">
+                  PAGE {currentPage} <span className="text-gray-300 mx-1">/</span> {totalPages}
+                </span>
+              </div>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(p => p + 1)}
+                className="h-8 w-8 flex items-center justify-center rounded-lg bg-white border border-gray-100 text-gray-400 hover:text-[#020035] disabled:opacity-30 transition-all active:scale-95 shadow-sm"
+              >
+                <RefreshCw className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   )
 }
@@ -335,7 +402,7 @@ function RoleBadge({ role }: { role: string }) {
   }
   const config = configs[role?.toLowerCase()] || configs.user
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tight border ${config.bg} ${config.text}`}>
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tight border ${config.bg} ${config.text}`}>
       {config.label}
     </span>
   )
