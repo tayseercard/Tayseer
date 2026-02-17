@@ -117,11 +117,11 @@ export default function PublicVoucherPage() {
         <div className="mt-4 text-center">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Solde Actuel</p>
           <p className="text-4xl sm:text-5xl font-extrabold text-[#020035]">
-            {voucher.balance.toLocaleString()} <span className="text-2xl text-gray-400 font-bold">{voucher.currency}</span>
+            {(voucher.balance ?? 0).toLocaleString()} <span className="text-2xl text-gray-400 font-bold">{voucher.currency}</span>
           </p>
 
           <p className="text-sm text-gray-500 mt-2 font-medium">
-            Montant initial : {voucher.initial_amount.toLocaleString()} {voucher.currency}
+            Montant initial : {(voucher.initial_amount ?? 0).toLocaleString()} {voucher.currency}
           </p>
         </div>
 

@@ -30,6 +30,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const [scannerOpen, setScannerOpen] = useState(false)
   const [storeName, setStoreName] = useState<string | null>(null)
+  const [storeLogo, setStoreLogo] = useState<string | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
   const { t, lang } = useLanguage()
 
   const [notifOpen, setNotifOpen] = useState(false)
@@ -54,7 +56,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
       const { data: store } = await supabase
         .from('stores')
-        .select('name, status')
+        .select('name, status, logo_url')
         .eq('owner_user_id', session.user.id)
         .maybeSingle()
 
@@ -64,6 +66,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       }
 
       setStoreName(store?.name ?? 'Store')
+      setStoreLogo(store?.logo_url ?? null)
     })()
   }, [supabase, router])
 
@@ -81,40 +84,46 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     >
       {/* ===== Desktop Top Navigation ===== */}
       <header className="hidden md:flex flex-col w-full sticky top-0 z-50 bg-[var(--c-bg)] text-[var(--c-text)] border-b border-[var(--c-bank)]/20 shadow-sm">
-        <div className="flex items-center justify-between px-6 py-3">
-          {/* Logo */}
-          <div className="relative h-8 w-28">
-            <Image alt="tayseer" src="/icon-192.png" fill className="object-contain" />
-          </div>
-          {/* === GLOBAL NOTIFICATION SYSTEM === */}
-          <Toaster position="top-right" />
-          {/* 🔔 Notification Bell stays mounted forever */}
-          <NotificationBell
-            onOpen={() => setNotifOpen(true)}
-            refreshSignal={notifRefresh}
-          />
 
-          {/* === GLOBAL NOTIFICATION PANEL === */}
-          <NotificationPanel
-            open={notifOpen}
-            onClose={() => setNotifOpen(false)}
-            onRefreshCount={() => setNotifRefresh((n) => n + 1)}
-          />
-          <NotificationModal
-            open={notifOpen}
-            onClose={() => setNotifOpen(false)}
-            onClickNotification={(n) => {
-              setNotifOpen(false)
-              if (n.link) {
-                router.push(n.link)
-              } else if (n.request_id) {
-                router.push(`/store/requests?id=${n.request_id}`)
-              } else {
-                router.push("/store/notifications")
-              }
-            }}
-          />
-          {/* Desktop Nav */}
+        {/* === GLOBAL NOTIFICATION SYSTEM === */}
+        <Toaster position="top-right" />
+        <NotificationPanel
+          open={notifOpen}
+          onClose={() => setNotifOpen(false)}
+          onRefreshCount={() => setNotifRefresh((n) => n + 1)}
+        />
+        <NotificationModal
+          open={notifOpen}
+          onClose={() => setNotifOpen(false)}
+          onClickNotification={(n) => {
+            setNotifOpen(false)
+            if (n.link) {
+              router.push(n.link)
+            } else if (n.request_id) {
+              router.push(`/store/requests?id=${n.request_id}`)
+            } else {
+              router.push("/store/notifications")
+            }
+          }}
+        />
+
+        <div className="relative flex items-center justify-center px-6 py-3">
+
+          {/* LEFT: Logo & Bell */}
+          <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-4">
+            {/* Logo */}
+            <div className="relative h-8 w-28">
+              <Image alt="tayseer" src="/icon-192.png" fill className="object-contain" />
+            </div>
+
+            {/* 🔔 Notification Bell */}
+            <NotificationBell
+              onOpen={() => setNotifOpen(true)}
+              refreshSignal={notifRefresh}
+            />
+          </div>
+
+          {/* CENTER: Desktop Nav */}
           <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             {[
               { href: '/store/dashboard', label: t.dashboard, icon: LayoutDashboard },
@@ -139,14 +148,58 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             })}
           </nav>
 
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
-            className="text-xs text-[var(--c-text)] hover:text-[var(--c-accent)] flex items-center gap-1"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
+          {/* RIGHT: Profile Dropdown */}
+          <div className="absolute right-6 top-1/2 -translate-y-1/2">
+            <div
+              className="relative"
+              onMouseEnter={() => setProfileOpen(true)}
+              onMouseLeave={() => setProfileOpen(false)}
+            >
+              <button
+                className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm transition-transform hover:scale-105 bg-white"
+              >
+                {storeLogo ? (
+                  <Image src={storeLogo} alt="Profile" fill className="object-cover rounded-full" />
+                ) : (
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
+                    <Users className="h-5 w-5" />
+                  </div>
+                )}
+              </button>
+
+              {/* Dropdown Menu */}
+              {profileOpen && (
+                <div className="absolute right-0 top-full pt-2 w-56 z-50 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
+                      <p className="text-xs text-gray-400 font-medium uppercase tracking-wider">Connecté en tant que</p>
+                      <p className="text-sm font-semibold text-gray-900 truncate">{storeName}</p>
+                    </div>
+
+                    <div className="p-1">
+                      <Link
+                        href="/store/settings"
+                        className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        onClick={() => setProfileOpen(false)}
+                      >
+                        <Settings className="h-4 w-4" />
+                        {t.settings}
+                      </Link>
+
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
         </div>
 
         {/* Breadcrumb */}

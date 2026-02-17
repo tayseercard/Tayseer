@@ -21,8 +21,10 @@ import {
   MoreHorizontal,
   Plus,
   Power,
-  Trash2
+  Trash2,
+  Store as StoreIcon
 } from 'lucide-react'
+import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
 import PrintVouchersModal from '@/components/PrintVouchersModal'
 import { Badge } from '@/components/ui/badge'
@@ -40,6 +42,7 @@ type StoreRow = {
   status: 'open' | 'inactive' | 'closed'
   created_at: string | null
   paid_at: string | null
+  logo_url?: string | null
   payment_status?: 'paid' | 'unpaid'
   plans?: {
     id: string
@@ -321,8 +324,20 @@ export default function AdminStoreDetailPage() {
 
         {/* 1. Name, Status and Actions */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-4 mb-2">
-            <h2 className="text-2xl font-black text-gray-900 leading-tight truncate">{store?.name}</h2>
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="h-16 w-16 shrink-0 rounded-full border border-gray-100 bg-gray-50 overflow-hidden relative">
+                {store?.logo_url ? (
+                  <Image src={store.logo_url} alt={store.name ?? ''} fill className="object-cover" />
+                ) : (
+                  <StoreIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-gray-300" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-2xl font-black text-gray-900 leading-tight truncate">{store?.name}</h2>
+                <p className="text-xs text-gray-400 font-medium truncate mt-0.5">ID: {store?.id.slice(0, 8)}</p>
+              </div>
+            </div>
 
             {/* ⚙️ More Actions Menu */}
             <Menu as="div" className="relative">

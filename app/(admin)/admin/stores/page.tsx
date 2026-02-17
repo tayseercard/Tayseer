@@ -3,6 +3,7 @@
 import StoresHeader from '@/components/StoresHeader'
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Store as StoreIcon,
   Search,
@@ -242,11 +243,90 @@ export default function AdminStoresPage() {
           ) : filteredData.length === 0 ? (
             <div className="py-20 text-center text-gray-400 font-medium">No stores found.</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3 pb-4">
-              {filteredData.map((s) => (
-                <StoreCard key={s.id} s={s} onDelete={handleDeleteStore} />
-              ))}
-            </div>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+                <table className="w-full text-left text-sm text-gray-500">
+                  <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-bold border-b border-gray-100">
+                    <tr>
+                      <th className="px-6 py-4 font-bold tracking-wider">Store</th>
+                      <th className="px-6 py-4 font-bold tracking-wider">Contact</th>
+                      <th className="px-6 py-4 font-bold tracking-wider">Location</th>
+                      <th className="px-6 py-4 font-bold tracking-wider text-center">Status</th>
+                      <th className="px-6 py-4 font-bold tracking-wider text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50 bg-white">
+                    {filteredData.map((s) => (
+                      <tr
+                        key={s.id}
+                        className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+                        onClick={() => window.location.href = `/admin/stores/${encodeURIComponent(s.name)}`}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 shrink-0 rounded-full border border-gray-100 bg-gray-50 overflow-hidden relative">
+                              {s.logo_url ? (
+                                <Image src={s.logo_url} alt={s.name} fill className="object-cover" />
+                              ) : (
+                                <StoreIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-bold text-gray-900">{s.name}</div>
+                              <div className="text-xs text-gray-400">Inscrit: {new Date(s.created_at).toLocaleDateString()}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-1 text-xs text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-3 w-3 text-gray-400" /> {s.email}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-3 w-3 text-gray-400" /> {s.phone || '—'}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-1">
+                            <span className="inline-flex w-fit items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                              {wilayaLabel(s.wilaya)}
+                            </span>
+                            {s.address && <span className="text-xs text-gray-400 truncate max-w-[150px]">{s.address}</span>}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex justify-center">
+                            <Badge kind={s.status === 'open' ? 'green' : s.status === 'inactive' ? 'amber' : 'rose'}>
+                              {s.status === 'open' ? 'Actif' : s.status === 'inactive' ? 'En attente' : 'Fermé'}
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => handleDeleteStore(s.id, s.name)}
+                              className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                              title="Delete store"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards (Grid) */}
+              <div className="grid grid-cols-1 gap-3 md:hidden">
+                {filteredData.map((s) => (
+                  <StoreCard key={s.id} s={s} onDelete={handleDeleteStore} />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>
