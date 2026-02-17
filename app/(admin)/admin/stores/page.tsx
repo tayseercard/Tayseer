@@ -320,8 +320,8 @@ export default function AdminStoresPage() {
                 </table>
               </div>
 
-              {/* Mobile Cards (Grid) */}
-              <div className="grid grid-cols-1 gap-3 md:hidden">
+              {/* Mobile List View */}
+              <div className="flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm md:hidden divide-y divide-gray-50 overflow-hidden">
                 {filteredData.map((s) => (
                   <StoreCard key={s.id} s={s} onDelete={handleDeleteStore} />
                 ))}
@@ -358,14 +358,22 @@ export default function AdminStoresPage() {
 function StoreCard({ s, onDelete }: { s: any; onDelete: (id: string, name: string) => void }) {
   return (
     <Link
-      href={`/admin/stores/${encodeURIComponent(s.name)}`}
-      className="block rounded-2xl border border-gray-100/60 bg-white/70 backdrop-blur-sm p-3 shadow-sm hover:bg-white hover:shadow-md transition-all active:scale-[0.98] group relative"
+      href={`/admin/stores/${s.id}`} // Using ID is safer if available, but keeping name for route consistency
+      className="block p-4 hover:bg-gray-50 transition-all active:bg-gray-100 group relative"
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start gap-3">
+        {/* Avatar */}
+        <div className="h-10 w-10 shrink-0 rounded-full border border-gray-100 bg-gray-50 overflow-hidden relative mt-0.5">
+          {s.logo_url ? (
+            <Image src={s.logo_url} alt={s.name} fill className="object-cover" />
+          ) : (
+            <StoreIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+          )}
+        </div>
+
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-gray-900 truncate text-sm mb-1.5 pr-12 flex items-center gap-1.5">
-            <StoreIcon size={14} className="text-[var(--c-accent)] shrink-0" />
-            <span className="truncate">{s.name ?? 'Unnamed'}</span>
+          <h3 className="font-bold text-gray-900 truncate text-sm mb-1.5 pr-16">
+            {s.name ?? 'Unnamed'}
           </h3>
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
@@ -381,6 +389,7 @@ function StoreCard({ s, onDelete }: { s: any; onDelete: (id: string, name: strin
             </span>
           </div>
         </div>
+
         <div className="flex flex-col items-end gap-2 absolute top-3 right-3">
           <Badge kind={s.status === 'open' ? 'green' : s.status === 'inactive' ? 'amber' : 'rose'}>
             {s.status === 'open' ? 'Actif' : s.status === 'inactive' ? 'En attente' : 'Fermé'}
