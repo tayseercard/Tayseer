@@ -46,6 +46,17 @@ export default function StoreHeader({
         {store && (
           <div className="flex-1 min-w-0 flex items-start gap-4">
 
+            {/* Store Avatar */}
+            <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-full border border-white/20 bg-white/10 overflow-hidden relative shadow-inner">
+              {store.logoUrl ? (
+                <img src={store.logoUrl} alt={store.name} className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center">
+                  <span className="text-xl font-bold text-white/20">{store.name.charAt(0)}</span>
+                </div>
+              )}
+            </div>
+
             <div className="min-w-0 flex-1 space-y-1.5 transition-all">
               <div className="flex flex-wrap items-start gap-2 pr-2">
                 <p className="text-lg font-black leading-tight text-white tracking-tight line-clamp-2 break-words">

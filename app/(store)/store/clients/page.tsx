@@ -80,19 +80,7 @@ export default function StoreClientsPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 pt-4 pb-20 space-y-3">
 
-      <header
-        className="
-          flex items-center justify-between
-          px-6 py-4
-          rounded-2xl
-          bg-[var(--c-primary)]
-          border border-[var(--c-bank)]/20
-          shadow-md backdrop-blur-lg
-          text-white
-        "
-      >
-        <h1 className="text-lg sm:text-xl font-semibold">Clients</h1>
-      </header>
+
 
       {/* 🔍 Search Row */}
       <div className="flex flex-col md:flex-row items-center justify-end gap-4">

@@ -24,7 +24,6 @@ import PasswordSettings from '@/components/store/settings/PasswordSettings'
 import LanguageSettings from '@/components/store/settings/LanguageSettings'
 import PlanSettings from '@/components/store/settings/PlanSettings'
 import StoreInfoSettings from '@/components/store/settings/StoreInfoSettings'
-import StoreHeader from '@/components/store/StoreHeader'
 
 export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(false)
@@ -91,72 +90,65 @@ export default function SettingsPage() {
 
   return (
     <div
-      className={`min-h-screen bg-[var(--bg)] flex flex-col items-center px-4 py-6 transition-all duration-300 ${lang === 'ar' ? 'rtl' : 'ltr'
+      className={`min-h-screen bg-[var(--bg)] flex flex-col px-4 py-6 transition-all duration-300 ${lang === 'ar' ? 'rtl' : 'ltr'
         }`}
     >
-      <div className="w-full max-w-md space-y-6">
+      <div className="w-full space-y-6">
         {/* === Header === */}
 
-        <header
-          className="
-            flex items-center justify-between
-            px-6 py-4
-            rounded-2xl
-            bg-[var(--c-primary)]
-            border border-[var(--c-bank)]/20
-            shadow-md backdrop-blur-lg
-            text-white
-          "
-        >
-          <h1 className="text-lg sm:text-xl font-semibold">{t.settings}</h1>
-
-        </header>
 
 
-        {/* === Account Section === */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
-          <SettingRow icon={<User className="w-5 h-5" />} label={t.profile} onClick={() => setActiveModal('profile')} />
-          <SettingRow
-            icon={<Lock />}
-            label={t.password}
-            onClick={() => setActiveModal('password')}
-          />
-          <SettingRow
-            icon={<Globe2 />}
-            label={t.language}
-            right={
-              lang === 'fr'
-                ? 'Français'
-                : lang === 'ar'
-                  ? 'العربية 🇩🇿'
-                  : 'English 🇬🇧'
-            }
-            onClick={() => setActiveModal('language')}
-          />
-          <SettingRow
-            icon={<Shield />}
-            label={t.team || 'Team Members'}
-            onClick={() => router.push('/store/team')}
-          />
-          <SettingRow
-            icon={<Package />}
-            label={t.subscription}
-            onClick={() => setActiveModal('subscription')}
-          />
 
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          {/* === Account Section === */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100 overflow-hidden">
+            <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100">
+              <h2 className="text-xs font-black uppercase tracking-widest text-gray-400">{t.account || 'Compte'}</h2>
+            </div>
+            <SettingRow icon={<User className="w-5 h-5" />} label={t.profile} onClick={() => setActiveModal('profile')} />
+            <SettingRow
+              icon={<Lock />}
+              label={t.password}
+              onClick={() => setActiveModal('password')}
+            />
+            <SettingRow
+              icon={<Globe2 />}
+              label={t.language}
+              right={
+                lang === 'fr'
+                  ? 'Français'
+                  : lang === 'ar'
+                    ? 'العربية 🇩🇿'
+                    : 'English 🇬🇧'
+              }
+              onClick={() => setActiveModal('language')}
+            />
+            <SettingRow
+              icon={<Shield />}
+              label={t.team || 'Team Members'}
+              onClick={() => router.push('/store/team')}
+            />
+            <SettingRow
+              icon={<Package />}
+              label={t.subscription}
+              onClick={() => setActiveModal('subscription')}
+            />
+          </div>
 
-        {/* === App Info Section === */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100">
-          <SettingRow icon={<Info />} label={t.aboutApp || 'About application'} />
-          <SettingRow icon={<HelpCircle />} label={t.help || 'Help / FAQ'} />
-          <SettingRow
-            icon={<LogOut className="w-5 h-5 text-rose-500" />}
-            label={t.logout || 'Se déconnecter'}
-            labelClass="text-rose-600 font-medium"
-            onClick={handleLogout}
-          />
-
+          {/* === App Info Section === */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100 overflow-hidden">
+            <div className="px-4 py-3 bg-gray-50/50 border-b border-gray-100">
+              <h2 className="text-xs font-black uppercase tracking-widest text-gray-400">{t.application || 'Application'}</h2>
+            </div>
+            <SettingRow icon={<Info />} label={t.aboutApp || 'About application'} />
+            <SettingRow icon={<HelpCircle />} label={t.help || 'Help / FAQ'} />
+            <SettingRow
+              icon={<LogOut className="w-5 h-5 text-rose-500" />}
+              label={t.logout || 'Se déconnecter'}
+              labelClass="text-rose-600 font-medium"
+              onClick={handleLogout}
+            />
+          </div>
         </div>
       </div>
 

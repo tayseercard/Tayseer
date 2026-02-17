@@ -499,128 +499,132 @@ export default function AdminStoreDetailPage() {
           </div>
         </div>
 
-        {/* 3. Historique des Paiements */}
-        <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-          <div className="space-y-4">
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Historique des Paiements</h3>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
 
-            <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50/50">
-              <table className="w-full text-[10px]">
-                <thead className="bg-gray-100/50 text-gray-400 font-black uppercase tracking-widest border-b border-gray-100">
-                  <tr>
-                    <th className="px-4 py-2 text-left">Plan / Pack</th>
-                    <th className="px-4 py-2 text-center">Montant</th>
-                    <th className="px-4 py-2 text-right">Date de Validation</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 bg-white/40">
-                  {payments.length === 0 ? (
-                    <tr className="text-gray-400 italic">
-                      <td className="px-4 py-3 text-xs font-bold">{store?.plans?.name || 'N/A'}</td>
-                      <td className="px-4 py-3 text-center font-bold">
-                        {store?.plans ? fmtDZD(store.plans.total_price) : '—'}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="text-rose-400 font-black italic">En attente</span>
-                      </td>
+          {/* LEFT: Liste des Vouchers */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
+            <div className="p-4 border-b border-gray-50 flex items-center justify-between">
+              <h3 className="font-bold text-gray-900 text-xs flex items-center gap-2">
+                <Printer className="w-4 h-4 text-gray-400" />
+                Liste des Vouchers
+              </h3>
+              <div className="relative w-48">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Filtrer..."
+                  className="w-full pl-8 pr-3 py-1.5 bg-gray-50/50 border border-gray-100 rounded-lg text-xs focus:outline-none transition"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-x-auto">
+              {loadingVouchers ? (
+                <div className="py-20 text-center text-gray-400 text-xs">Chargement...</div>
+              ) : paginated.length === 0 ? (
+                <div className="py-20 text-center text-gray-400 text-xs font-medium">Aucun résultat trouvé.</div>
+              ) : (
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-gray-50/50 text-gray-400 text-[10px] font-black uppercase">
+                      <th className="px-5 py-3 text-left">Bénéficiaire</th>
+                      <th className="px-5 py-3 text-left">Code</th>
+                      <th className="px-5 py-3 text-left">Statut</th>
+                      <th className="px-5 py-3 text-right">Solde</th>
                     </tr>
-                  ) : (
-                    payments.map((p, idx) => (
-                      <tr key={idx} className="text-gray-700 font-bold">
-                        <td className="px-4 py-3 text-xs font-black">{p.plans?.name || store?.plans?.name || 'Pack'}</td>
-                        <td className="px-4 py-3 text-center text-[#020035] font-black">
-                          {fmtDZD(p.amount)}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg uppercase font-black text-[9px] whitespace-nowrap">
-                            {new Date(p.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </td>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {paginated.map((v) => (
+                      <tr key={v.id} className="hover:bg-gray-50/30 transition">
+                        <td className="px-5 py-3 font-bold text-gray-700">{v.buyer_name || '—'}</td>
+                        <td className="px-5 py-3"><span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-black">{v.code}</span></td>
+                        <td className="px-5 py-3"><StatusPill status={v.status} /></td>
+                        <td className="px-5 py-3 text-right font-black text-gray-600">{fmtDZD(v.balance)}</td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {store?.payment_status !== 'paid' && (
-                <button
-                  onClick={handleMarkAsPaid}
-                  className="w-full h-11 flex items-center justify-center gap-2 bg-[#020035] text-white rounded-xl text-xs font-bold hover:bg-black transition active:scale-95 shadow-lg shadow-gray-200"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  Valider le Paiement
-                </button>
-              )}
-
-              {store?.payment_status === 'paid' && store?.status !== 'open' && (
-                <button
-                  onClick={handleToggleStatus}
-                  className="col-span-full h-11 flex items-center justify-center gap-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 active:scale-95"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Activer la Boutique
-                </button>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* 4. Liste des Vouchers */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col min-h-[400px]">
-          <div className="p-4 border-b border-gray-50 flex items-center justify-between">
-            <h3 className="font-bold text-gray-900 text-xs flex items-center gap-2">
-              <Printer className="w-4 h-4 text-gray-400" />
-              Liste des Vouchers
-            </h3>
-            <div className="relative w-48">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Filtrer..."
-                className="w-full pl-8 pr-3 py-1.5 bg-gray-50/50 border border-gray-100 rounded-lg text-xs focus:outline-none transition"
-              />
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-x-auto">
-            {loadingVouchers ? (
-              <div className="py-20 text-center text-gray-400 text-xs">Chargement...</div>
-            ) : paginated.length === 0 ? (
-              <div className="py-20 text-center text-gray-400 text-xs font-medium">Aucun résultat trouvé.</div>
-            ) : (
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="bg-gray-50/50 text-gray-400 text-[10px] font-black uppercase">
-                    <th className="px-5 py-3 text-left">Bénéficiaire</th>
-                    <th className="px-5 py-3 text-left">Code</th>
-                    <th className="px-5 py-3 text-left">Statut</th>
-                    <th className="px-5 py-3 text-right">Solde</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {paginated.map((v) => (
-                    <tr key={v.id} className="hover:bg-gray-50/30 transition">
-                      <td className="px-5 py-3 font-bold text-gray-700">{v.buyer_name || '—'}</td>
-                      <td className="px-5 py-3"><span className="font-mono text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-black">{v.code}</span></td>
-                      <td className="px-5 py-3"><StatusPill status={v.status} /></td>
-                      <td className="px-5 py-3 text-right font-black text-gray-600">{fmtDZD(v.balance)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {!loadingVouchers && totalPages > 1 && (
+              <div className="p-4 border-t border-gray-50 flex items-center justify-center gap-3">
+                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1 disabled:opacity-20"><ChevronLeft className="w-4 h-4" /></button>
+                <span className="text-[10px] font-black text-gray-400">{currentPage} / {totalPages}</span>
+                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-1 disabled:opacity-20"><ChevronRight className="w-4 h-4" /></button>
+              </div>
             )}
           </div>
 
-          {!loadingVouchers && totalPages > 1 && (
-            <div className="p-4 border-t border-gray-50 flex items-center justify-center gap-3">
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="p-1 disabled:opacity-20"><ChevronLeft className="w-4 h-4" /></button>
-              <span className="text-[10px] font-black text-gray-400">{currentPage} / {totalPages}</span>
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="p-1 disabled:opacity-20"><ChevronRight className="w-4 h-4" /></button>
+          {/* RIGHT: Historique des Paiements */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+            <div className="space-y-4">
+              <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Historique des Paiements</h3>
+
+              <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50/50">
+                <table className="w-full text-[10px]">
+                  <thead className="bg-gray-100/50 text-gray-400 font-black uppercase tracking-widest border-b border-gray-100">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Plan / Pack</th>
+                      <th className="px-4 py-2 text-center">Montant</th>
+                      <th className="px-4 py-2 text-right">Date de Validation</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 bg-white/40">
+                    {payments.length === 0 ? (
+                      <tr className="text-gray-400 italic">
+                        <td className="px-4 py-3 text-xs font-bold">{store?.plans?.name || 'N/A'}</td>
+                        <td className="px-4 py-3 text-center font-bold">
+                          {store?.plans ? fmtDZD(store.plans.total_price) : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-rose-400 font-black italic">En attente</span>
+                        </td>
+                      </tr>
+                    ) : (
+                      payments.map((p, idx) => (
+                        <tr key={idx} className="text-gray-700 font-bold">
+                          <td className="px-4 py-3 text-xs font-black">{p.plans?.name || store?.plans?.name || 'Pack'}</td>
+                          <td className="px-4 py-3 text-center text-[#020035] font-black">
+                            {fmtDZD(p.amount)}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg uppercase font-black text-[9px] whitespace-nowrap">
+                              {new Date(p.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {store?.payment_status !== 'paid' && (
+                  <button
+                    onClick={handleMarkAsPaid}
+                    className="w-full h-11 flex items-center justify-center gap-2 bg-[#020035] text-white rounded-xl text-xs font-bold hover:bg-black transition active:scale-95 shadow-lg shadow-gray-200"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    Valider le Paiement
+                  </button>
+                )}
+
+                {store?.payment_status === 'paid' && store?.status !== 'open' && (
+                  <button
+                    onClick={handleToggleStatus}
+                    className="col-span-full h-11 flex items-center justify-center gap-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 active:scale-95"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Activer la Boutique
+                  </button>
+                )}
+              </div>
             </div>
-          )}
+          </div>
+
         </div>
 
         {store && (

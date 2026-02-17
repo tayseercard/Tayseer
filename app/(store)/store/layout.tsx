@@ -129,12 +129,12 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           {/* CENTER: Desktop Nav */}
           <nav className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             {[
-              { href: '/store/dashboard', label: t.dashboard, icon: LayoutDashboard },
+              { href: '/store', label: t.dashboard, icon: LayoutDashboard },
               { href: '/store/vouchers', label: t.vouchers, icon: QrCode },
               { href: '/store/clients', label: t.clients, icon: Users },
               { href: '/store/settings', label: t.settings, icon: Settings },
             ].map(({ href, label, icon: Icon }) => {
-              const active = pathname?.startsWith(href)
+              const active = href === '/store' ? pathname === '/store' : pathname?.startsWith(href)
               return (
                 <Link
                   key={href}
@@ -159,15 +159,20 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               onMouseLeave={() => setProfileOpen(false)}
             >
               <button
-                className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 shadow-sm transition-transform hover:scale-105 bg-white"
+                className="flex items-center gap-3 px-3 py-1.5 rounded-full border border-gray-200 shadow-sm transition-all hover:bg-gray-50 bg-white group"
               >
-                {storeLogo ? (
-                  <Image src={storeLogo} alt="Profile" fill className="object-cover rounded-full" />
-                ) : (
-                  <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
-                    <Users className="h-5 w-5" />
-                  </div>
-                )}
+                <span className="text-sm font-semibold text-gray-700 hidden md:inline-block max-w-[150px] truncate">
+                  {storeName}
+                </span>
+                <div className="w-8 h-8 rounded-full overflow-hidden relative border border-gray-100">
+                  {storeLogo ? (
+                    <Image src={storeLogo} alt="Profile" fill className="object-cover rounded-full" />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
+                      <Users className="h-4 w-4" />
+                    </div>
+                  )}
+                </div>
               </button>
 
               {/* Dropdown Menu */}
@@ -245,7 +250,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       >
         {/* Buttons container (lifted upward) */}
         <div className="flex flex-1 justify-around items-end pb-4">
-          <NavLink href="/store/dashboard" icon={LayoutDashboard} label={t.home} />
+          <NavLink href="/store" icon={LayoutDashboard} label={t.home} />
           <NavLink href="/store/clients" icon={Users} label={t.clients} />
 
           {/* Floating Scan Button */}

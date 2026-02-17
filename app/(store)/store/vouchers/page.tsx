@@ -2,7 +2,7 @@
 
 import StoreHeader from '@/components/store/StoreHeader'
 
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState, useRef } from 'react'
 import { Menu, Combobox } from '@headlessui/react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { v4 as uuidv4 } from 'uuid'
@@ -20,6 +20,9 @@ import {
   ChevronDown,
   Filter,
   ListChecks,
+  MoreVertical,
+  Printer,
+  ShoppingBag,
 } from 'lucide-react'
 import StoreVoucherHeader from '@/components/store/StoreVoucherHeader'
 import PrintVouchersModal from '@/components/PrintVouchersModal'
@@ -292,15 +295,25 @@ function StoreVouchersInner() {
   const getStoreName = (id: string) => stores.find((s) => s.id === id)?.name ?? '—'
 
 
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [showMenu, setShowMenu] = useState(false)
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuRef]);
+
   /* -------- UI -------- */
   return (
     <div className={`min-h-screen flex flex-col bg-gradient-to-br from-white via-gray-50 to-emerald-50 text-gray-900 px-4 pt-4 pb-6 space-y-3 ${lang === 'ar' ? 'rtl' : 'ltr'}`}>
-
-      <StoreVoucherHeader
-        onPrint={() => setPrintOpen(true)}
-        onToggleSearch={() => setShowSearch(!showSearch)}
-        onBuyQR={() => setBuyOpen(true)}
-      />
 
       {/* ===== Totals Section (Financial) ===== */}
       {!loading && rows.length > 0 && (
@@ -370,7 +383,8 @@ function StoreVouchersInner() {
           ))}
         </div>
 
-        <div className="shrink-0 pr-1 pb-1 pt-2">
+        <div className="shrink-0 flex items-center gap-1 pr-1 pb-1 pt-2">
+          {/* 🔍 Search Toggle */}
           <button
             onClick={() => setShowSearch(!showSearch)}
             className={`p-2 rounded-lg transition-all ${showSearch ? 'bg-[var(--c-accent)] text-white shadow-sm' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
@@ -378,6 +392,41 @@ function StoreVouchersInner() {
           >
             <Search className="h-4 w-4" />
           </button>
+
+          {/* 3 DOTS MENU */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+
+            {showMenu && (
+              <div className="absolute right-0 top-10 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 overflow-hidden animate-fade-in text-gray-800 z-50">
+                <button
+                  onClick={() => {
+                    setShowMenu(false)
+                    setPrintOpen(true)
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 transition border-b border-gray-50"
+                >
+                  <Printer className="w-4 h-4 text-gray-500" />
+                  <span>Imprimer QR</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false)
+                    setBuyOpen(true)
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 transition"
+                >
+                  <ShoppingBag className="w-4 h-4 text-gray-500" />
+                  <span>Acheter des QRs</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

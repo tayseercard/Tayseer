@@ -17,6 +17,7 @@ import CountUp from 'react-countup'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import NotificationBell from '@/components/NotificationBell'
 import NotificationModal from '@/components/NotificationModal'
+import NotificationPanel from '@/components/NotificationPanel'
 
 export default function StoreDashboardPage() {
   const { t } = useLanguage()
@@ -25,12 +26,19 @@ export default function StoreDashboardPage() {
   const [notifRefresh, setNotifRefresh] = useState(0)
   const [notifOpen, setNotifOpen] = useState(false)
   const router = useRouter()
-  const [store, setStore] = useState<{ name: string; email: string; role: string; logoUrl?: string } | null>(null)
+  const [store, setStore] = useState<{
+    name: string;
+    email: string;
+    role: string;
+    logoUrl?: string;
+    phone?: string;
+    address?: string;
+  } | null>(null)
   const [voucherStats, setVoucherStats] = useState({
     total: 0,
     active: 0,
     redeemed: 0,
-    blank:0,
+    blank: 0,
     totalValue: 0,
     redeemedValue: 0,
   })
@@ -38,15 +46,15 @@ export default function StoreDashboardPage() {
     totalClients: 0,
   })
 
-function closeNotifModal() {
-  setNotifOpen(false)
-  setNotifRefresh((x) => x + 1)   // 🔥 triggers refresh
-}
+  function closeNotifModal() {
+    setNotifOpen(false)
+    setNotifRefresh((x) => x + 1)   // 🔥 triggers refresh
+  }
 
-const [latestRequests, setLatestRequests] = useState<any[]>([])
+  const [latestRequests, setLatestRequests] = useState<any[]>([])
 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       setLoading(true)
       const {
         data: { session },
@@ -56,15 +64,17 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
 
       const { data: storeRow } = await supabase
         .from('stores')
-        .select('name, email, logo_url')
+        .select('name, email, logo_url, phone, address')
         .eq('owner_user_id', user.id)
         .maybeSingle()
 
       setStore({
         name: storeRow?.name || 'Store',
         email: storeRow?.email || user.email || '',
-        role: 'Store Owner',
+        role: 'Propriétaire',
         logoUrl: storeRow?.logo_url || '/icon-192.png',
+        phone: storeRow?.phone || '',
+        address: storeRow?.address || '',
       })
 
       const { data: roleRow } = await supabase
@@ -79,15 +89,15 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
         return
       }
       // Fetch latest 5 requests
-    const { data } = await supabase
-      .from("voucher_requests")
-      .select("*")
-      .eq("store_id", storeId)
-      .order("created_at", { ascending: false })
-      .limit(5)
+      const { data } = await supabase
+        .from("voucher_requests")
+        .select("*")
+        .eq("store_id", storeId)
+        .order("created_at", { ascending: false })
+        .limit(5)
 
-    setLatestRequests(data || [])
-  
+      setLatestRequests(data || [])
+
 
       const { data: vouchersData } = await supabase
         .from('vouchers')
@@ -119,32 +129,46 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
       setLoading(false)
     })()
   }, [supabase])
-  
+
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--c-text)] px-4 sm:px-6 md:px-10 py-8 space-y-8">
-      <StoreHeader 
-      rightContent={
-          <NotificationBell 
-          onOpen={() => 
-            setNotifOpen(true)}
-          refreshSignal={notifRefresh}/>
-        } 
-        
+      <StoreHeader
+
+        rightContent={
+          <NotificationBell
+            onOpen={() =>
+              setNotifOpen(true)}
+            refreshSignal={notifRefresh} />
+        }
         store={store || { name: 'Loading…', email: '', role: '', logoUrl: '' }} />
 
 
-         {/* ✅ Notification Modal goes here */}
-    <NotificationModal
-      open={notifOpen}
-      onClose={closeNotifModal}
-      onClickNotification={(notif) => {
-        if (notif.request_id) {
-          router.push(`/store/requests?highlight=${notif.request_id}`)
-        }
-        setNotifOpen(false)
-      }}
-    />
+      {/* ✅ Notification Modal goes here */}
+      <NotificationModal
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        onClickNotification={(n) => {
+          //setNotifOpen(false)
+
+          // If the notif is linked to a voucher request
+          if (n.request_id) {
+            router.push(`/store/requests?id=${n.request_id}`)
+            return
+          }
+
+          // Fallback
+          router.push("/store/requests")
+        }}
+
+      />
+
+      <NotificationPanel
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        onRefreshCount={() => setNotifRefresh((n) => n + 1)}
+      />
+
       {loading ? (
         <div className="py-20 text-center text-[var(--c-text)]/50 text-sm animate-pulse">
           {t.loadingDashboard}
@@ -158,99 +182,62 @@ const [latestRequests, setLatestRequests] = useState<any[]>([])
             transition={{ delay: 0.1 }}
             className="space-y-10"
           >
-          {/* === Voucher Overview === */}
-          <div>
-            <SectionTitle
-              icon={<Gift />}
-              title={t.voucherOverview}
-              href="/store/vouchers"
-            />
+            {/* === Dashboard Grid === */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
 
-            {/* ONE ROW ALWAYS — SCROLLABLE */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-
-              {/* Total vouchers */}
-              <Link
-                href="/store/vouchers"
-                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
-              >
-                <DashboardStatCard title={t.total} value={voucherStats.total} />
-              </Link>
-
-              {/* Active vouchers */}
-              <Link
-                href="/store/vouchers?status=active"
-                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
-              >
-                <DashboardStatCard
-                  title={t.active}
-                  value={voucherStats.active}
-                  highlight
-                />
-              </Link>
-
-              {/* Redeemed vouchers */}
-              <Link
-                href="/store/vouchers?status=redeemed"
-                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
-              >
-                <DashboardStatCard title={t.redeemed} value={voucherStats.redeemed} />
-              </Link>
-               {/* blank vouchers */}
-              <Link
-                href="/store/vouchers?status=blank"
-                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
-              >
-                <DashboardStatCard title={t.blank} value={voucherStats.blank} />
-              </Link>
-            </div>
-          </div>
-
-
-
-            {/* === Financial Summary === */}
-            <SectionTitle icon={<CreditCard />} title={t.financialSummary} />
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <DashboardStatCard title={t.totalValue} value={voucherStats.totalValue} suffix=" DA" />
-              <DashboardStatCard title={t.redeemedValue} value={voucherStats.redeemedValue} suffix=" DA" />
-            </div>
-
-
-            <div>
-{/* Latest Requests */}
-              <div>
-                 {/* Total vouchers */}
+              {/* LEFT COLUMN: Voucher Operations */}
+              <div className="space-y-10">
+                {/* Voucher Overview */}
+                <div>
                   <SectionTitle
-              icon={<Gift />}
-              title='Latest requests'
-              href="/store/requests"
-            />
-              <Link
-                href="/store/requests"
-                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
-              >
-            <DashboardRequestCard latestRequests={latestRequests}  />
-              </Link>
-           
-             </div>
+                    icon={<Gift />}
+                    title={t.voucherOverview}
+                    href="/store/vouchers"
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Link href="/store/vouchers" className="block transition hover:-translate-y-0.5">
+                      <DashboardStatCard title={t.total} value={voucherStats.total} />
+                    </Link>
+                    <Link href="/store/vouchers?status=active" className="block transition hover:-translate-y-0.5">
+                      <DashboardStatCard title={t.active} value={voucherStats.active} highlight />
+                    </Link>
+                    <Link href="/store/vouchers?status=redeemed" className="block transition hover:-translate-y-0.5">
+                      <DashboardStatCard title={t.redeemed} value={voucherStats.redeemed} />
+                    </Link>
+                    <Link href="/store/vouchers?status=blank" className="block transition hover:-translate-y-0.5">
+                      <DashboardStatCard title={t.blank} value={voucherStats.blank} />
+                    </Link>
+                  </div>
+                </div>
 
+                {/* Latest Requests */}
+                <div>
+                  <SectionTitle
+                    icon={<Gift />}
+                    title="Latest Requests"
+                    href="/store/requests"
+                  />
+                  <Link href="/store/requests" className="block transition hover:-translate-y-0.5">
+                    <DashboardRequestCard latestRequests={latestRequests} />
+                  </Link>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: Business & Financials */}
+              {/* Financial Summary & Business Info */}
+              <div>
+                <SectionTitle icon={<CreditCard />} title={t.financialSummary} />
+                <div className="grid grid-cols-2 gap-4">
+                  <DashboardStatCard title={t.totalValue} value={voucherStats.totalValue} suffix=" DA" />
+                  <DashboardStatCard title={t.redeemedValue} value={voucherStats.redeemedValue} suffix=" DA" />
+
+                  {/* Client Overview - Now aligned with the second row of vouchers */}
+                  <Link href="/store/clients" className="block transition hover:-translate-y-0.5">
+                    <DashboardStatCard title={t.totalClients} value={clientStats.totalClients} />
+                  </Link>
+                </div>
+              </div>
             </div>
-              
-            {/* === Clients === */}
-            <SectionTitle icon={<Users />} 
-            title={t.clientOverview} href="/store/clients" />
-            {/* Total vouchers */}
-              <Link
-                href="/store/clients"
-                className="min-w-[140px] block transition hover:-translate-y-0.5 hover:shadow-md rounded-2xl"
-              >
-              <DashboardStatCard title={t.totalClients} value={clientStats.totalClients} />
-              </Link>
-
-              
-
-
-            
           </motion.div>
         </AnimatePresence>
       )}
@@ -344,6 +331,3 @@ function DashboardRequestCard({
     </div>
   )
 }
-
-
-
