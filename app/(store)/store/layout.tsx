@@ -40,9 +40,12 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   async function handleLogout() {
     try {
       await supabase.auth.signOut()
-      router.replace('/auth/login')
+      await fetch('/api/auth/logout', { method: 'POST' })
+      localStorage.clear()
     } catch (err) {
       console.error('Logout failed:', err)
+    } finally {
+      window.location.href = '/auth/login'
     }
   }
 
