@@ -30,10 +30,28 @@ export async function POST(req: Request) {
         redirectTo: redirectUrl,
       })
 
-    if (inviteError) throw inviteError
+    let userId = inviteData?.user?.id
 
-    const userId = inviteData.user?.id
-    if (!userId) throw new Error('❌ Failed to create or invite user.')
+    if (inviteError) {
+      if (
+        inviteError.message?.toLowerCase().includes('already') ||
+        inviteError.message?.toLowerCase().includes('exists')
+      ) {
+        // User already exists in auth.users! We need to find their ID to re-link them.
+        const { data: { users } } = await supabaseAdmin.auth.admin.listUsers()
+        const existingUser = users.find((u: any) => u.email === email)
+
+        if (existingUser) {
+          userId = existingUser.id
+        } else {
+          throw new Error('User is registered, but could not be located in directory.')
+        }
+      } else {
+        throw inviteError
+      }
+    }
+
+    if (!userId) throw new Error('❌ Failed to create or find existing user.')
 
     // 2️⃣ Assign role in me_effective_role
     const { error: roleError } = await supabaseAdmin.from('me_effective_role').upsert([
@@ -61,8 +79,8 @@ export async function POST(req: Request) {
     // ✅ Success response
     return NextResponse.json({
       success: true,
-      message: `✅ Invitation sent to ${email}`,
-      user: inviteData.user,
+      message: `✅ Cashier ${email} successfully added to the store!`,
+      user: { id: userId, email },
     })
   } catch (err: any) {
     console.error('Add cashier error:', err)

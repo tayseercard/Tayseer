@@ -20,7 +20,7 @@ export default function PasswordSettings({ t }: { t: Record<string, string> }) {
   async function handlePasswordChange() {
     setMessage(null)
 
-    if (!currentPassword || !newPassword || !confirmPassword)
+    if (!newPassword || !confirmPassword)
       return setMessage('⚠️ Please fill in all fields.')
     if (newPassword.length < 6)
       return setMessage('⚠️ New password must be at least 6 characters.')
@@ -34,13 +34,6 @@ export default function PasswordSettings({ t }: { t: Record<string, string> }) {
         error: userError,
       } = await supabase.auth.getUser()
       if (userError || !user) throw new Error('User not found.')
-
-      // 🔑 Step 1: Verify current password
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email!,
-        password: currentPassword,
-      })
-      if (signInError) throw new Error('❌ Current password is incorrect.')
 
       // 🔁 Step 2: Update new password
       const { error: updateError } = await supabase.auth.updateUser({
@@ -62,25 +55,6 @@ export default function PasswordSettings({ t }: { t: Record<string, string> }) {
 
   return (
     <div className="space-y-3 text-sm">
-      {/* Current Password */}
-      <label className="block relative">
-        <span className="text-gray-600">Current Password</span>
-        <input
-          type={showCurrent ? 'text' : 'password'}
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          className="mt-1 w-full border rounded-md p-2 pr-10 text-sm"
-          placeholder="••••••••"
-        />
-        <button
-          type="button"
-          onClick={() => setShowCurrent(!showCurrent)}
-          className="absolute right-2 top-[30px] text-gray-500 hover:text-gray-700"
-        >
-          {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-        </button>
-      </label>
-
       {/* New Password */}
       <label className="block relative">
         <span className="text-gray-600">New Password</span>
@@ -121,9 +95,8 @@ export default function PasswordSettings({ t }: { t: Record<string, string> }) {
 
       {message && (
         <p
-          className={`text-xs text-center mt-2 ${
-            message.startsWith('✅') ? 'text-emerald-600' : 'text-rose-600'
-          }`}
+          className={`text-xs text-center mt-2 ${message.startsWith('✅') ? 'text-emerald-600' : 'text-rose-600'
+            }`}
         >
           {message}
         </p>
@@ -133,10 +106,9 @@ export default function PasswordSettings({ t }: { t: Record<string, string> }) {
         onClick={handlePasswordChange}
         disabled={loading}
         className={`w-full mt-2 rounded-md py-2 text-sm font-medium transition
-          ${
-            loading
-              ? 'bg-gray-400 cursor-not-allowed text-white'
-              : 'bg-[var(--c-accent)] text-white hover:bg-[var(--c-accent)]/90'
+          ${loading
+            ? 'bg-gray-400 cursor-not-allowed text-white'
+            : 'bg-[var(--c-accent)] text-white hover:bg-[var(--c-accent)]/90'
           }
         `}
       >

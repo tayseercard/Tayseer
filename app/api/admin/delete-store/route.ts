@@ -9,21 +9,6 @@ export async function POST(req: Request) {
     if (!store_id)
       return NextResponse.json({ error: 'Missing store_id' }, { status: 400 })
 
-    // Check if store has vouchers (prevent accidental deletion of stores with data)
-    const { count, error: countError } = await supabaseAdmin
-      .from('vouchers')
-      .select('*', { count: 'exact', head: true })
-      .eq('store_id', store_id)
-
-    if (countError) throw countError
-
-    if (count && count > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete store with existing vouchers' },
-        { status: 400 }
-      )
-    }
-
     // Get store owner before deleting the store
     const { data: store, error: fetchError } = await supabaseAdmin
       .from('stores')

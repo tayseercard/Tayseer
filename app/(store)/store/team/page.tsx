@@ -187,14 +187,25 @@ export default function StoreTeamPage() {
               className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm"
             >
               {/* Name */}
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-semibold text-gray-800 truncate">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-semibold text-gray-800 truncate pr-2 mt-0.5">
                   {m.full_name || m.email}
                 </h3>
 
-                <Badge>
-                  {m.role}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge>
+                    {m.role}
+                  </Badge>
+                  {role === 'store_owner' && m.role !== 'store_owner' && (
+                    <button
+                      onClick={() => removeMember(m)}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      title="Remove Member"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Email */}
@@ -203,22 +214,9 @@ export default function StoreTeamPage() {
               </p>
 
               {/* Joined date */}
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="text-xs text-gray-500 mb-1">
                 Joined: {new Date(m.created_at).toLocaleDateString()}
               </p>
-
-              {/* Remove button */}
-              {role === 'store_owner' && m.role !== 'store_owner' && (
-                <Button
-                  onClick={() => removeMember(m)}
-                  variant="destructive"
-                  size="sm"
-                  className="w-full flex items-center justify-center"
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Remove
-                </Button>
-              )}
             </div>
           ))}
         </div>

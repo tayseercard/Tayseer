@@ -14,11 +14,14 @@ import {
   Instagram,
   Mail,
   CheckCircle2,
-  TrendingUp,
   CreditCard,
   Menu,
   ChevronRight,
-  Star
+  Star,
+  Twitter,
+  Linkedin,
+  Globe,
+  TrendingUp
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
@@ -53,9 +56,27 @@ const defaultPlans = [
 
 export default function TayseerLanding() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [termsOpen, setTermsOpen] = useState(false)
+  const [termsContent, setTermsContent] = useState('')
   const [plans, setPlans] = useState<any[]>([])
+  const [socials, setSocials] = useState<any>({})
   const [loading, setLoading] = useState(true)
   const supabase = createClientComponentClient()
+
+  async function handleOpenTerms() {
+    setTermsOpen(true)
+    setTermsContent('Chargement...')
+    try {
+      const { data, error } = await supabase.storage.from('logos').download('terms.txt')
+      if (data) {
+        setTermsContent(await data.text())
+      } else {
+        setTermsContent('Aucune condition d\'utilisation n\'est actuellement disponible.')
+      }
+    } catch {
+      setTermsContent('Erreur lors du chargement.')
+    }
+  }
 
   useEffect(() => {
     async function loadPlans() {
@@ -74,7 +95,21 @@ export default function TayseerLanding() {
         setLoading(false)
       }
     }
+    async function loadSocials() {
+      try {
+        const { data, error } = await supabase.storage.from('logos').download('socials.json')
+        if (data) {
+          const text = await data.text()
+          if (text) {
+            setSocials(JSON.parse(text))
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load socials", err)
+      }
+    }
     loadPlans()
+    loadSocials()
   }, [])
 
   return (
@@ -126,6 +161,38 @@ export default function TayseerLanding() {
           <div className="flex flex-col gap-4 mt-8 w-full px-12">
             <Link href="/auth/signup" onClick={() => setMenuOpen(false)} className="w-full bg-white text-[#020035] py-4 rounded-xl text-center font-bold">Inscrivez-vous</Link>
             <Link href="/auth/login" onClick={() => setMenuOpen(false)} className="w-full border border-white/20 py-4 rounded-xl text-center">Connexion</Link>
+          </div>
+        </div>
+      )}
+
+      {/* Terms Overlay */}
+      {termsOpen && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          style={{ pointerEvents: 'auto' }}
+          onClick={() => setTermsOpen(false)}
+        >
+          <div
+            className="bg-white text-slate-800 rounded-3xl w-full max-w-2xl flex flex-col shadow-2xl relative"
+            style={{ maxHeight: '90vh', pointerEvents: 'auto' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50 shrink-0 rounded-t-3xl">
+              <h2 className="text-xl font-black text-[#020035]">Conditions d'utilisation</h2>
+              <button onClick={() => setTermsOpen(false)} className="p-2 bg-white rounded-full shadow-sm hover:bg-slate-50 border border-slate-100 transition">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div
+              className="p-6 sm:p-8 text-slate-600 bg-white"
+              style={{ overflowY: 'auto', flex: '1 1 auto', overscrollBehavior: 'contain' }}
+            >
+              <div className="whitespace-pre-wrap font-medium leading-relaxed pb-4">
+                {termsContent}
+              </div>
+            </div>
+
           </div>
         </div>
       )}
@@ -442,9 +509,20 @@ export default function TayseerLanding() {
                 La plateforme de gestion de vouchers nouvelle génération. Simple, puissante et conçue pour l'Algérie.
               </p>
               <div className="flex gap-4">
-                <SocialIcon icon={<Facebook className="w-5 h-5" />} />
-                <SocialIcon icon={<Instagram className="w-5 h-5" />} />
-                <SocialIcon icon={<Mail className="w-5 h-5" />} />
+                {socials.facebook && <SocialIcon href={socials.facebook} icon={<Facebook className="w-5 h-5" />} />}
+                {socials.instagram && <SocialIcon href={socials.instagram} icon={<Instagram className="w-5 h-5" />} />}
+                {socials.twitter && <SocialIcon href={socials.twitter} icon={<Twitter className="w-5 h-5" />} />}
+                {socials.linkedin && <SocialIcon href={socials.linkedin} icon={<Linkedin className="w-5 h-5" />} />}
+                {socials.website && <SocialIcon href={socials.website} icon={<Globe className="w-5 h-5" />} />}
+
+                {/* Fallbacks if none are set */}
+                {!socials.facebook && !socials.instagram && !socials.twitter && !socials.linkedin && !socials.website && (
+                  <>
+                    <SocialIcon href="#" icon={<Facebook className="w-5 h-5" />} />
+                    <SocialIcon href="#" icon={<Instagram className="w-5 h-5" />} />
+                  </>
+                )}
+                <SocialIcon href="mailto:contact@tayseer.dz" icon={<Mail className="w-5 h-5" />} />
               </div>
             </div>
 
@@ -460,10 +538,7 @@ export default function TayseerLanding() {
             <div>
               <h4 className="text-white font-bold mb-6">Ressources</h4>
               <ul className="space-y-4 text-sm">
-                <li><a href="#" className="hover:text-white transition">Centre d'aide</a></li>
-                <li><a href="#" className="hover:text-white transition">Documentation API</a></li>
-                <li><a href="#" className="hover:text-white transition">Conditions d'utilisation</a></li>
-                <li><a href="#" className="hover:text-white transition">Confidentialité</a></li>
+                <li><button onClick={(e) => { e.preventDefault(); handleOpenTerms(); }} className="hover:text-white transition">Conditions d'utilisation</button></li>
               </ul>
             </div>
 
@@ -504,9 +579,9 @@ function FeatureCard({ icon, title, desc }: { icon: React.ReactNode, title: stri
   )
 }
 
-function SocialIcon({ icon }: { icon: React.ReactNode }) {
+function SocialIcon({ icon, href = '#' }: { icon: React.ReactNode, href?: string }) {
   return (
-    <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/20 hover:text-white transition">
+    <a href={href} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/20 hover:text-white transition">
       {icon}
     </a>
   )

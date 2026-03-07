@@ -25,11 +25,13 @@ import LanguageSettings from '@/components/admin/settings/LanguageSettings'
 import RolesSettings from '@/components/admin/settings/RolesSettings'
 import PacksSettings from '@/components/admin/settings/PacksSettings'
 import AccountingSettings from '@/components/admin/settings/AccountingSettings'
+import TermsSettings from '@/components/admin/settings/TermsSettings'
+import SocialSettings from '@/components/admin/settings/SocialSettings'
 
 export default function SettingsPage() {
   const [darkMode, setDarkMode] = useState(false)
   const [activeModal, setActiveModal] = useState<
-    'profile' | 'password' | 'language' | 'roles' | 'accounting' | null
+    'profile' | 'password' | 'language' | 'roles' | 'accounting' | 'terms' | 'socials' | null
   >(null)
 
   const supabase = createClientComponentClient()
@@ -143,7 +145,13 @@ export default function SettingsPage() {
 
             <SettingRow
               icon={<Info />}
-              label={t.aboutApp || 'About application'}
+              label={t.termsAndConditions || 'Terms & Conditions'}
+              onClick={() => setActiveModal('terms')}
+            />
+            <SettingRow
+              icon={<Globe2 />}
+              label="Réseaux Sociaux"
+              onClick={() => setActiveModal('socials')}
             />
             <SettingRow
               icon={<HelpCircle />}
@@ -186,6 +194,8 @@ export default function SettingsPage() {
           )}
           {activeModal === 'roles' && <RolesSettings t={t} />}
           {activeModal === 'accounting' && <AccountingSettings />}
+          {activeModal === 'terms' && <TermsSettings />}
+          {activeModal === 'socials' && <SocialSettings />}
         </SettingsModal>
       )}
     </div>
