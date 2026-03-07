@@ -185,10 +185,10 @@ export default function TayseerLanding() {
             </div>
 
             <div
-              className="p-6 sm:p-8 text-slate-600 bg-white"
+              className="p-6 sm:p-8 text-slate-600 bg-white overflow-x-hidden"
               style={{ overflowY: 'auto', flex: '1 1 auto', overscrollBehavior: 'contain' }}
             >
-              <div className="whitespace-pre-wrap font-medium leading-relaxed pb-4">
+              <div className="whitespace-pre-wrap break-words font-medium leading-relaxed pb-4 w-full">
                 {termsContent}
               </div>
             </div>
